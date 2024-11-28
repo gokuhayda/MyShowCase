@@ -50,12 +50,11 @@ To install the `tsml` package:
    ```bash
    git clone https://github.com/gokuhayda/TechShowCase.git
    cd TechShowCase/tsml
+
   2. Set up the environment and install dependencies:
 
 python3 -m venv venv
 source venv/bin/activate   # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
 
 3. Install the package:
 
