@@ -1,6 +1,6 @@
-# eTechShowCase
+# TechShowCase
 
-Welcome to **eTechShowCase**, a public repository showcasing my technical experiments, projects, and learning journey across various fields of technology.
+Welcome to **TechShowCase**, a public repository showcasing my technical experiments, projects, and learning journey across various fields of technology.
 
 ## 📌 About the Project
 This repository aims to:
@@ -13,14 +13,14 @@ Feel free to explore, use, and contribute to the projects available here!
 ## 📂 Repository Structure
 The repository is organized into categories based on programming languages and themes:
 
-eTechShowCase/
+TechShowCase/
 ├── tsml/
 
 ## 📖 How to Use
 1. Browse through the repository to find a project or code snippet of interest.
 2. Clone the repository using:
    ```bash
-   git clone https://github.com/gokuhayda/eTechShowCase.git
+   git clone https://github.com/gokuhayda/TechShowCase.git
 
 3. Explore the code, modify it, and adapt it to your own projects.
 
