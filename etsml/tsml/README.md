@@ -1,37 +1,136 @@
-# TechShowCase
+# tsml
 
-Welcome to **TechShowCase**, a public repository showcasing my technical experiments, projects, and learning journey across various fields of technology.
+`tsml` (Time Series and Machine Learning) is a Python package designed to simplify and accelerate workflows involving time series analysis, feature engineering, and machine learning. This repository organizes tools, scripts, and notebooks to provide modular, reusable, and efficient solutions for data-driven projects.
 
-## 📌 About the Project
-This repository aims to:
-- Share knowledge and insights from personal coding explorations.
-- Demonstrate technical skills in programming, data analysis, and machine learning.
-- Foster collaboration and learning within the developer community.
+## 📂 Datasets
 
-Feel free to explore, use, and contribute to the projects available here!
+The `tsml` package includes integrated datasets for practical experiments and demonstrations. The datasets are stored in the `datasets/` directory.
 
-## 📂 Repository Structure
-The repository is organized into categories based on programming languages and themes:
+### 🚴 Bike Sharing Dataset
+This dataset is sourced from the **UCI Machine Learning Repository** and contains information about bike-sharing systems, including:
+- **`day.csv`**: Aggregated data for daily usage.
+- **`hour.csv`**: Hourly data with detailed information.
 
-TechShowCase/
-├── tsml/
+### 📚 Dataset Features
+The Bike Sharing Dataset includes:
+- Weather conditions (temperature, humidity, windspeed).
+- Temporal information (season, year, month, hour).
+- Usage metrics (count of bikes rented).
 
-## 📖 How to Use
-1. Browse through the repository to find a project or code snippet of interest.
-2. Clone the repository using:
+#### Source:
+The dataset was provided by [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/bike+sharing+dataset).
+
+### 🔍 Usage
+To load and experiment with the datasets:
+```python
+import pandas as pd
+
+# Load daily dataset
+daily_data = pd.read_csv('tsml/datasets/bike_sharing/day.csv')
+
+# Load hourly dataset
+hourly_data = pd.read_csv('tsml/datasets/bike_sharing/hour.csv')
+
+print(daily_data.head())
+print(hourly_data.head())
+
+## 📌 Key Features
+- **Time Series Analysis**: Tools for preprocessing, modeling, and evaluating time series data.
+- **Feature Engineering**: Utilities for generating and selecting meaningful features.
+- **Model Training**: Pre-configured pipelines for machine learning models with hyperparameter optimization.
+- **Extensibility**: A modular structure allows easy integration of new functionalities.
+
+## 📂 Directory Structure
+
+## 🚀 Installation
+
+To install the `tsml` package:
+
+1. Clone the repository:
    ```bash
    git clone https://github.com/gokuhayda/TechShowCase.git
+   cd TechShowCase/tsml
+  2. Set up the environment and install dependencies:
 
-3. Explore the code, modify it, and adapt it to your own projects.
+python3 -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+
+3. Install the package:
+
+pip install .
+
+📖 Usage
+
+Time Series Model Training
+
+Train and evaluate time series models using pre-configured pipelines:
+
+from tsml.models.time_series_model_trainer import TSModelTrainer
+
+trainer = TSModelTrainer(
+    models_params=models_params,
+    df=dataframe,
+    feature_cols=['feature1', 'feature2'],
+    target_col='target',
+    metric='mse',
+    n_splits=5
+)
+trainer.train_models()
+print(trainer.performance_table)
+
+Feature Engineering
+
+Generate and transform features with feature_engineering.py:
+
+from tsml.feature_engineering.feature_engineering import FeatureEngineering
+
+fe = FeatureEngineering()
+transformed_data = fe.fit_transform(data)
+
+Feature Selection
+
+Evaluate and select the best features:
+
+from tsml.feature_selection.evaluate_feature_selection import evaluate_feature_selection
+
+tab, best_features, _ = evaluate_feature_selection(dataframe, model, target_col='target')
+print(best_features)
+
+Jupyter Notebooks
+
+Explore the notebooks/ directory for hands-on examples:
+
+curso_forecast_ml_series.ipynb: Forecasting walkthrough.
+
+curso_forecast_feature_engineering.ipynb: Feature engineering tutorial.
 
 📋 License
 
-This repository is licensed under the MIT License. You are free to use the code, provided proper attribution is given.
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 🤝 Contributions
 
-Contributions, suggestions, and feedback are highly encouraged! If you'd like to collaborate, feel free to open an issue or submit a pull request.
+Contributions are welcome! To contribute:
+
+1. Fork this repository.
+
+
+2. Create a feature branch (git checkout -b feature/new-feature).
+
+
+3. Commit your changes (git commit -m "Add new feature").
+
+
+4. Push to the branch (git push origin feature/new-feature).
+
+
+5. Open a pull request.
+
+
 
 📫 Connect with Me
 
-Find me on LinkedIn (https://www.linkedin.com/in/éric-sena) or GitHub to discuss tech, projects, or collaboration opportunities.
+Find me on LinkedIn or GitHub for questions, collaboration, or feedback.
+ 
