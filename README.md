@@ -14,7 +14,7 @@ Feel free to explore, use, and contribute to the projects available here!
 The repository is organized into categories based on programming languages and themes:
 
 eTechShowCase/
-├── tsml/
+├── etsml/
 
 ## 📖 How to Use
 1. Browse through the repository to find a project or code snippet of interest.
