@@ -5,9 +5,9 @@ requirements = [
     "matplotlib>=3.8.0",
     "pandas>=1.5.3",
     "scikit-learn>=1.3.0",
-    "statsmodels>=0.14.0",
-    "pmdarima>=2.0.3",
-    "jupyter>=1.0.0"  
+    "jupyter>=1.0.0", 
+    "statsmodels==0.14.0",  
+    "pmdarima==2.0.4" 
 ]
 
 setup(
