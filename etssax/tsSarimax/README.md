@@ -1,9 +1,9 @@
 ARIMA Predictor
 
-Bem-vindo ao ARIMA Predictor, um pacote Python para previsão de séries temporais usando ARIMA e SARIMAX, com suporte para variáveis exógenas. Este pacote é projetado para facilitar a análise de dados temporais e prever tendências futuras de maneira eficiente.
-📌 Sobre o Pacote
+Bem-vindo ao ARIMA Predictor, um pacote Python para previsão de séries temporais usando ARIMA e SARIMAX, com suporte para variáveis exógenas. Este exercício é projetado para facilitar a análise de dados temporais e prever tendências futuras de maneira eficiente.
+📌 Sobre o Exercício 
 
-Este pacote tem como objetivo:
+Este exercício tem como objetivo:
 
     Automatizar o treinamento de modelos ARIMA e SARIMAX.
     Simplificar o processo de previsão de séries temporais, incluindo suporte a variáveis exógenas.
