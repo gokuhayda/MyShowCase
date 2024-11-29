@@ -1,23 +1,41 @@
-ARIMA Predictor
+🚀 eTechShowCase - etssax
 
-Bem-vindo ao ARIMA Predictor, um pacote Python para previsão de séries temporais usando ARIMA e SARIMAX, com suporte para variáveis exógenas. Este exercício é projetado para facilitar a análise de dados temporais e prever tendências futuras de maneira eficiente.
-📌 Sobre o Exercício 
+Bem-vindo ao etssax, um projeto inovador que torna o trabalho com modelos SARIMAX mais intuitivo, especialmente ao incorporar variáveis exógenas. Este pacote Python foi projetado para simplificar o processo de previsão de séries temporais e otimizar análises de tendências futuras.
 
-Este exercício tem como objetivo:
 
-    Automatizar o treinamento de modelos ARIMA e SARIMAX.
-    Simplificar o processo de previsão de séries temporais, incluindo suporte a variáveis exógenas.
-    Oferecer ferramentas para análise e visualização de resultados preditivos.
+---
+
+📌 Destaques
+
+💡 Novidade: Variáveis Exógenas Mais Intuitivas
+
+Sempre quis usar variáveis exógenas no SARIMAX, mas achou a implementação complicada? Agora, com o etssax, você pode integrá-las de forma prática e eficiente, sem alterar o comportamento do pacote original.
+
+✨ Principais Funcionalidades
+
+Suporte direto a variáveis exógenas durante o treinamento de modelos SARIMAX.
+
+Processo otimizado para integrar variáveis adicionais na previsão de tendências futuras.
+
+Busca stepwise automatizada para identificar o melhor modelo com base no AIC.
+
+
+
+---
 
 📂 Estrutura do Projeto
 
 O projeto está organizado da seguinte maneira:
 
-etssaxt/ ├── tsSarimax/
+etssaxt/
+├── tsSarimax/
+
+
+---
 
 🚀 Como Usar
 
-Aqui está um exemplo básico de como utilizar o pacote para treinar um modelo e prever tendências futuras:
+Aqui está um exemplo simples para começar a trabalhar com o etssax:
 
 from tsSarimax.models.predictor import ARIMAPredictor
 import pandas as pd
@@ -30,7 +48,7 @@ predictor = ARIMAPredictor(data, target_col='target_column')
 
 # Treinar o modelo e prever
 train_preds, test_preds, future_preds, model_fit, train_metrics, test_metrics = predictor.train_and_predict_sarimax(
-    feature_cols=['feature1', 'feature2'],
+    feature_cols=['feature1', 'feature2'],  # Suporte a variáveis exógenas
     seasonal=True,
     stepwise=True,
     forecast_horizon=30
@@ -41,3 +59,11 @@ print("Train Metrics:", train_metrics)
 print("Test Metrics:", test_metrics)
 
 
+---
+
+🛠️ Contribuições
+
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests para melhorar este projeto.
+
+
+---
