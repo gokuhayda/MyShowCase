@@ -1,0 +1,17 @@
+# Ignorar checkpoints de notebooks
+.ipynb_checkpoints/
+
+# Ignorar os diretórios
+Dataset/
+tsml.egg-info/
+timeseries_env/
+
+# Ignorar todos os arquivos .pyc
+*.pyc
+
+# Ignorar diretórios __pycache__
+__pycache__/
+
+# Ignorar arquivos .pyo (caso existam)
+*.pyo
+
