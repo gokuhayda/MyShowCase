@@ -6,7 +6,8 @@ requirements = [
     "pandas>=1.5.3",
     "scikit-learn>=1.3.0",
     "statsmodels>=0.14.0",
-    "pmdarima>=2.0.3"
+    "pmdarima>=2.0.3",
+    "jupyter>=1.0.0"  
 ]
 
 setup(
