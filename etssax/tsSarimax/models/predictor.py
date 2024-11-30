@@ -47,38 +47,87 @@ class ARIMAPredictor:
         
         return mse, rmse, mae, r2, combined_score
 
-    def train_and_predict_sarimax(self, feature_cols, seasonal=False, stepwise=True, forecast_horizon=None, disp=False):
+    def train_and_predict_sarimax(
+        self, 
+        feature_cols, 
+        seasonal=False, 
+        seasonal_order=(0, 0, 0, 0), 
+        stepwise=True, 
+        forecast_horizon=None, 
+        disp=False
+    ):
         """
-        Treina e faz previsões usando o modelo SARIMAX com variáveis exógenas.
+        Treina e faz previsões usando o modelo SARIMAX com variáveis exógenas e sazonalidade explícita.
+
+        Parameters:
+            feature_cols: Colunas de variáveis exógenas.
+            seasonal: Booleano indicando se sazonalidade deve ser considerada.
+            seasonal_order: Parâmetros sazonais (P, D, Q, s).
+            stepwise: Utilizar ajuste stepwise no auto_arima.
+            forecast_horizon: Número de passos futuros a prever.
+            disp: Exibir detalhes do ajuste do modelo.
+
+        Returns:
+            train_predictions: Previsões no conjunto de treino.
+            test_predictions: Previsões no conjunto de teste.
+            future_predictions: Previsões futuras (opcional).
+            model_fit: Objeto ajustado do modelo.
+            train_metrics: Métricas do conjunto de treino.
+            test_metrics: Métricas do conjunto de teste.
         """
+        # Ajuste do modelo com auto_arima
         auto_model = auto_arima(
             self.train_df[self.target_col],
             exogenous=self.train_df[feature_cols],
             seasonal=seasonal,
+            m=seasonal_order[3] if seasonal else 1,  # Define a periodicidade (s)
             stepwise=stepwise,
             suppress_warnings=True,
             error_action="ignore",
             trace=True
         )
-        order = auto_model.order
-        model = SARIMAX(self.train_df[self.target_col], exog=self.train_df[feature_cols], order=order)
+
+        order = auto_model.order  # Parâmetros ARIMA
+        seasonal_order_auto = auto_model.seasonal_order  # Parâmetros sazonais detectados
+
+        # Usar ordem sazonal explícita, se fornecida
+        final_seasonal_order = seasonal_order if seasonal else (0, 0, 0, 0)
+
+        # Ajuste do modelo SARIMAX com sazonalidade explícita
+        model = SARIMAX(
+            self.train_df[self.target_col],
+            exog=self.train_df[feature_cols],
+            order=order,
+            seasonal_order=final_seasonal_order
+        )
         model_fit = model.fit(disp=disp)  # Ajuste do modelo
 
-        train_predictions = model_fit.predict(start=0, end=len(self.train_df)-1, exog=self.train_df[feature_cols])
-        test_predictions = model_fit.predict(start=len(self.train_df), end=len(self.df)-1, exog=self.test_df[feature_cols])
+        # Previsões
+        train_predictions = model_fit.predict(
+            start=0, 
+            end=len(self.train_df)-1, 
+            exog=self.train_df[feature_cols]
+        )
+        test_predictions = model_fit.predict(
+            start=len(self.train_df), 
+            end=len(self.df)-1, 
+            exog=self.test_df[feature_cols]
+        )
 
+        # Previsões futuras, se aplicável
         future_predictions = None
         if forecast_horizon:
             future_exog = self._generate_future_exog(feature_cols, forecast_horizon)
             future_predictions = model_fit.forecast(steps=forecast_horizon, exog=future_exog)
 
+        # Métricas
         train_metrics = self._compute_metrics(self.train_df[self.target_col], train_predictions)
         test_metrics = self._compute_metrics(self.test_df[self.target_col], test_predictions)
-        
+
+        # Plot dos resultados
         self._plot_results(train_predictions, test_predictions, future_predictions, forecast_horizon)
 
         return train_predictions, test_predictions, future_predictions, model_fit, train_metrics, test_metrics
-
 
     def _generate_future_exog(self, feature_cols, forecast_horizon):
         """
@@ -242,6 +291,3 @@ class ARIMAPredictor:
         print("\nConclusões:")
         for conclusion in conclusions:
             print(conclusion)
-
-
-
