@@ -40,7 +40,9 @@ pip install -r requirements/requirements.txt
 Configure o arquivo .env com suas chaves de API:
 
 GITHUB_TOKEN=seu_github_token
+
 OPENAI_API_KEY=sua_openai_api_key
+
 HUGGINGFACEHUB_API_TOKEN=sua_huggingfacehub_api_key
 
 Como Usar
