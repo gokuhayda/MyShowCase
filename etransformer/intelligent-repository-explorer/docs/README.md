@@ -48,9 +48,7 @@ HUGGINGFACEHUB_API_TOKEN=sua_huggingfacehub_api_key
 Como Usar
 
     Atualize o arquivo config.yaml para apontar para o repositório GitHub desejado.
-    Execute o script principal:
-
-python src/main.py
+    Execute o script principal: python src/main.py
 
 
 
