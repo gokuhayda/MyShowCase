@@ -26,7 +26,7 @@ Este projeto é uma aplicação Python que utiliza LLMs (como OpenAI GPT e Llama
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/usuario/projeto.git
+   git clone https://github.com/gokuhayda/eTechShowCase.git
 
 Crie e ative um ambiente virtual:
 
