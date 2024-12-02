@@ -56,13 +56,20 @@ python src/main.py
 
 Estrutura de Arquivos
 
-📦 NomeDoProjeto
+📦 Intelligent Repository Explorer
+
  ┣ 📂 src
+ 
  ┃ ┗ 📜 main.py
+ 
  ┣ 📂 config
+ 
  ┃ ┗ 📜 config.yaml
+ 
  ┣ 📂 docs
+ 
  ┃ ┗ 📜 README.md
+ 
  ┣ 📂 requirements
     ┗ 📜 requirements.txt
 
