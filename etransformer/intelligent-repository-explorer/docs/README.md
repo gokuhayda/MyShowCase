@@ -71,6 +71,7 @@ Estrutura de Arquivos
  ┃ ┗ 📜 README.md
  
  ┣ 📂 requirements
+ 
     ┗ 📜 requirements.txt
 
 
