@@ -75,6 +75,38 @@ Para facilitar os testes, um PDF de exemplo está incluído no diretório `data`
 - Insira perguntas no campo de texto principal.
 - O sistema retornará respostas baseadas no conteúdo do PDF.
 
+### 5. **Consultas com Subperguntas**
+
+O sistema oferece suporte a consultas avançadas com **subperguntas**, permitindo explorar documentos em maior profundidade, particularmente úteis para perguntas complexas ou multi-facetadas.
+
+**Como funciona:**
+- A funcionalidade divide uma pergunta principal em subperguntas específicas, realizando consultas separadas para cada uma delas.
+- As respostas às subperguntas são combinadas para formar uma resposta consolidada à pergunta principal.
+- Esse método é particularmente eficaz ao lidar com grandes volumes de informações ou perguntas que envolvem várias partes.
+
+**Exemplo com o PDF de Exemplo**
+O arquivo `currículo_exemplo.pdf`, incluído na pasta `data`, contém informações sobre a trajetória profissional de um cientista de dados.
+
+Se você perguntar: *"Quais projetos relacionados a Machine Learning foram realizados e qual o impacto de cada um?"*, o sistema pode dividir a pergunta em:
+1. Quais projetos de Machine Learning estão listados no documento?
+2. Qual foi o impacto relatado para cada projeto?
+
+O sistema pode retornar:
+- **Projeto:** Reconhecimento Biométrico Infantil - Natosafe.  
+  **Impacto:** Aumento de 20% na precisão de identificação biométrica.
+- **Projeto:** Sistema preditivo para rastreadores solares - FIT.  
+  **Impacto:** Aumento de 10% na eficiência operacional.
+- **Projeto:** Previsão de Demanda e Clusterização - MadeiraMadeira.  
+  **Impacto:** Redução de 10% nos custos logísticos.
+
+**Passo a Passo para Utilizar:**
+1. Insira sua pergunta no campo **"Consulta com Subperguntas"**.
+2. Clique no botão **"Consultar (Subperguntas)"**.
+3. O sistema processará a pergunta, realizará as consultas, e exibirá a resposta consolidada.
+4. Se houver fontes disponíveis, elas serão exibidas abaixo da resposta.
+
+**Nota:** Certifique-se de que o índice vetorial foi criado antes de realizar consultas. Caso contrário, o sistema exibirá uma mensagem de erro.
+
 ---
 
 ## Teste com o PDF de Exemplo
