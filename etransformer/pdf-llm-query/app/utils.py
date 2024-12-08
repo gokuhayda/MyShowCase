@@ -1,5 +1,5 @@
 import os
-import fitz
+import fitz 
 from tkinter import Tk, filedialog
 
 def select_folder():
@@ -37,7 +37,6 @@ def process_pdfs(base_directory):
     
     print(f"Todos os arquivos PDF foram processados e salvos em {output_dir}.")
     return output_dir
-
 
 
 

@@ -7,6 +7,8 @@ from llama_index.vector_stores.deeplake import DeepLakeVectorStore
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
 from llama_index.core.postprocessor import SentenceTransformerRerank
+from llama_index.core.query_engine import SubQuestionQueryEngine
+from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from app.utils import process_pdfs
 
 def create_index_with_rerankers(pdf_directory):
@@ -60,3 +62,25 @@ def query_index_with_rerankers(question):
     response = query_engine.query(question)
     return response.response
 
+# Função para consulta com SubQuestionQueryEngine
+def query_index_with_subquestions(question):
+    if "vector_index" not in st.session_state or not st.session_state.vector_index:
+        raise ValueError("O índice vetorial não foi criado. Crie o índice antes de realizar consultas.")
+
+    vector_index = st.session_state.vector_index
+
+    query_engine_tool = QueryEngineTool(
+        query_engine=vector_index.as_query_engine(similarity_top_k=10),
+        metadata=ToolMetadata(
+            name="pdf_query_engine",
+            description="Consulta avançada baseada em PDFs"
+        ),
+    )
+
+    sub_query_engine = SubQuestionQueryEngine.from_defaults(
+        query_engine_tools=[query_engine_tool],
+        use_async=True
+    )
+
+    response = sub_query_engine.query(question)
+    return response

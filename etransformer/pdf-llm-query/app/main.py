@@ -1,7 +1,8 @@
 import os
 import streamlit as st
 from app.utils import select_folder, process_pdfs
-from app.indexing import create_index_with_rerankers, query_index_with_rerankers
+from app.indexing import create_index_with_rerankers, query_index_with_rerankers, query_index_with_subquestions
+import openai
 
 # Configuração inicial da interface
 st.title("Sistema de Consulta a PDFs com GPT-4")
@@ -9,6 +10,7 @@ st.sidebar.header("Configuração de API e Seleção de Pasta")
 
 # Configuração da API OpenAI
 openai_api_key = st.sidebar.text_input("Digite sua chave de API OpenAI", type="password")
+os.environ["OPENAI_API_KEY"] = openai_api_key
 if openai_api_key:
     os.environ["OPENAI_API_KEY"] = openai_api_key
     st.success("Chave de API configurada com sucesso!")
@@ -42,21 +44,52 @@ if "pdf_directory" in locals() and pdf_directory:
             except Exception as e:
                 st.error(f"Erro ao criar o índice: {e}")
 
-# Interface para consulta
-st.header("Faça uma consulta")
-question = st.text_input("Digite sua pergunta sobre os documentos", key="question_input")
-if st.button("Consultar", key="query_button") and question:
+# Primeiro campo para entrada de pergunta
+question_normal = st.text_input("Digite sua pergunta sobre os documentos (Consulta Normal)", key="question_input_normal")
+
+# Botão para consulta normal
+if st.button("Consultar (Normal)", key="query_button_normal") and question_normal:
     try:
         with st.spinner("Buscando resposta..."):
-            # Consultar o índice com a pergunta fornecida
-            answer = query_index_with_rerankers(question)
-            st.session_state.answer = answer  # Armazenar resposta no estado
-    except ValueError as e:
-        st.error(f"Erro ao realizar consulta: {e}")
+            if not st.session_state.vector_index:
+                raise ValueError("O índice vetorial não foi criado. Crie o índice antes de realizar consultas.")
+            answer = query_index_with_rerankers(question_normal)
+            st.session_state.answer = answer
+            st.write("**Resposta:**")
+            st.write(st.session_state.answer)
     except Exception as e:
-        st.error(f"Ocorreu um erro inesperado: {e}")
+        st.error(f"Ocorreu um erro: {e}")
+else:
+    if not question_normal:
+        st.warning("Por favor, insira uma pergunta antes de consultar.")
 
-# Exibir a resposta armazenada
-if "answer" in st.session_state:
-    st.write("**Resposta:**")
-    st.write(st.session_state.answer)
+# Segundo campo para entrada de pergunta
+question_subquestions = st.text_input("Digite sua pergunta sobre os documentos (Consulta com Subperguntas)", key="question_input_subquestions")
+
+# Botão para consulta com subperguntas
+# Botão para consulta com subperguntas
+if st.button("Consultar (Subperguntas)", key="query_button_subquestions") and question_subquestions:
+    try:
+        with st.spinner("Buscando resposta..."):
+            if not st.session_state.vector_index:
+                raise ValueError("O índice vetorial não foi criado. Crie o índice antes de realizar consultas.")
+            
+            # Consulta com subperguntas
+            response = query_index_with_subquestions(question_subquestions)
+            
+            # Extrair e exibir a resposta principal
+            st.session_state.answer = response.response
+            st.write("**Resposta:**")
+            st.write(st.session_state.answer)
+
+            # Exibir as fontes formatadas, se disponíveis
+            sources = response.get_formatted_sources()
+            if sources:
+                st.write("**Fontes:**")
+                st.write(sources)
+    except Exception as e:
+        st.error(f"Ocorreu um erro: {e}")
+else:
+    if not question_subquestions:
+        st.warning("Por favor, insira uma pergunta antes de consultar.")
+
