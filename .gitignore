@@ -1,0 +1,26 @@
+
+# Arquivos Python compilados
+*.pyc
+__pycache__/
+
+# Diretório de dados e saídas processadas
+data/processed_texts/
+
+# Arquivos de log ou temporários do DeepLake
+data/pdf-gpt4-query/deep_lake_db/
+data/pdf-gpt4-query/deep_lake_db/_deeplake_log/
+
+# Ambientes virtuais
+venv/
+*.env
+
+# Arquivos temporários de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos gerados automaticamente pelo Streamlit
+.streamlit/
+
+# Outros arquivos não essenciais
+.idea/
+.vscode/
