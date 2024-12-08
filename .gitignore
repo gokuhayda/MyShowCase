@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 # Arquivos Python compilados
 *.pyc
@@ -24,3 +25,8 @@ Thumbs.db
 # Outros arquivos não essenciais
 .idea/
 .vscode/
+=======
+etssax/build/
+etssax/tsSarimax.egg-info/
+
+>>>>>>> 6e630e0815839ff75bb0e312906729002d7a7433

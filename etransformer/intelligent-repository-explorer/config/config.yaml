@@ -1,0 +1,23 @@
+github:
+  repo_url: "https://github.com/...."  # Exemplo de URL para testar
+  branch: "main"  # Branch padrão
+  extensions:  # Extensões de arquivos a serem incluídas no carregamento
+    - ".py"
+    - ".js"
+    - ".ts"
+    - ".md"
+  concurrent_requests: 5  # Número de requisições simultâneas
+
+llm:
+  use_openai: false  # Define se deve usar o OpenAI para consulta
+  openai_model: "gpt-4"  # Modelo OpenAI
+  llama_model_name: "meta-llama/Meta-Llama-3-8B-Instruct"  # Modelo Llama
+  index_dimension: 512  # Dimensão do índice vetorial
+  test_question: "What is the repository about?"  # Pergunta inicial
+
+storage:
+  persist: true  # Define se o banco de dados será salvo localmente
+  path: "./transform/intelligent-repository-explorer/index_storage"  # Caminho para salvar o índice
+  overwrite: false  # Define se o índice existente deve ser sobrescrito
+
+
