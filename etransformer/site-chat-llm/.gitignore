@@ -1,0 +1,23 @@
+
+# Diretórios de ambiente virtual
+venv/
+__pycache__/
+
+# Arquivos de configuração locais
+.env
+
+# Logs
+*.log
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos gerados
+*.pyc
+*.pyo
+*.swp
+
+# Ignorar tudo em static/images/ exceto logo.webp
+static/images/*
+!static/images/logo.webp

@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: site-chat-llm
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app/chatbot.py"
+    plan: free

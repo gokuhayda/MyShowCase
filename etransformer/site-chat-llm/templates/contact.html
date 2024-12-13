@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BFK1J8PF6K"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-BFK1J8PF6K');
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contato - NextGen Analytics Solutions</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Google Fonts: Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <script>
+        (function () {
+            emailjs.init("IXM9bV0t5tdk4Bgdq");
+        })();
+    </script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <img src="images/DALL·E 2024-12-06 11.24.20 - Create a modern and approachable image for a website's 'Contact' page, featuring elements like a message envelope, chat bubbles, and a glowing map pin.webp" alt="NextGen Analytics Solutions Logo" class="banner-image">
+            <h1>Contato</h1>
+            <p>Entre em contato conosco para saber mais!</p>
+        </div>
+    </header>
+
+    <nav>
+    <div aria-label="breadcrumb">
+        <a href="index.html">Início</a> > <span>Cases</span>
+    </div>
+        <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+        <ul class="menu">
+            <li><a href="index.html">🏠 Início</a></li>
+            <li><a href="competency_mapping.html">📊 Mapeamento de Competências</a></li>
+            <li><a href="process_optimization.html">⚙️ Otimização de Processos</a></li>
+            <li><a href="data_science_consulting.html">📈 Consultoria em Ciência de Dados</a></li>
+            <li><a href="machine_learning_solutions.html">🤖 Machine Learning</a></li>
+            <li><a href="generative_models.html">🌌 Modelos Generativos</a></li>
+            <li><a href="cases.html">🏆 Cases</a></li>
+            <li><a href="contact.html">📞 Contato</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <form id="contact-form">
+            <label for="name">Nome:</label>
+            <input type="text" id="name" name="name" placeholder="Seu nome completo" required>
+
+            <label for="email">E-mail:</label>
+            <input type="email" id="email" name="email" placeholder="seuemail@dominio.com" required>
+
+            <label for="phone">Telefone (Opcional):</label>
+            <input type="tel" id="phone" name="phone" placeholder="(DDD) 00000-0000" pattern="^\d{2} \d{4,5}-\d{4}$">
+
+            <label for="service">Serviço de Interesse:</label>
+            <select id="service" name="service" required>
+            <option value="">Selecione um serviço</option>
+            <option value="data_science">Consultoria em Ciência de Dados</option>
+            <option value="competency_mapping">Mapeamento de Competências</option>
+            <option value="process_mapping">Mapeamento de Processos</option>
+            <option value="machine_learning">Implementação de Machine Learning</option>
+            <option value="generative_ai">Soluções em Inteligência Generativa</option>
+            <option value="deep_learning">Soluções em Deep Learning</option>
+            </select>
+            <label for="message">Mensagem:</label>
+            <textarea id="message" name="message" rows="4" placeholder="Digite sua mensagem aqui" required></textarea>
+
+            <button type="submit">Enviar</button>
+        </form>
+    </main>
+
+    <!-- Botão do WhatsApp -->
+    <a href="https://api.whatsapp.com/send?phone=5541995484812&text=Oi, visitei o site e gostaria de saber mais sobre a NextGen Analytics Solutions" id="whatsapp-button" target="_blank" title="Fale Conosco pelo WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+   </a>
+
+
+    <script>
+        function toggleMenu() {
+            document.querySelector(".menu").classList.toggle("active");
+        }
+
+        document.getElementById("contact-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            emailjs.sendForm("service_t5k235z", "template_4nn4a3g", this)
+                .then(() => {
+                    alert("Mensagem enviada com sucesso!");
+                    this.reset(); // Limpa o formulário após o envio bem-sucedido
+                })
+                .catch(error => {
+                    alert("Erro ao enviar mensagem. Tente novamente.");
+                    console.error("Erro:", error);
+                });
+        });
+    </script>
+
+    <!-- Scripts -->
+<script src="static/chatbot.js"></script>
+
+</body>
+</html>

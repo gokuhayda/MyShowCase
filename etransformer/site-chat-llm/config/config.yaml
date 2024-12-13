@@ -1,0 +1,62 @@
+default_model: "gpt4"  # Ou "llama", dependendo do modelo desejado
+
+embedding_model:
+  type: "text-embedding-ada-002"  # Modelo para embeddings
+  max_tokens: 2048
+  batch_size: 100
+
+gpt4:
+  type: "gpt-4"
+  max_input_size: 4096
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 20
+  system_message: "Sempre responder no idioma português. Olá! Eu sou o assistente virtual da NextGen Analytics Solutions e estou aqui para fornecer informações sobre os serviços da empresa, como mapeamento de competências, mapeamento de processos, ciência de dados e inteligência artificial. Minha prioridade é responder suas perguntas de forma clara, objetiva e com um toque informal, mas sempre focado no tema. Precisa de algo? É só perguntar! Minhas respostas serão curtas, de 1 a 2 frases, para facilitar a leitura." 
+
+llama:
+  type: "meta-llama/Llama-3.3-70B-Instruct"
+  device: "cuda"
+  max_input_size: 4096
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 20
+  system_message: "Sempre responder no idioma português. Olá! Eu sou o assistente virtual da NextGen Analytics Solutions e estou aqui para fornecer informações sobre os serviços da empresa, como mapeamento de competências, mapeamento de processos, ciência de dados e inteligência artificial. Minha prioridade é responder suas perguntas de forma clara, objetiva e com um toque informal, mas sempre focado no tema. Precisa de algo? É só perguntar! Minhas respostas serão curtas, de 1 a 2 frases, para facilitar a leitura." 
+  
+indexing:
+  chunk_size: 500                              # Tamanho dos fragmentos
+  overlap: 100                                 # Sobreposição entre fragmentos
+
+retrieval:
+  top_k: 5                                    # Número de chunks retornados
+  reranker_model: "sentence-transformers/all-MiniLM-L6-v2"
+  subquestion_enabled: true                    # Habilitar subperguntas
+
+session:
+  idle_timeout: 300                            # Tempo ocioso para encerrar sessões
+  notify_user: true                            # Notificar antes de encerrar sessão
+
+setup_docs:
+  max_document_size: 5000                      # Adicionar validação de tamanho dos documentos e fragmentação
+
+storage:
+  conversations_path: "./storage/conversations"        
+  sessions_path: "./storage/sessions"                  
+  vector_store_path: "./storage/deeplake_local"
+  deep_lake_path: "./storage/deep_lake_db"
+  conversations_path: "./storage/conversations"
+  raw_pdf_directory: "./storage/datasets/raw_data"
+  processed_texts_directory: "./storage/datasets/processed_texts"
+
+deep_memory:
+  similarity_top_k: 4
+  model_name: "sentence-transformers/all-MiniLM-L6-v2"
+
+# URLs para scraping de páginas web
+web_pages:
+  - "https://gokuhayda.github.io/nextgen_frontend/competency_mapping.html"
+  - "https://gokuhayda.github.io/nextgen_frontend/index.html"
+  - "https://gokuhayda.github.io/nextgen_frontend/process_optimization.html"
+  - "https://gokuhayda.github.io/nextgen_frontend/data_science_consulting.html"
+  - "https://gokuhayda.github.io/nextgen_frontend/machine_learning_solutions.html"
+  - "https://gokuhayda.github.io/nextgen_frontend/generative_models.html"
+  - "https://gokuhayda.github.io/nextgen_frontend/cases.html"
