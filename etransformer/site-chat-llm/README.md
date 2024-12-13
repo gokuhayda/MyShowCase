@@ -1,4 +1,6 @@
 
+
+
 # Site-Chat-LLM
 
 Este projeto combina um **frontend hospedado no GitHub Pages** com um **backend Flask** para interagir com um chatbot baseado em modelos avançados de linguagem.
@@ -41,6 +43,34 @@ site-chat-llm/
 - **Backend Dinâmico:** Suporte para execução local e em produção.
 - **Chatbot Baseado em LLM:** Interação inteligente por meio de modelos avançados de linguagem.
 
+
+## Funcionalidades Principais
+
+1. **Chatbot Inteligente:**
+   - Baseado em modelos avançados de linguagem (LLMs).
+   - Suporte para consultas complexas e respostas contextualizadas.
+   - Gerenciamento de histórico de conversas com resumo automático para otimização de tokens.
+
+2. **Ingestão de Dados:**
+   - Processamento de páginas da web usando web scraping com BeautifulSoup.
+   - Extração e processamento de textos de PDFs com PyMuPDF.
+   - Armazenamento e organização de dados em formato acessível para o chatbot.
+
+3. **Armazenamento e Indexação:**
+   - Uso de DeepLake para criar uma base vetorial eficiente.
+   - Divisão de documentos extensos em fragmentos para otimização de busca.
+   - Suporte a consultas reordenadas e busca semântica.
+
+4. **Integração de Frontend e Backend:**
+   - Comunicação por CORS com o frontend hospedado no GitHub Pages.
+   - Rota dedicada para interação com o chatbot.
+   - Configuração adaptável para execução local ou produção.
+
+5. **Suporte ao Usuário:**
+   - Logs detalhados para depuração.
+   - Mensagens de erro amigáveis e tratativas para falhas comuns.
+   - Configuração por meio de um arquivo `.env` e `config.yaml`.
+   
 ---
 
 ## **Configuração e Execução**
