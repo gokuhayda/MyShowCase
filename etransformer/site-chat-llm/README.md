@@ -94,6 +94,13 @@ Contribuições são bem-vindas! Para contribuir:
 
 ---
 
+## **Links Importantes**
+
+- [Perfil no LinkedIn](https://br.linkedin.com/in/éric-sena)
+- [Página de Teste](https://gokuhayda.github.io/nextgen_frontend/index.html)
+
+---
+
 ## **Licença**
 
 Este projeto está sob a licença MIT.
