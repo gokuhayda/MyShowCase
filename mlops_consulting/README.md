@@ -1,54 +1,84 @@
-# MlopsConsulting Crew
+# MLOps Consulting Framework
 
-Welcome to the MlopsConsulting Crew project, powered by [crewAI](https://crewai.com). This template is designed to help you set up a multi-agent AI system with ease, leveraging the powerful and flexible framework provided by crewAI. Our goal is to enable your agents to collaborate effectively on complex tasks, maximizing their collective intelligence and capabilities.
+Este repositório contém a implementação de um framework escalável para consultoria e implantação de MLOps em ambientes corporativos.
 
-## Installation
+## 📌 Visão Geral
 
-Ensure you have Python >=3.10 <3.13 installed on your system. This project uses [UV](https://docs.astral.sh/uv/) for dependency management and package handling, offering a seamless setup and execution experience.
+O **MLOps Consulting Framework** foi desenvolvido para oferecer um fluxo estruturado de descoberta, análise, projeto e implementação de pipelines de MLOps em empresas de grande porte.
 
-First, if you haven't already, install uv:
+## 📂 Estrutura do Repositório
 
-```bash
-pip install uv
+```
+MLOps-Consulting-Framework/
+│── knowledge/
+│   ├── reports/
+│   │   ├── assessment_phase/
+│   │   ├── discovery_phase/
+│   │   ├── final_flux/
+│   │   ├── pipeline_design_phase/
+│   ├── sources/
+│       ├── project_description.md
+│       ├── required.md
+│       ├── stakeholder_notes.csv
+│
+│── mlops_consulting_flow/
+│   ├── logs/
+│   │   ├── assessment_phase/
+│   │   ├── discovery_phase/
+│   │   ├── final_flux/
+│   │   ├── pipeline_design_phase/
+│   ├── src/
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── crew_manager.py
+│   │   │   ├── logger.py
+│   │   │   ├── state.py
+│   │   │   ├── utils.py
+│   │   ├── crews/
+│   │   │   ├── poem_crew/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── config/
+│   │   │   │   ├── poem_crew.py
+│   │   ├── tools/
+│   │   │   ├── __init__.py
+│   │   │   ├── human_input_tool.py
+│   │   │   ├── yaml_validator.py
+│   │   ├── flow.py
+│   │   ├── main.py
+│
+│── .gitignore
+│── requirements.txt
+│── pyproject.toml
+│── README.md
 ```
 
-Next, navigate to your project directory and install the dependencies:
+## 🚀 Como Usar
 
-(Optional) Lock the dependencies and install them by using the CLI command:
+### 1️⃣ Clonar o Repositório
 ```bash
-crewai install
-```
-### Customizing
-
-**Add your `OPENAI_API_KEY` into the `.env` file**
-
-- Modify `src/mlops_consulting/config/agents.yaml` to define your agents
-- Modify `src/mlops_consulting/config/tasks.yaml` to define your tasks
-- Modify `src/mlops_consulting/crew.py` to add your own logic, tools and specific args
-- Modify `src/mlops_consulting/main.py` to add custom inputs for your agents and tasks
-
-## Running the Project
-
-To kickstart your crew of AI agents and begin task execution, run this from the root folder of your project:
-
-```bash
-$ crewai run
+git clone https://github.com/seu-usuario/MLOps-Consulting-Framework.git
+cd MLOps-Consulting-Framework
 ```
 
-This command initializes the mlops_consulting Crew, assembling the agents and assigning them tasks as defined in your configuration.
+### 2️⃣ Instalar Dependências
+```bash
+pip install -r requirements.txt
+```
 
-This example, unmodified, will run the create a `report.md` file with the output of a research on LLMs in the root folder.
+### 3️⃣ Executar o Framework
+```bash
+python main.py run
+```
 
-## Understanding Your Crew
+## ⚙️ Configuração
 
-The mlops_consulting Crew is composed of multiple AI agents, each with unique roles, goals, and tools. These agents collaborate on a series of tasks, defined in `config/tasks.yaml`, leveraging their collective skills to achieve complex objectives. The `config/agents.yaml` file outlines the capabilities and configurations of each agent in your crew.
+Os arquivos `agents.yaml`, `tasks.yaml` e `mlops_globals.yaml` permitem configurar as diferentes etapas do framework.
 
-## Support
+## 📝 Licença
 
-For support, questions, or feedback regarding the MlopsConsulting Crew or crewAI.
-- Visit our [documentation](https://docs.crewai.com)
-- Reach out to us through our [GitHub repository](https://github.com/joaomdmoura/crewai)
-- [Join our Discord](https://discord.com/invite/X4JWnZnxPb)
-- [Chat with our docs](https://chatg.pt/DWjSBZn)
+Este projeto está licenciado sob a [MIT License](LICENSE).
 
-Let's create wonders together with the power and simplicity of crewAI.
+---
+
+📧 Autor: **Eric Gustavo Reis de Sena**  
+✉️ Email: egrsena@gmail.com
