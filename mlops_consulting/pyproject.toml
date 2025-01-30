@@ -1,23 +1,30 @@
-[project]
-name = "mlops_consulting"
+[tool.poetry]
+name = "mlops-consulting-framework"
 version = "0.1.0"
-description = "mlops_consulting using crewAI"
-authors = [{ name = "Your Name", email = "you@example.com" }]
-requires-python = ">=3.10,<3.13"
-dependencies = [
-    "crewai[tools]>=0.100.0,<1.0.0"
-]
+description = "Framework para consultoria e implementação de MLOps"
+authors = ["Eric Gustavo Reis de Sena <egrsena@gmail.com>"]
+license = "MIT"
 
-[project.scripts]
-mlops_consulting = "mlops_consulting.main:run"
-run_crew = "mlops_consulting.main:run"
-train = "mlops_consulting.main:train"
-replay = "mlops_consulting.main:replay"
-test = "mlops_consulting.main:test"
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+numpy = "*"
+pandas = "*"
+pyyaml = "*"
+loguru = "*"
+crewAI = "*"
+langchain = "*"
+openai = "*"
+tensorflow = "*"
+scikit-learn = "*"
+fastapi = "*"
+uvicorn = "*"
+pytest = "*"
+docker = "*"
+kubernetes = "*"
+mlflow = "*"
+apache-airflow = "*"
+pydantic = "*"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.crewai]
-type = "crew"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
