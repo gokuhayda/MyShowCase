@@ -1,0 +1,29 @@
+[project]
+name = "mlops_consulting"
+version = "0.1.0"
+description = "Framework de MLOps Consulting usando CrewAI"
+authors = [{ name = "Eric Gustavo Reis de Sena", email = "egrsena@gmail.com" }]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "crewai[tools]>=0.100.0,<1.0.0",
+    "pydantic",
+    "fastapi",
+    "numpy",
+    "pandas",
+    "yaml",
+    "uvicorn"
+]
+
+[project.scripts]
+mlops_consulting = "mlops_consulting.main:run"
+run_crew = "mlops_consulting.main:run"
+train = "mlops_consulting.main:train"
+replay = "mlops_consulting.main:replay"
+test = "mlops_consulting.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"

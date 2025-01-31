@@ -1,0 +1,51 @@
+**Documento de Requisitos**
+
+**Objetivos Estratégicos do Projeto:**
+O projeto MLOps tem como objetivo desenvolver e implementar um framework de MLOps escalável e robusto para suportar o ciclo de vida completo de modelos de machine learning em produção. Os principais objetivos do projeto incluem:
+
+1. Automação End-to-End: Abranger todo o fluxo de trabalho de dados e modelos, desde a ingestão e preparação de dados até a implantação e monitoramento em produção.
+2. Integração Contínua e Entrega Contínua (CI/CD): Otimizar o desenvolvimento, testes e implantação de modelos, garantindo versionamento confiável e feedback rápido.
+3. Conformidade Regulatória e Segurança: Assegurar aderência a normas como GDPR, LGPD e outras regulamentações específicas do setor, aplicando criptografia, auditoria e boas práticas de governança de dados.
+4. Eficiência Operacional e Insights Estratégicos: Aumentar a produtividade das equipes, reduzir custos de manutenção e disponibilizar análises avançadas em tempo real para a tomada de decisão.
+5. Escalabilidade e Resiliência: Implementar arquiteturas distribuídas capazes de lidar com grandes volumes de dados e alta demanda de processamento, garantindo disponibilidade contínua e alta performance.
+
+**Métricas de Sucesso (KPIs):**
+- % de conformidade com normas regulatórias (ex: GDPR, LGPD)
+- Tempo médio de resposta a alertas de segurança
+- Número de falhas de segurança identificadas e resolvidas
+- Tempo de lançamento de novos modelos no ambiente de produção
+- Nível de automatização do ciclo de vida dos modelos
+
+**Restrições e Prioridades do Negócio:**
+- Prioridade máxima na segurança e conformidade regulatória
+- Conclusão das ações corretivas identificadas na auditoria de segurança dentro de 6 meses
+- Restrição de orçamento para implementar melhorias de segurança identificadas na auditoria
+
+**Stakeholders:**
+- Cliente/Equipe de Gerenciamento de Projeto: Responsáveis pelo acompanhamento e alinhamento do projeto com os objetivos do negócio.
+- Ana Souza (Engenheira de Dados): Responsável pela criação e otimização de pipelines de dados.
+- Carla Oliveira (Cientista de Dados): Especializada em análise exploratória, desenvolvimento e validação de modelos de machine learning.
+- Marcos Lima (Engenheiro de Machine Learning): Responsável pela construção e manutenção dos pipelines de treinamento e inferência.
+- Roberto Costa (DevOps Engineer): Concentra-se na automação de processos de integração e entrega contínua.
+- Roberta Costa (Cloud Architect): Responsável pela infraestrutura em nuvem, garantindo escalabilidade e resiliência.
+- Fernanda Alves (Monitoring Specialist): Responsável por criar dashboards de acompanhamento de KPIs e detectar anomalias.
+- Lucas Tavares (Ethics & Compliance Officer): Garante a conformidade regulatória, ética e proteção de dados sensíveis.
+
+**Dados Disponíveis:**
+- Fontes de Dados Internas: Logs de aplicativos, bancos de dados relacionais, Data Warehouse, CRM.
+- Fontes de Dados Externas: Integrações via APIs REST/SOAP, web scraping, dados de parceiros e provedores de informações.
+
+**Gaps de Dados e Necessidades Adicionais:**
+- Identificar e preencher lacunas de dados necessários para garantir a qualidade e a eficácia dos modelos de machine learning em produção.
+
+**Parâmetros Financeiros e Estratégicos:**
+- Initial Capital: Definir o capital inicial disponível para investimento no projeto.
+- Risk Tolerance: Avaliar o nível de tolerância ao risco em relação ao projeto.
+- Strategy Preference: Estabelecer preferências estratégicas, como estratégias de negócio ou abordagens de modelagem.
+
+**Restrições ou Requisitos Especiais:**
+- Necessidades específicas de segurança e compliance regulatório devem ser consideradas, como criptografia de dados, controle de acesso e auditoria.
+
+**Outros Insights Relevantes:**
+- O projeto deve considerar a implementação de ferramentas e tecnologias de MLOps, como orquestração de pipelines, sistemas de experiment tracking e plataformas para implantação e monitoramento de modelos.
+- A colaboração e o alinhamento entre as diferentes equipes serão fundamentais para o sucesso do projeto.

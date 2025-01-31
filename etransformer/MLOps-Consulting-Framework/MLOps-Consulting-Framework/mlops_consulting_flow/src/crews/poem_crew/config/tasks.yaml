@@ -1,0 +1,1976 @@
+
+tasks:
+  creative_questionnaire_task:
+    agent_role: "Creative Coordinator Agent"
+    priority: "High"
+    description: >
+      Desenvolver um questionário detalhado utilizando um processo de **"pensamento em voz alta"** em inglês, seguido por uma resposta final em português. O agente deve executar as seguintes etapas:
+
+      1. **Análise da Pergunta do Usuário**:
+         - Avaliar a complexidade da pergunta.
+         - Identificar ambiguidades e requisitos ocultos.
+         - Determinar o escopo e os objetivos da resposta necessária.
+
+      2. **Reflexão Estruturada em Inglês**:
+         - Planejar a abordagem para formular a resposta.
+         - Considerar diferentes estratégias para garantir clareza e relevância.
+         - Documentar o raciocínio interno em inglês para transparência.
+
+      3. **Revisita aos Dados em `{file_path_sources}` e `{project_description}`**:
+         - Garantir que todas as informações relevantes sejam consideradas.
+         - Alinhar as perguntas com os objetivos e requisitos do projeto.
+         - Incorporar insights dos arquivos essenciais como `required.md` e `stakeholder_notes.csv`.
+
+      4. **Geração de Perguntas em Português com Formatação YAML Rigorosa**:
+         - Criar perguntas claras, específicas e alinhadas aos objetivos do projeto.
+         - Utilizar diferentes formatos de perguntas (resposta curta, longa, múltipla escolha, dropdowns, etc.).
+         - Garantir que a estrutura YAML seja válida e bem organizada.
+
+      5. **Inclusão do Tempo Total Gasto no Processo**:
+         - Registrar o tempo total utilizado para desenvolver o questionário.
+         - Incluir essa informação na seção de `metadata` do YAML.
+
+      **Formato Obrigatório**:
+        - **Reflexão Interna**: Todo o processo de pensamento deve ser documentado em inglês, mesmo que a pergunta original esteja em português.
+        - **Resposta Final**: A resposta final deve ser em português, seguindo rigorosamente a estrutura YAML validada.
+        - **Seções Organizadas**: O questionário deve ser dividido em seções temáticas com descrições claras.
+        - **Exemplos Claros**: Cada pergunta deve incluir um exemplo para ilustrar o tipo de resposta esperada.
+
+    expected_output: >
+      O output esperado é um arquivo YAML estruturado que inclui o processo de pensamento em inglês, o questionário detalhado em português e metadados sobre o tempo gasto. Abaixo está um exemplo ilustrativo:
+
+      ```yaml
+      thinking_process:
+        - "EN [Analysis]: Identifying key business objectives from {project_description}..."
+        - "EN [Adjustment]: Revising question structure based on stakeholder_notes.csv..."
+        - "EN [Validation]: Ensuring alignment with compliance requirements in {file_path_sources}..."
+      questionnaire:
+        title: "Questionário para {project_description}"
+        general_description: >
+          Este questionário foi elaborado para coletar informações essenciais acerca do projeto
+          de MLOps, considerando as necessidades de negócio, dados disponíveis, arquitetura
+          prevista, desafios técnicos e mecanismos de monitoramento. As perguntas foram inspiradas
+          pelos dados em {file_path_sources}, entendendo que se tratam de exemplos simulados.
+
+          O objetivo é que um consultor humano utilize este questionário para conduzir entrevistas
+          estruturadas com os stakeholders do projeto {project_description} e, assim, obter subsídios
+          para tomadas de decisão em todo o ciclo de vida MLOps.
+
+        sections:
+          - name: "Objetivos do Negócio"
+            description: >
+              Nesta seção, exploramos as motivações e metas estratégicas do projeto, alinhadas
+              ao contexto organizacional e às partes interessadas.
+            questions:
+              - id: OB01
+                text: "Quais são os principais objetivos estratégicos do projeto {project_description}?"
+                type: long_answer
+                example: "Exemplo: 'Aumentar a eficiência operacional em 20% no primeiro ano e reduzir custos em 15%.'"
+              - id: OB02
+                text: "Quais métricas de sucesso (KPIs) são consideradas prioritárias para avaliar o impacto do projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI, redução de tempo de processo, taxa de conversão em vendas.'"
+              - id: OB03
+                text: "Existe alguma meta específica de ROI ou de geração de receita associada ao projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI de 150% em 12 meses.'"
+              - id: OB04
+                text: "Qual é o prazo esperado para o projeto começar a gerar resultados mensuráveis?"
+                type: short_answer
+                example: "Exemplo: '6 meses a partir do início do desenvolvimento.'"
+              - id: OB05
+                text: "Qual o nível de engajamento e suporte dos principais stakeholders dentro da organização?"
+                type: multiple_choice
+                options: 
+                  - "Alto (Patrocínio ativo e recursos disponíveis)"
+                  - "Médio (Alguma participação, mas recursos limitados)"
+                  - "Baixo (Resistência ou priorização insuficiente)"
+                example: "Exemplo de resposta: 'Médio - há interesse, mas ainda não há budget totalmente definido.'"
+              - id: OB06
+                text: "Há algum requisito de compliance ou regulatório que possa influenciar os objetivos de negócio?"
+                type: long_answer
+                example: "Exemplo: 'A empresa precisa cumprir LGPD e ter relatórios de auditoria anuais para a Anvisa.'"
+
+          - name: "Entendimento dos Dados"
+            description: >
+              Aqui, buscamos mapear os tipos de dados existentes, sua qualidade e disponibilidade,
+              bem como eventuais lacunas e requisitos adicionais.
+            questions:
+              - id: ED01
+                text: "Quais tipos de dados (estruturados, semiestruturados, não estruturados) estão disponíveis atualmente?"
+                type: short_answer
+                example: "Exemplo: 'Planilhas em formato CSV, logs de sistema, dados de CRM.'"
+              - id: ED02
+                text: "Qual o volume aproximado desses dados e com que frequência são atualizados?"
+                type: dropdown
+                options: 
+                  - "Menos de 1GB (Atualização diária)"
+                  - "Entre 1GB e 100GB (Atualização semanal)"
+                  - "Mais de 100GB (Atualização contínua em tempo real)"
+                example: "Exemplo: 'Entre 1GB e 100GB, atualizados semanalmente.'"
+              - id: ED03
+                text: "Existem problemas conhecidos de qualidade nos dados (valores ausentes, duplicidade, inconsistências)?"
+                type: long_answer
+                example: "Exemplo: 'Há muitas inconsistências nos logs de vendas, além de valores nulos em campos de cadastro.'"
+              - id: ED04
+                text: "Quais são as principais fontes de dados (APIs, bancos de dados relacionais, data lakes, etc.)?"
+                type: long_answer
+                example: "Exemplo: 'Dados de vendas provêm de um ERP interno; dados de suporte do cliente vêm de um sistema de tickets SaaS.'"
+              - id: ED05
+                text: "Há restrições de acesso ou protocolos de segurança específicos para lidar com esses dados?"
+                type: short_answer
+                example: "Exemplo: 'Acesso apenas via VPN corporativa, com permissões concedidas pelo time de segurança.'"
+              - id: ED06
+                text: "Quais dados adicionais seriam desejáveis para melhor atender aos objetivos do projeto?"
+                type: long_answer
+                example: "Exemplo: 'Registros de uso do produto, dados de redes sociais, histórico de interações de suporte avançado.'"
+              - id: ED07
+                text: "Existem métricas ou dashboards atuais para acompanhar a qualidade e a disponibilidade dos dados?"
+                type: multiple_choice
+                options: 
+                  - "Sim, existem dashboards robustos"
+                  - "Existem alguns relatórios básicos"
+                  - "Não há acompanhamento formal"
+                example: "Exemplo de resposta: 'Existem apenas relatórios manuais gerados a cada mês.'"
+
+          - name: "Desafios Técnicos"
+            description: >
+              Esta seção foca na identificação dos gargalos e riscos associados à implementação
+              do MLOps, considerando tecnologias, processos e equipe.
+            questions:
+              - id: DT01
+                text: "Quais são as principais limitações técnicas hoje para processar e analisar grandes volumes de dados?"
+                type: long_answer
+                example: "Exemplo: 'Falta de infraestrutura em nuvem, pipelines manuais, ferramentas de ETL defasadas.'"
+              - id: DT02
+                text: "A equipe possui experiência prévia com ferramentas de MLOps (Airflow, MLflow, Kubeflow, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, equipe sênior"
+                  - "Médio, alguma experiência"
+                  - "Não, conhecimento limitado"
+                example: "Exemplo de resposta: 'Não, mas há interesse em capacitação interna.'"
+              - id: DT03
+                text: "Existem restrições de desempenho ou latência para os modelos que serão implementados?"
+                type: long_answer
+                example: "Exemplo: 'O sistema precisa responder em < 100ms para transações online.'"
+              - id: DT04
+                text: "Quais práticas de versionamento de dados e modelos já são utilizadas (se houver)?"
+                type: short_answer
+                example: "Exemplo: 'Uso de Git para código, mas não há controle de versão para dados ou modelos ainda.'"
+              - id: DT05
+                text: "Há preocupação com vieses (bias) nos dados ou nas previsões do modelo?"
+                type: multiple_choice
+                options: 
+                  - "Sim, esse é um risco crítico"
+                  - "Sim, mas consideramos gerenciável"
+                  - "Ainda não avaliamos essa questão"
+                example: "Exemplo de resposta: 'Sim, pois temos receio de viés em dados históricos de contratação de funcionários.'"
+              - id: DT06
+                text: "Qual a disponibilidade de ambientes de desenvolvimento, testes e produção para implementar o pipeline MLOps?"
+                type: short_answer
+                example: "Exemplo: 'Temos 2 ambientes on-premises e estamos migrando para AWS com 1 ambiente de teste e 1 de produção.'"
+              - id: DT07
+                text: "Existe algum plano de contingência caso ocorra falha em componentes críticos da infraestrutura?"
+                type: long_answer
+                example: "Exemplo: 'Temos um cluster em standby, mas não existe automação para failover atualmente.'"
+
+          - name: "Arquitetura de Pipelines"
+            description: >
+              Nesta seção, o objetivo é esclarecer os componentes e fluxos planejados ou existentes
+              para a ingestão, processamento, treinamento, deploy e retraining de modelos.
+            questions:
+              - id: AP01
+                text: "Quais etapas do pipeline de dados já estão automatizadas (ingestão, transformação, limpeza, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Nenhuma etapa é automatizada"
+                  - "Apenas ingestão e limpeza"
+                  - "Todas as etapas estão parcialmente automatizadas"
+                  - "Todas as etapas estão totalmente automatizadas"
+                example: "Exemplo de resposta: 'Ingestão e limpeza parcial via scripts Python, sem orquestração dedicada.'"
+              - id: AP02
+                text: "Existe alguma ferramenta de orquestração em uso (Airflow, Luigi, Prefect, etc.)?"
+                type: dropdown
+                options: 
+                  - "Nenhuma"
+                  - "Apache Airflow"
+                  - "Luigi"
+                  - "Prefect"
+                  - "Kubeflow Pipelines"
+                  - "Outra"
+                example: "Exemplo: 'Usamos Apache Airflow em uma VM local.'"
+              - id: AP03
+                text: "Como os modelos são ou serão implantados em produção (Docker, Kubernetes, servidor dedicado)?"
+                type: long_answer
+                example: "Exemplo: 'Pretendemos usar Docker com Kubernetes para escalabilidade horizontal.'"
+              - id: AP04
+                text: "Há integração contínua (CI) e entrega contínua (CD) configuradas para os pipelines e modelos?"
+                type: multiple_choice
+                options: 
+                  - "Sim, temos CI/CD completo"
+                  - "Parcial (apenas testes e builds)"
+                  - "Não há automação neste sentido"
+                example: "Exemplo de resposta: 'Há pipelines de CI, mas o deploy ainda é manual.'"
+              - id: AP05
+                text: "Qual a expectativa de frequência de re-treinamento dos modelos?"
+                type: short_answer
+                example: "Exemplo: 'Mensal ou sempre que houver drift significativo nos dados.'"
+              - id: AP06
+                text: "Como será gerenciada a governança de dados e modelos (controle de acesso, versões, logs de auditoria)?"
+                type: long_answer
+                example: "Exemplo: 'Temos um sistema de IAM integrado com logs centralizados em uma ferramenta SIEM.'"
+
+          - name: "Monitoramento"
+            description: >
+              Por fim, o monitoramento é crucial para manter a qualidade e desempenho do pipeline
+              e dos modelos em produção. Aqui investigamos as abordagens e métricas pretendidas.
+            questions:
+              - id: MO01
+                text: "Quais métricas de desempenho do modelo são fundamentais para o projeto?"
+                type: long_answer
+                example: "Exemplo: 'Precisão, F1-score, tempo de resposta (latência), disponibilidade da API.'"
+              - id: MO02
+                text: "Existem metas de SLA/SLI definidas para os serviços de inferência em produção?"
+                type: short_answer
+                example: "Exemplo: 'SLA de 99,9% de disponibilidade e latência abaixo de 200ms.'"
+              - id: MO03
+                text: "Como será gerenciado o data drift e o concept drift ao longo do tempo?"
+                type: long_answer
+                example: "Exemplo: 'Vamos comparar distribuições de variáveis a cada semana e re-treinar o modelo se houver divergência significativa.'"
+              - id: MO04
+                text: "Que tipo de alertas ou notificações automáticas vocês consideram importantes?"
+                type: multiple_choice
+                options: 
+                  - "Alertas de queda de precisão"
+                  - "Aumento de latência"
+                  - "Falhas de pipeline"
+                  - "Todos os itens anteriores"
+                example: "Exemplo de resposta: 'Todos os itens anteriores, integrados ao Slack e PagerDuty.'"
+              - id: MO05
+                text: "Há alguma ferramenta de observabilidade já implantada (ex.: Prometheus, Grafana, DataDog)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, Prometheus/Grafana"
+                  - "Sim, DataDog"
+                  - "Não temos nenhuma no momento"
+                  - "Outra ferramenta"
+                example: "Exemplo de resposta: 'Usamos Prometheus e Grafana para métricas de infraestrutura, não para modelos ainda.'"
+              - id: MO06
+                text: "Há algum histórico de logs em {file_log_path} que possa servir de base para análise de problemas recorrentes?"
+                type: short_answer
+                example: "Exemplo: 'Temos logs centralizados nos últimos 6 meses, mas sem categorização de erros.'"
+
+        additional_suggestions:
+          - "Avaliar a necessidade de treinamento interno da equipe para uso de ferramentas de MLOps."
+          - "Considerar a criação de um comitê de governança de IA para tratar questões éticas e regulatórias."
+          - "Mapear processos manuais que podem ser automatizados para ganhos rápidos de produtividade."
+          - "Prever a expansão futura do pipeline, permitindo integração com novos serviços e fontes de dados."
+          - "Criar protótipos de dashboards para acompanhamento de KPIs, antes de investir em ferramentas complexas."
+          - "Promover sessões de alinhamento frequentes com stakeholders para revisar prioridades e riscos emergentes."
+
+    expected_output: >
+      ```yaml
+      thinking_process:
+        - "EN [Analysis]: Identifying key business objectives from {project_description}..."
+        - "EN [Adjustment]: Revising question structure based on stakeholder_notes.csv..."
+        - "EN [Validation]: Ensuring alignment with compliance requirements in {file_path_sources}..."
+      questionnaire:
+        title: "Questionário para {project_description}"
+        general_description: >
+          Este questionário foi elaborado para coletar informações essenciais acerca do projeto
+          de MLOps, considerando as necessidades de negócio, dados disponíveis, arquitetura
+          prevista, desafios técnicos e mecanismos de monitoramento. As perguntas foram inspiradas
+          pelos dados em {file_path_sources}, entendendo que se tratam de exemplos simulados.
+
+          O objetivo é que um consultor humano utilize este questionário para conduzir entrevistas
+          estruturadas com os stakeholders do projeto {project_description} e, assim, obter subsídios
+          para tomadas de decisão em todo o ciclo de vida MLOps.
+
+        sections:
+          - name: "Objetivos do Negócio"
+            description: >
+              Nesta seção, exploramos as motivações e metas estratégicas do projeto, alinhadas
+              ao contexto organizacional e às partes interessadas.
+            questions:
+              - id: OB01
+                text: "Quais são os principais objetivos estratégicos do projeto {project_description}?"
+                type: long_answer
+                example: "Exemplo: 'Aumentar a eficiência operacional em 20% no primeiro ano e reduzir custos em 15%.'"
+              - id: OB02
+                text: "Quais métricas de sucesso (KPIs) são consideradas prioritárias para avaliar o impacto do projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI, redução de tempo de processo, taxa de conversão em vendas.'"
+              - id: OB03
+                text: "Existe alguma meta específica de ROI ou de geração de receita associada ao projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI de 150% em 12 meses.'"
+              - id: OB04
+                text: "Qual é o prazo esperado para o projeto começar a gerar resultados mensuráveis?"
+                type: short_answer
+                example: "Exemplo: '6 meses a partir do início do desenvolvimento.'"
+              - id: OB05
+                text: "Qual o nível de engajamento e suporte dos principais stakeholders dentro da organização?"
+                type: multiple_choice
+                options: 
+                  - "Alto (Patrocínio ativo e recursos disponíveis)"
+                  - "Médio (Alguma participação, mas recursos limitados)"
+                  - "Baixo (Resistência ou priorização insuficiente)"
+                example: "Exemplo de resposta: 'Médio - há interesse, mas ainda não há budget totalmente definido.'"
+              - id: OB06
+                text: "Há algum requisito de compliance ou regulatório que possa influenciar os objetivos de negócio?"
+                type: long_answer
+                example: "Exemplo: 'A empresa precisa cumprir LGPD e ter relatórios de auditoria anuais para a Anvisa.'"
+
+          - name: "Entendimento dos Dados"
+            description: >
+              Aqui, buscamos mapear os tipos de dados existentes, sua qualidade e disponibilidade,
+              bem como eventuais lacunas e requisitos adicionais.
+            questions:
+              - id: ED01
+                text: "Quais tipos de dados (estruturados, semiestruturados, não estruturados) estão disponíveis atualmente?"
+                type: short_answer
+                example: "Exemplo: 'Planilhas em formato CSV, logs de sistema, dados de CRM.'"
+              - id: ED02
+                text: "Qual o volume aproximado desses dados e com que frequência são atualizados?"
+                type: dropdown
+                options: 
+                  - "Menos de 1GB (Atualização diária)"
+                  - "Entre 1GB e 100GB (Atualização semanal)"
+                  - "Mais de 100GB (Atualização contínua em tempo real)"
+                example: "Exemplo: 'Entre 1GB e 100GB, atualizados semanalmente.'"
+              - id: ED03
+                text: "Existem problemas conhecidos de qualidade nos dados (valores ausentes, duplicidade, inconsistências)?"
+                type: long_answer
+                example: "Exemplo: 'Há muitas inconsistências nos logs de vendas, além de valores nulos em campos de cadastro.'"
+              - id: ED04
+                text: "Quais são as principais fontes de dados (APIs, bancos de dados relacionais, data lakes, etc.)?"
+                type: long_answer
+                example: "Exemplo: 'Dados de vendas provêm de um ERP interno; dados de suporte do cliente vêm de um sistema de tickets SaaS.'"
+              - id: ED05
+                text: "Há restrições de acesso ou protocolos de segurança específicos para lidar com esses dados?"
+                type: short_answer
+                example: "Exemplo: 'Acesso apenas via VPN corporativa, com permissões concedidas pelo time de segurança.'"
+              - id: ED06
+                text: "Quais dados adicionais seriam desejáveis para melhor atender aos objetivos do projeto?"
+                type: long_answer
+                example: "Exemplo: 'Registros de uso do produto, dados de redes sociais, histórico de interações de suporte avançado.'"
+              - id: ED07
+                text: "Existem métricas ou dashboards atuais para acompanhar a qualidade e a disponibilidade dos dados?"
+                type: multiple_choice
+                options: 
+                  - "Sim, existem dashboards robustos"
+                  - "Existem alguns relatórios básicos"
+                  - "Não há acompanhamento formal"
+                example: "Exemplo de resposta: 'Existem apenas relatórios manuais gerados a cada mês.'"
+
+          - name: "Desafios Técnicos"
+            description: >
+              Esta seção foca na identificação dos gargalos e riscos associados à implementação
+              do MLOps, considerando tecnologias, processos e equipe.
+            questions:
+              - id: DT01
+                text: "Quais são as principais limitações técnicas hoje para processar e analisar grandes volumes de dados?"
+                type: long_answer
+                example: "Exemplo: 'Falta de infraestrutura em nuvem, pipelines manuais, ferramentas de ETL defasadas.'"
+              - id: DT02
+                text: "A equipe possui experiência prévia com ferramentas de MLOps (Airflow, MLflow, Kubeflow, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, equipe sênior"
+                  - "Médio, alguma experiência"
+                  - "Não, conhecimento limitado"
+                example: "Exemplo de resposta: 'Não, mas há interesse em capacitação interna.'"
+              - id: DT03
+                text: "Existem restrições de desempenho ou latência para os modelos que serão implementados?"
+                type: long_answer
+                example: "Exemplo: 'O sistema precisa responder em < 100ms para transações online.'"
+              - id: DT04
+                text: "Quais práticas de versionamento de dados e modelos já são utilizadas (se houver)?"
+                type: short_answer
+                example: "Exemplo: 'Uso de Git para código, mas não há controle de versão para dados ou modelos ainda.'"
+              - id: DT05
+                text: "Há preocupação com vieses (bias) nos dados ou nas previsões do modelo?"
+                type: multiple_choice
+                options: 
+                  - "Sim, esse é um risco crítico"
+                  - "Sim, mas consideramos gerenciável"
+                  - "Ainda não avaliamos essa questão"
+                example: "Exemplo de resposta: 'Sim, pois temos receio de viés em dados históricos de contratação de funcionários.'"
+              - id: DT06
+                text: "Qual a disponibilidade de ambientes de desenvolvimento, testes e produção para implementar o pipeline MLOps?"
+                type: short_answer
+                example: "Exemplo: 'Temos 2 ambientes on-premises e estamos migrando para AWS com 1 ambiente de teste e 1 de produção.'"
+              - id: DT07
+                text: "Existe algum plano de contingência caso ocorra falha em componentes críticos da infraestrutura?"
+                type: long_answer
+                example: "Exemplo: 'Temos um cluster em standby, mas não existe automação para failover atualmente.'"
+
+          - name: "Arquitetura de Pipelines"
+            description: >
+              Nesta seção, o objetivo é esclarecer os componentes e fluxos planejados ou existentes
+              para a ingestão, processamento, treinamento, deploy e retraining de modelos.
+            questions:
+              - id: AP01
+                text: "Quais etapas do pipeline de dados já estão automatizadas (ingestão, transformação, limpeza, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Nenhuma etapa é automatizada"
+                  - "Apenas ingestão e limpeza"
+                  - "Todas as etapas estão parcialmente automatizadas"
+                  - "Todas as etapas estão totalmente automatizadas"
+                example: "Exemplo de resposta: 'Ingestão e limpeza parcial via scripts Python, sem orquestração dedicada.'"
+              - id: AP02
+                text: "Existe alguma ferramenta de orquestração em uso (Airflow, Luigi, Prefect, etc.)?"
+                type: dropdown
+                options: 
+                  - "Nenhuma"
+                  - "Apache Airflow"
+                  - "Luigi"
+                  - "Prefect"
+                  - "Kubeflow Pipelines"
+                  - "Outra"
+                example: "Exemplo: 'Usamos Apache Airflow em uma VM local.'"
+              - id: AP03
+                text: "Como os modelos são ou serão implantados em produção (Docker, Kubernetes, servidor dedicado)?"
+                type: long_answer
+                example: "Exemplo: 'Pretendemos usar Docker com Kubernetes para escalabilidade horizontal.'"
+              - id: AP04
+                text: "Há integração contínua (CI) e entrega contínua (CD) configuradas para os pipelines e modelos?"
+                type: multiple_choice
+                options: 
+                  - "Sim, temos CI/CD completo"
+                  - "Parcial (apenas testes e builds)"
+                  - "Não há automação neste sentido"
+                example: "Exemplo de resposta: 'Há pipelines de CI, mas o deploy ainda é manual.'"
+              - id: AP05
+                text: "Qual a expectativa de frequência de re-treinamento dos modelos?"
+                type: short_answer
+                example: "Exemplo: 'Mensal ou sempre que houver drift significativo nos dados.'"
+              - id: AP06
+                text: "Como será gerenciada a governança de dados e modelos (controle de acesso, versões, logs de auditoria)?"
+                type: long_answer
+                example: "Exemplo: 'Temos um sistema de IAM integrado com logs centralizados em uma ferramenta SIEM.'"
+
+          - name: "Monitoramento"
+            description: >
+              Por fim, o monitoramento é crucial para manter a qualidade e desempenho do pipeline
+              e dos modelos em produção. Aqui investigamos as abordagens e métricas pretendidas.
+            questions:
+              - id: MO01
+                text: "Quais métricas de desempenho do modelo são fundamentais para o projeto?"
+                type: long_answer
+                example: "Exemplo: 'Precisão, F1-score, tempo de resposta (latência), disponibilidade da API.'"
+              - id: MO02
+                text: "Existem metas de SLA/SLI definidas para os serviços de inferência em produção?"
+                type: short_answer
+                example: "Exemplo: 'SLA de 99,9% de disponibilidade e latência abaixo de 200ms.'"
+              - id: MO03
+                text: "Como será gerenciado o data drift e o concept drift ao longo do tempo?"
+                type: long_answer
+                example: "Exemplo: 'Vamos comparar distribuições de variáveis a cada semana e re-treinar o modelo se houver divergência significativa.'"
+              - id: MO04
+                text: "Que tipo de alertas ou notificações automáticas vocês consideram importantes?"
+                type: multiple_choice
+                options: 
+                  - "Alertas de queda de precisão"
+                  - "Aumento de latência"
+                  - "Falhas de pipeline"
+                  - "Todos os itens anteriores"
+                example: "Exemplo de resposta: 'Todos os itens anteriores, integrados ao Slack e PagerDuty.'"
+              - id: MO05
+                text: "Há alguma ferramenta de observabilidade já implantada (ex.: Prometheus, Grafana, DataDog)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, Prometheus/Grafana"
+                  - "Sim, DataDog"
+                  - "Não temos nenhuma no momento"
+                  - "Outra ferramenta"
+                example: "Exemplo de resposta: 'Usamos Prometheus e Grafana para métricas de infraestrutura, não para modelos ainda.'"
+              - id: MO06
+                text: "Há algum histórico de logs em {file_log_path} que possa servir de base para análise de problemas recorrentes?"
+                type: short_answer
+                example: "Exemplo: 'Temos logs centralizados nos últimos 6 meses, mas sem categorização de erros.'"
+
+        additional_suggestions:
+          - "Avaliar a necessidade de treinamento interno da equipe para uso de ferramentas de MLOps."
+          - "Considerar a criação de um comitê de governança de IA para tratar questões éticas e regulatórias."
+          - "Mapear processos manuais que podem ser automatizados para ganhos rápidos de produtividade."
+          - "Prever a expansão futura do pipeline, permitindo integração com novos serviços e fontes de dados."
+          - "Criar protótipos de dashboards para acompanhamento de KPIs, antes de investir em ferramentas complexas."
+          - "Promover sessões de alinhamento frequentes com stakeholders para revisar prioridades e riscos emergentes."
+
+    expected_output: >
+      ```yaml
+      thinking_process:
+        - "EN [Analysis]: Identifying key business objectives from {project_description}..."
+        - "EN [Adjustment]: Revising question structure based on stakeholder_notes.csv..."
+        - "EN [Validation]: Ensuring alignment with compliance requirements in {file_path_sources}..."
+      questionnaire:
+        title: "Questionário para {project_description}"
+        general_description: >
+          Este questionário foi elaborado para coletar informações essenciais acerca do projeto
+          de MLOps, considerando as necessidades de negócio, dados disponíveis, arquitetura
+          prevista, desafios técnicos e mecanismos de monitoramento. As perguntas foram inspiradas
+          pelos dados em {file_path_sources}, entendendo que se tratam de exemplos simulados.
+
+          O objetivo é que um consultor humano utilize este questionário para conduzir entrevistas
+          estruturadas com os stakeholders do projeto {project_description} e, assim, obter subsídios
+          para tomadas de decisão em todo o ciclo de vida MLOps.
+
+        sections:
+          - name: "Objetivos do Negócio"
+            description: >
+              Nesta seção, exploramos as motivações e metas estratégicas do projeto, alinhadas
+              ao contexto organizacional e às partes interessadas.
+            questions:
+              - id: OB01
+                text: "Quais são os principais objetivos estratégicos do projeto {project_description}?"
+                type: long_answer
+                example: "Exemplo: 'Aumentar a eficiência operacional em 20% no primeiro ano e reduzir custos em 15%.'"
+              - id: OB02
+                text: "Quais métricas de sucesso (KPIs) são consideradas prioritárias para avaliar o impacto do projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI, redução de tempo de processo, taxa de conversão em vendas.'"
+              - id: OB03
+                text: "Existe alguma meta específica de ROI ou de geração de receita associada ao projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI de 150% em 12 meses.'"
+              - id: OB04
+                text: "Qual é o prazo esperado para o projeto começar a gerar resultados mensuráveis?"
+                type: short_answer
+                example: "Exemplo: '6 meses a partir do início do desenvolvimento.'"
+              - id: OB05
+                text: "Qual o nível de engajamento e suporte dos principais stakeholders dentro da organização?"
+                type: multiple_choice
+                options: 
+                  - "Alto (Patrocínio ativo e recursos disponíveis)"
+                  - "Médio (Alguma participação, mas recursos limitados)"
+                  - "Baixo (Resistência ou priorização insuficiente)"
+                example: "Exemplo de resposta: 'Médio - há interesse, mas ainda não há budget totalmente definido.'"
+              - id: OB06
+                text: "Há algum requisito de compliance ou regulatório que possa influenciar os objetivos de negócio?"
+                type: long_answer
+                example: "Exemplo: 'A empresa precisa cumprir LGPD e ter relatórios de auditoria anuais para a Anvisa.'"
+
+          - name: "Entendimento dos Dados"
+            description: >
+              Aqui, buscamos mapear os tipos de dados existentes, sua qualidade e disponibilidade,
+              bem como eventuais lacunas e requisitos adicionais.
+            questions:
+              - id: ED01
+                text: "Quais tipos de dados (estruturados, semiestruturados, não estruturados) estão disponíveis atualmente?"
+                type: short_answer
+                example: "Exemplo: 'Planilhas em formato CSV, logs de sistema, dados de CRM.'"
+              - id: ED02
+                text: "Qual o volume aproximado desses dados e com que frequência são atualizados?"
+                type: dropdown
+                options: 
+                  - "Menos de 1GB (Atualização diária)"
+                  - "Entre 1GB e 100GB (Atualização semanal)"
+                  - "Mais de 100GB (Atualização contínua em tempo real)"
+                example: "Exemplo: 'Entre 1GB e 100GB, atualizados semanalmente.'"
+              - id: ED03
+                text: "Existem problemas conhecidos de qualidade nos dados (valores ausentes, duplicidade, inconsistências)?"
+                type: long_answer
+                example: "Exemplo: 'Há muitas inconsistências nos logs de vendas, além de valores nulos em campos de cadastro.'"
+              - id: ED04
+                text: "Quais são as principais fontes de dados (APIs, bancos de dados relacionais, data lakes, etc.)?"
+                type: long_answer
+                example: "Exemplo: 'Dados de vendas provêm de um ERP interno; dados de suporte do cliente vêm de um sistema de tickets SaaS.'"
+              - id: ED05
+                text: "Há restrições de acesso ou protocolos de segurança específicos para lidar com esses dados?"
+                type: short_answer
+                example: "Exemplo: 'Acesso apenas via VPN corporativa, com permissões concedidas pelo time de segurança.'"
+              - id: ED06
+                text: "Quais dados adicionais seriam desejáveis para melhor atender aos objetivos do projeto?"
+                type: long_answer
+                example: "Exemplo: 'Registros de uso do produto, dados de redes sociais, histórico de interações de suporte avançado.'"
+              - id: ED07
+                text: "Existem métricas ou dashboards atuais para acompanhar a qualidade e a disponibilidade dos dados?"
+                type: multiple_choice
+                options: 
+                  - "Sim, existem dashboards robustos"
+                  - "Existem alguns relatórios básicos"
+                  - "Não há acompanhamento formal"
+                example: "Exemplo de resposta: 'Existem apenas relatórios manuais gerados a cada mês.'"
+
+          - name: "Desafios Técnicos"
+            description: >
+              Esta seção foca na identificação dos gargalos e riscos associados à implementação
+              do MLOps, considerando tecnologias, processos e equipe.
+            questions:
+              - id: DT01
+                text: "Quais são as principais limitações técnicas hoje para processar e analisar grandes volumes de dados?"
+                type: long_answer
+                example: "Exemplo: 'Falta de infraestrutura em nuvem, pipelines manuais, ferramentas de ETL defasadas.'"
+              - id: DT02
+                text: "A equipe possui experiência prévia com ferramentas de MLOps (Airflow, MLflow, Kubeflow, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, equipe sênior"
+                  - "Médio, alguma experiência"
+                  - "Não, conhecimento limitado"
+                example: "Exemplo de resposta: 'Não, mas há interesse em capacitação interna.'"
+              - id: DT03
+                text: "Existem restrições de desempenho ou latência para os modelos que serão implementados?"
+                type: long_answer
+                example: "Exemplo: 'O sistema precisa responder em < 100ms para transações online.'"
+              - id: DT04
+                text: "Quais práticas de versionamento de dados e modelos já são utilizadas (se houver)?"
+                type: short_answer
+                example: "Exemplo: 'Uso de Git para código, mas não há controle de versão para dados ou modelos ainda.'"
+              - id: DT05
+                text: "Há preocupação com vieses (bias) nos dados ou nas previsões do modelo?"
+                type: multiple_choice
+                options: 
+                  - "Sim, esse é um risco crítico"
+                  - "Sim, mas consideramos gerenciável"
+                  - "Ainda não avaliamos essa questão"
+                example: "Exemplo de resposta: 'Sim, pois temos receio de viés em dados históricos de contratação de funcionários.'"
+              - id: DT06
+                text: "Qual a disponibilidade de ambientes de desenvolvimento, testes e produção para implementar o pipeline MLOps?"
+                type: short_answer
+                example: "Exemplo: 'Temos 2 ambientes on-premises e estamos migrando para AWS com 1 ambiente de teste e 1 de produção.'"
+              - id: DT07
+                text: "Existe algum plano de contingência caso ocorra falha em componentes críticos da infraestrutura?"
+                type: long_answer
+                example: "Exemplo: 'Temos um cluster em standby, mas não existe automação para failover atualmente.'"
+
+          - name: "Arquitetura de Pipelines"
+            description: >
+              Nesta seção, o objetivo é esclarecer os componentes e fluxos planejados ou existentes
+              para a ingestão, processamento, treinamento, deploy e retraining de modelos.
+            questions:
+              - id: AP01
+                text: "Quais etapas do pipeline de dados já estão automatizadas (ingestão, transformação, limpeza, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Nenhuma etapa é automatizada"
+                  - "Apenas ingestão e limpeza"
+                  - "Todas as etapas estão parcialmente automatizadas"
+                  - "Todas as etapas estão totalmente automatizadas"
+                example: "Exemplo de resposta: 'Ingestão e limpeza parcial via scripts Python, sem orquestração dedicada.'"
+              - id: AP02
+                text: "Existe alguma ferramenta de orquestração em uso (Airflow, Luigi, Prefect, etc.)?"
+                type: dropdown
+                options: 
+                  - "Nenhuma"
+                  - "Apache Airflow"
+                  - "Luigi"
+                  - "Prefect"
+                  - "Kubeflow Pipelines"
+                  - "Outra"
+                example: "Exemplo: 'Usamos Apache Airflow em uma VM local.'"
+              - id: AP03
+                text: "Como os modelos são ou serão implantados em produção (Docker, Kubernetes, servidor dedicado)?"
+                type: long_answer
+                example: "Exemplo: 'Pretendemos usar Docker com Kubernetes para escalabilidade horizontal.'"
+              - id: AP04
+                text: "Há integração contínua (CI) e entrega contínua (CD) configuradas para os pipelines e modelos?"
+                type: multiple_choice
+                options: 
+                  - "Sim, temos CI/CD completo"
+                  - "Parcial (apenas testes e builds)"
+                  - "Não há automação neste sentido"
+                example: "Exemplo de resposta: 'Há pipelines de CI, mas o deploy ainda é manual.'"
+              - id: AP05
+                text: "Qual a expectativa de frequência de re-treinamento dos modelos?"
+                type: short_answer
+                example: "Exemplo: 'Mensal ou sempre que houver drift significativo nos dados.'"
+              - id: AP06
+                text: "Como será gerenciada a governança de dados e modelos (controle de acesso, versões, logs de auditoria)?"
+                type: long_answer
+                example: "Exemplo: 'Temos um sistema de IAM integrado com logs centralizados em uma ferramenta SIEM.'"
+
+          - name: "Monitoramento"
+            description: >
+              Por fim, o monitoramento é crucial para manter a qualidade e desempenho do pipeline
+              e dos modelos em produção. Aqui investigamos as abordagens e métricas pretendidas.
+            questions:
+              - id: MO01
+                text: "Quais métricas de desempenho do modelo são fundamentais para o projeto?"
+                type: long_answer
+                example: "Exemplo: 'Precisão, F1-score, tempo de resposta (latência), disponibilidade da API.'"
+              - id: MO02
+                text: "Existem metas de SLA/SLI definidas para os serviços de inferência em produção?"
+                type: short_answer
+                example: "Exemplo: 'SLA de 99,9% de disponibilidade e latência abaixo de 200ms.'"
+              - id: MO03
+                text: "Como será gerenciado o data drift e o concept drift ao longo do tempo?"
+                type: long_answer
+                example: "Exemplo: 'Vamos comparar distribuições de variáveis a cada semana e re-treinar o modelo se houver divergência significativa.'"
+              - id: MO04
+                text: "Que tipo de alertas ou notificações automáticas vocês consideram importantes?"
+                type: multiple_choice
+                options: 
+                  - "Alertas de queda de precisão"
+                  - "Aumento de latência"
+                  - "Falhas de pipeline"
+                  - "Todos os itens anteriores"
+                example: "Exemplo de resposta: 'Todos os itens anteriores, integrados ao Slack e PagerDuty.'"
+              - id: MO05
+                text: "Há alguma ferramenta de observabilidade já implantada (ex.: Prometheus, Grafana, DataDog)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, Prometheus/Grafana"
+                  - "Sim, DataDog"
+                  - "Não temos nenhuma no momento"
+                  - "Outra ferramenta"
+                example: "Exemplo de resposta: 'Usamos Prometheus e Grafana para métricas de infraestrutura, não para modelos ainda.'"
+              - id: MO06
+                text: "Há algum histórico de logs em {file_log_path} que possa servir de base para análise de problemas recorrentes?"
+                type: short_answer
+                example: "Exemplo: 'Temos logs centralizados nos últimos 6 meses, mas sem categorização de erros.'"
+
+        additional_suggestions:
+          - "Avaliar a necessidade de treinamento interno da equipe para uso de ferramentas de MLOps."
+          - "Considerar a criação de um comitê de governança de IA para tratar questões éticas e regulatórias."
+          - "Mapear processos manuais que podem ser automatizados para ganhos rápidos de produtividade."
+          - "Prever a expansão futura do pipeline, permitindo integração com novos serviços e fontes de dados."
+          - "Criar protótipos de dashboards para acompanhamento de KPIs, antes de investir em ferramentas complexas."
+          - "Promover sessões de alinhamento frequentes com stakeholders para revisar prioridades e riscos emergentes."
+
+    expected_output: >
+      ```yaml
+      thinking_process:
+        - "EN [Analysis]: Identifying key business objectives from {project_description}..."
+        - "EN [Adjustment]: Revising question structure based on stakeholder_notes.csv..."
+        - "EN [Validation]: Ensuring alignment with compliance requirements in {file_path_sources}..."
+      questionnaire:
+        title: "Questionário para {project_description}"
+        general_description: >
+          Este questionário foi elaborado para coletar informações essenciais acerca do projeto
+          de MLOps, considerando as necessidades de negócio, dados disponíveis, arquitetura
+          prevista, desafios técnicos e mecanismos de monitoramento. As perguntas foram inspiradas
+          pelos dados em {file_path_sources}, entendendo que se tratam de exemplos simulados.
+
+          O objetivo é que um consultor humano utilize este questionário para conduzir entrevistas
+          estruturadas com os stakeholders do projeto {project_description} e, assim, obter subsídios
+          para tomadas de decisão em todo o ciclo de vida MLOps.
+
+        sections:
+          - name: "Objetivos do Negócio"
+            description: >
+              Nesta seção, exploramos as motivações e metas estratégicas do projeto, alinhadas
+              ao contexto organizacional e às partes interessadas.
+            questions:
+              - id: OB01
+                text: "Quais são os principais objetivos estratégicos do projeto {project_description}?"
+                type: long_answer
+                example: "Exemplo: 'Aumentar a eficiência operacional em 20% no primeiro ano e reduzir custos em 15%.'"
+              - id: OB02
+                text: "Quais métricas de sucesso (KPIs) são consideradas prioritárias para avaliar o impacto do projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI, redução de tempo de processo, taxa de conversão em vendas.'"
+              - id: OB03
+                text: "Existe alguma meta específica de ROI ou de geração de receita associada ao projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI de 150% em 12 meses.'"
+              - id: OB04
+                text: "Qual é o prazo esperado para o projeto começar a gerar resultados mensuráveis?"
+                type: short_answer
+                example: "Exemplo: '6 meses a partir do início do desenvolvimento.'"
+              - id: OB05
+                text: "Qual o nível de engajamento e suporte dos principais stakeholders dentro da organização?"
+                type: multiple_choice
+                options: 
+                  - "Alto (Patrocínio ativo e recursos disponíveis)"
+                  - "Médio (Alguma participação, mas recursos limitados)"
+                  - "Baixo (Resistência ou priorização insuficiente)"
+                example: "Exemplo de resposta: 'Médio - há interesse, mas ainda não há budget totalmente definido.'"
+              - id: OB06
+                text: "Há algum requisito de compliance ou regulatório que possa influenciar os objetivos de negócio?"
+                type: long_answer
+                example: "Exemplo: 'A empresa precisa cumprir LGPD e ter relatórios de auditoria anuais para a Anvisa.'"
+
+          - name: "Entendimento dos Dados"
+            description: >
+              Aqui, buscamos mapear os tipos de dados existentes, sua qualidade e disponibilidade,
+              bem como eventuais lacunas e requisitos adicionais.
+            questions:
+              - id: ED01
+                text: "Quais tipos de dados (estruturados, semiestruturados, não estruturados) estão disponíveis atualmente?"
+                type: short_answer
+                example: "Exemplo: 'Planilhas em formato CSV, logs de sistema, dados de CRM.'"
+              - id: ED02
+                text: "Qual o volume aproximado desses dados e com que frequência são atualizados?"
+                type: dropdown
+                options: 
+                  - "Menos de 1GB (Atualização diária)"
+                  - "Entre 1GB e 100GB (Atualização semanal)"
+                  - "Mais de 100GB (Atualização contínua em tempo real)"
+                example: "Exemplo: 'Entre 1GB e 100GB, atualizados semanalmente.'"
+              - id: ED03
+                text: "Existem problemas conhecidos de qualidade nos dados (valores ausentes, duplicidade, inconsistências)?"
+                type: long_answer
+                example: "Exemplo: 'Há muitas inconsistências nos logs de vendas, além de valores nulos em campos de cadastro.'"
+              - id: ED04
+                text: "Quais são as principais fontes de dados (APIs, bancos de dados relacionais, data lakes, etc.)?"
+                type: long_answer
+                example: "Exemplo: 'Dados de vendas provêm de um ERP interno; dados de suporte do cliente vêm de um sistema de tickets SaaS.'"
+              - id: ED05
+                text: "Há restrições de acesso ou protocolos de segurança específicos para lidar com esses dados?"
+                type: short_answer
+                example: "Exemplo: 'Acesso apenas via VPN corporativa, com permissões concedidas pelo time de segurança.'"
+              - id: ED06
+                text: "Quais dados adicionais seriam desejáveis para melhor atender aos objetivos do projeto?"
+                type: long_answer
+                example: "Exemplo: 'Registros de uso do produto, dados de redes sociais, histórico de interações de suporte avançado.'"
+              - id: ED07
+                text: "Existem métricas ou dashboards atuais para acompanhar a qualidade e a disponibilidade dos dados?"
+                type: multiple_choice
+                options: 
+                  - "Sim, existem dashboards robustos"
+                  - "Existem alguns relatórios básicos"
+                  - "Não há acompanhamento formal"
+                example: "Exemplo de resposta: 'Existem apenas relatórios manuais gerados a cada mês.'"
+
+          - name: "Desafios Técnicos"
+            description: >
+              Esta seção foca na identificação dos gargalos e riscos associados à implementação
+              do MLOps, considerando tecnologias, processos e equipe.
+            questions:
+              - id: DT01
+                text: "Quais são as principais limitações técnicas hoje para processar e analisar grandes volumes de dados?"
+                type: long_answer
+                example: "Exemplo: 'Falta de infraestrutura em nuvem, pipelines manuais, ferramentas de ETL defasadas.'"
+              - id: DT02
+                text: "A equipe possui experiência prévia com ferramentas de MLOps (Airflow, MLflow, Kubeflow, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, equipe sênior"
+                  - "Médio, alguma experiência"
+                  - "Não, conhecimento limitado"
+                example: "Exemplo de resposta: 'Não, mas há interesse em capacitação interna.'"
+              - id: DT03
+                text: "Existem restrições de desempenho ou latência para os modelos que serão implementados?"
+                type: long_answer
+                example: "Exemplo: 'O sistema precisa responder em < 100ms para transações online.'"
+              - id: DT04
+                text: "Quais práticas de versionamento de dados e modelos já são utilizadas (se houver)?"
+                type: short_answer
+                example: "Exemplo: 'Uso de Git para código, mas não há controle de versão para dados ou modelos ainda.'"
+              - id: DT05
+                text: "Há preocupação com vieses (bias) nos dados ou nas previsões do modelo?"
+                type: multiple_choice
+                options: 
+                  - "Sim, esse é um risco crítico"
+                  - "Sim, mas consideramos gerenciável"
+                  - "Ainda não avaliamos essa questão"
+                example: "Exemplo de resposta: 'Sim, pois temos receio de viés em dados históricos de contratação de funcionários.'"
+              - id: DT06
+                text: "Qual a disponibilidade de ambientes de desenvolvimento, testes e produção para implementar o pipeline MLOps?"
+                type: short_answer
+                example: "Exemplo: 'Temos 2 ambientes on-premises e estamos migrando para AWS com 1 ambiente de teste e 1 de produção.'"
+              - id: DT07
+                text: "Existe algum plano de contingência caso ocorra falha em componentes críticos da infraestrutura?"
+                type: long_answer
+                example: "Exemplo: 'Temos um cluster em standby, mas não existe automação para failover atualmente.'"
+
+          - name: "Arquitetura de Pipelines"
+            description: >
+              Nesta seção, o objetivo é esclarecer os componentes e fluxos planejados ou existentes
+              para a ingestão, processamento, treinamento, deploy e retraining de modelos.
+            questions:
+              - id: AP01
+                text: "Quais etapas do pipeline de dados já estão automatizadas (ingestão, transformação, limpeza, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Nenhuma etapa é automatizada"
+                  - "Apenas ingestão e limpeza"
+                  - "Todas as etapas estão parcialmente automatizadas"
+                  - "Todas as etapas estão totalmente automatizadas"
+                example: "Exemplo de resposta: 'Ingestão e limpeza parcial via scripts Python, sem orquestração dedicada.'"
+              - id: AP02
+                text: "Existe alguma ferramenta de orquestração em uso (Airflow, Luigi, Prefect, etc.)?"
+                type: dropdown
+                options: 
+                  - "Nenhuma"
+                  - "Apache Airflow"
+                  - "Luigi"
+                  - "Prefect"
+                  - "Kubeflow Pipelines"
+                  - "Outra"
+                example: "Exemplo: 'Usamos Apache Airflow em uma VM local.'"
+              - id: AP03
+                text: "Como os modelos são ou serão implantados em produção (Docker, Kubernetes, servidor dedicado)?"
+                type: long_answer
+                example: "Exemplo: 'Pretendemos usar Docker com Kubernetes para escalabilidade horizontal.'"
+              - id: AP04
+                text: "Há integração contínua (CI) e entrega contínua (CD) configuradas para os pipelines e modelos?"
+                type: multiple_choice
+                options: 
+                  - "Sim, temos CI/CD completo"
+                  - "Parcial (apenas testes e builds)"
+                  - "Não há automação neste sentido"
+                example: "Exemplo de resposta: 'Há pipelines de CI, mas o deploy ainda é manual.'"
+              - id: AP05
+                text: "Qual a expectativa de frequência de re-treinamento dos modelos?"
+                type: short_answer
+                example: "Exemplo: 'Mensal ou sempre que houver drift significativo nos dados.'"
+              - id: AP06
+                text: "Como será gerenciada a governança de dados e modelos (controle de acesso, versões, logs de auditoria)?"
+                type: long_answer
+                example: "Exemplo: 'Temos um sistema de IAM integrado com logs centralizados em uma ferramenta SIEM.'"
+
+          - name: "Monitoramento"
+            description: >
+              Por fim, o monitoramento é crucial para manter a qualidade e desempenho do pipeline
+              e dos modelos em produção. Aqui investigamos as abordagens e métricas pretendidas.
+            questions:
+              - id: MO01
+                text: "Quais métricas de desempenho do modelo são fundamentais para o projeto?"
+                type: long_answer
+                example: "Exemplo: 'Precisão, F1-score, tempo de resposta (latência), disponibilidade da API.'"
+              - id: MO02
+                text: "Existem metas de SLA/SLI definidas para os serviços de inferência em produção?"
+                type: short_answer
+                example: "Exemplo: 'SLA de 99,9% de disponibilidade e latência abaixo de 200ms.'"
+              - id: MO03
+                text: "Como será gerenciado o data drift e o concept drift ao longo do tempo?"
+                type: long_answer
+                example: "Exemplo: 'Vamos comparar distribuições de variáveis a cada semana e re-treinar o modelo se houver divergência significativa.'"
+              - id: MO04
+                text: "Que tipo de alertas ou notificações automáticas vocês consideram importantes?"
+                type: multiple_choice
+                options: 
+                  - "Alertas de queda de precisão"
+                  - "Aumento de latência"
+                  - "Falhas de pipeline"
+                  - "Todos os itens anteriores"
+                example: "Exemplo de resposta: 'Todos os itens anteriores, integrados ao Slack e PagerDuty.'"
+              - id: MO05
+                text: "Há alguma ferramenta de observabilidade já implantada (ex.: Prometheus, Grafana, DataDog)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, Prometheus/Grafana"
+                  - "Sim, DataDog"
+                  - "Não temos nenhuma no momento"
+                  - "Outra ferramenta"
+                example: "Exemplo de resposta: 'Usamos Prometheus e Grafana para métricas de infraestrutura, não para modelos ainda.'"
+              - id: MO06
+                text: "Há algum histórico de logs em {file_log_path} que possa servir de base para análise de problemas recorrentes?"
+                type: short_answer
+                example: "Exemplo: 'Temos logs centralizados nos últimos 6 meses, mas sem categorização de erros.'"
+
+        additional_suggestions:
+          - "Avaliar a necessidade de treinamento interno da equipe para uso de ferramentas de MLOps."
+          - "Considerar a criação de um comitê de governança de IA para tratar questões éticas e regulatórias."
+          - "Mapear processos manuais que podem ser automatizados para ganhos rápidos de produtividade."
+          - "Prever a expansão futura do pipeline, permitindo integração com novos serviços e fontes de dados."
+          - "Criar protótipos de dashboards para acompanhamento de KPIs, antes de investir em ferramentas complexas."
+          - "Promover sessões de alinhamento frequentes com stakeholders para revisar prioridades e riscos emergentes."
+
+    expected_output: >
+      ```yaml
+      thinking_process:
+        - "EN [Analysis]: Identifying key business objectives from {project_description}..."
+        - "EN [Adjustment]: Revising question structure based on stakeholder_notes.csv..."
+        - "EN [Validation]: Ensuring alignment with compliance requirements in {file_path_sources}..."
+      questionnaire:
+        title: "Questionário para {project_description}"
+        general_description: >
+          Este questionário foi elaborado para coletar informações essenciais acerca do projeto
+          de MLOps, considerando as necessidades de negócio, dados disponíveis, arquitetura
+          prevista, desafios técnicos e mecanismos de monitoramento. As perguntas foram inspiradas
+          pelos dados em {file_path_sources}, entendendo que se tratam de exemplos simulados.
+
+          O objetivo é que um consultor humano utilize este questionário para conduzir entrevistas
+          estruturadas com os stakeholders do projeto {project_description} e, assim, obter subsídios
+          para tomadas de decisão em todo o ciclo de vida MLOps.
+
+        sections:
+          - name: "Objetivos do Negócio"
+            description: >
+              Nesta seção, exploramos as motivações e metas estratégicas do projeto, alinhadas
+              ao contexto organizacional e às partes interessadas.
+            questions:
+              - id: OB01
+                text: "Quais são os principais objetivos estratégicos do projeto {project_description}?"
+                type: long_answer
+                example: "Exemplo: 'Aumentar a eficiência operacional em 20% no primeiro ano e reduzir custos em 15%.'"
+              - id: OB02
+                text: "Quais métricas de sucesso (KPIs) são consideradas prioritárias para avaliar o impacto do projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI, redução de tempo de processo, taxa de conversão em vendas.'"
+              - id: OB03
+                text: "Existe alguma meta específica de ROI ou de geração de receita associada ao projeto?"
+                type: short_answer
+                example: "Exemplo: 'ROI de 150% em 12 meses.'"
+              - id: OB04
+                text: "Qual é o prazo esperado para o projeto começar a gerar resultados mensuráveis?"
+                type: short_answer
+                example: "Exemplo: '6 meses a partir do início do desenvolvimento.'"
+              - id: OB05
+                text: "Qual o nível de engajamento e suporte dos principais stakeholders dentro da organização?"
+                type: multiple_choice
+                options: 
+                  - "Alto (Patrocínio ativo e recursos disponíveis)"
+                  - "Médio (Alguma participação, mas recursos limitados)"
+                  - "Baixo (Resistência ou priorização insuficiente)"
+                example: "Exemplo de resposta: 'Médio - há interesse, mas ainda não há budget totalmente definido.'"
+              - id: OB06
+                text: "Há algum requisito de compliance ou regulatório que possa influenciar os objetivos de negócio?"
+                type: long_answer
+                example: "Exemplo: 'A empresa precisa cumprir LGPD e ter relatórios de auditoria anuais para a Anvisa.'"
+
+          - name: "Entendimento dos Dados"
+            description: >
+              Aqui, buscamos mapear os tipos de dados existentes, sua qualidade e disponibilidade,
+              bem como eventuais lacunas e requisitos adicionais.
+            questions:
+              - id: ED01
+                text: "Quais tipos de dados (estruturados, semiestruturados, não estruturados) estão disponíveis atualmente?"
+                type: short_answer
+                example: "Exemplo: 'Planilhas em formato CSV, logs de sistema, dados de CRM.'"
+              - id: ED02
+                text: "Qual o volume aproximado desses dados e com que frequência são atualizados?"
+                type: dropdown
+                options: 
+                  - "Menos de 1GB (Atualização diária)"
+                  - "Entre 1GB e 100GB (Atualização semanal)"
+                  - "Mais de 100GB (Atualização contínua em tempo real)"
+                example: "Exemplo: 'Entre 1GB e 100GB, atualizados semanalmente.'"
+              - id: ED03
+                text: "Existem problemas conhecidos de qualidade nos dados (valores ausentes, duplicidade, inconsistências)?"
+                type: long_answer
+                example: "Exemplo: 'Há muitas inconsistências nos logs de vendas, além de valores nulos em campos de cadastro.'"
+              - id: ED04
+                text: "Quais são as principais fontes de dados (APIs, bancos de dados relacionais, data lakes, etc.)?"
+                type: long_answer
+                example: "Exemplo: 'Dados de vendas provêm de um ERP interno; dados de suporte do cliente vêm de um sistema de tickets SaaS.'"
+              - id: ED05
+                text: "Há restrições de acesso ou protocolos de segurança específicos para lidar com esses dados?"
+                type: short_answer
+                example: "Exemplo: 'Acesso apenas via VPN corporativa, com permissões concedidas pelo time de segurança.'"
+              - id: ED06
+                text: "Quais dados adicionais seriam desejáveis para melhor atender aos objetivos do projeto?"
+                type: long_answer
+                example: "Exemplo: 'Registros de uso do produto, dados de redes sociais, histórico de interações de suporte avançado.'"
+              - id: ED07
+                text: "Existem métricas ou dashboards atuais para acompanhar a qualidade e a disponibilidade dos dados?"
+                type: multiple_choice
+                options: 
+                  - "Sim, existem dashboards robustos"
+                  - "Existem alguns relatórios básicos"
+                  - "Não há acompanhamento formal"
+                example: "Exemplo de resposta: 'Existem apenas relatórios manuais gerados a cada mês.'"
+
+          - name: "Desafios Técnicos"
+            description: >
+              Esta seção foca na identificação dos gargalos e riscos associados à implementação
+              do MLOps, considerando tecnologias, processos e equipe.
+            questions:
+              - id: DT01
+                text: "Quais são as principais limitações técnicas hoje para processar e analisar grandes volumes de dados?"
+                type: long_answer
+                example: "Exemplo: 'Falta de infraestrutura em nuvem, pipelines manuais, ferramentas de ETL defasadas.'"
+              - id: DT02
+                text: "A equipe possui experiência prévia com ferramentas de MLOps (Airflow, MLflow, Kubeflow, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, equipe sênior"
+                  - "Médio, alguma experiência"
+                  - "Não, conhecimento limitado"
+                example: "Exemplo de resposta: 'Não, mas há interesse em capacitação interna.'"
+              - id: DT03
+                text: "Existem restrições de desempenho ou latência para os modelos que serão implementados?"
+                type: long_answer
+                example: "Exemplo: 'O sistema precisa responder em < 100ms para transações online.'"
+              - id: DT04
+                text: "Quais práticas de versionamento de dados e modelos já são utilizadas (se houver)?"
+                type: short_answer
+                example: "Exemplo: 'Uso de Git para código, mas não há controle de versão para dados ou modelos ainda.'"
+              - id: DT05
+                text: "Há preocupação com vieses (bias) nos dados ou nas previsões do modelo?"
+                type: multiple_choice
+                options: 
+                  - "Sim, esse é um risco crítico"
+                  - "Sim, mas consideramos gerenciável"
+                  - "Ainda não avaliamos essa questão"
+                example: "Exemplo de resposta: 'Sim, pois temos receio de viés em dados históricos de contratação de funcionários.'"
+              - id: DT06
+                text: "Qual a disponibilidade de ambientes de desenvolvimento, testes e produção para implementar o pipeline MLOps?"
+                type: short_answer
+                example: "Exemplo: 'Temos 2 ambientes on-premises e estamos migrando para AWS com 1 ambiente de teste e 1 de produção.'"
+              - id: DT07
+                text: "Existe algum plano de contingência caso ocorra falha em componentes críticos da infraestrutura?"
+                type: long_answer
+                example: "Exemplo: 'Temos um cluster em standby, mas não existe automação para failover atualmente.'"
+
+          - name: "Arquitetura de Pipelines"
+            description: >
+              Nesta seção, o objetivo é esclarecer os componentes e fluxos planejados ou existentes
+              para a ingestão, processamento, treinamento, deploy e retraining de modelos.
+            questions:
+              - id: AP01
+                text: "Quais etapas do pipeline de dados já estão automatizadas (ingestão, transformação, limpeza, etc.)?"
+                type: multiple_choice
+                options: 
+                  - "Nenhuma etapa é automatizada"
+                  - "Apenas ingestão e limpeza"
+                  - "Todas as etapas estão parcialmente automatizadas"
+                  - "Todas as etapas estão totalmente automatizadas"
+                example: "Exemplo de resposta: 'Ingestão e limpeza parcial via scripts Python, sem orquestração dedicada.'"
+              - id: AP02
+                text: "Existe alguma ferramenta de orquestração em uso (Airflow, Luigi, Prefect, etc.)?"
+                type: dropdown
+                options: 
+                  - "Nenhuma"
+                  - "Apache Airflow"
+                  - "Luigi"
+                  - "Prefect"
+                  - "Kubeflow Pipelines"
+                  - "Outra"
+                example: "Exemplo: 'Usamos Apache Airflow em uma VM local.'"
+              - id: AP03
+                text: "Como os modelos são ou serão implantados em produção (Docker, Kubernetes, servidor dedicado)?"
+                type: long_answer
+                example: "Exemplo: 'Pretendemos usar Docker com Kubernetes para escalabilidade horizontal.'"
+              - id: AP04
+                text: "Há integração contínua (CI) e entrega contínua (CD) configuradas para os pipelines e modelos?"
+                type: multiple_choice
+                options: 
+                  - "Sim, temos CI/CD completo"
+                  - "Parcial (apenas testes e builds)"
+                  - "Não há automação neste sentido"
+                example: "Exemplo de resposta: 'Há pipelines de CI, mas o deploy ainda é manual.'"
+              - id: AP05
+                text: "Qual a expectativa de frequência de re-treinamento dos modelos?"
+                type: short_answer
+                example: "Exemplo: 'Mensal ou sempre que houver drift significativo nos dados.'"
+              - id: AP06
+                text: "Como será gerenciada a governança de dados e modelos (controle de acesso, versões, logs de auditoria)?"
+                type: long_answer
+                example: "Exemplo: 'Temos um sistema de IAM integrado com logs centralizados em uma ferramenta SIEM.'"
+
+          - name: "Monitoramento"
+            description: >
+              Por fim, o monitoramento é crucial para manter a qualidade e desempenho do pipeline
+              e dos modelos em produção. Aqui investigamos as abordagens e métricas pretendidas.
+            questions:
+              - id: MO01
+                text: "Quais métricas de desempenho do modelo são fundamentais para o projeto?"
+                type: long_answer
+                example: "Exemplo: 'Precisão, F1-score, tempo de resposta (latência), disponibilidade da API.'"
+              - id: MO02
+                text: "Existem metas de SLA/SLI definidas para os serviços de inferência em produção?"
+                type: short_answer
+                example: "Exemplo: 'SLA de 99,9% de disponibilidade e latência abaixo de 200ms.'"
+              - id: MO03
+                text: "Como será gerenciado o data drift e o concept drift ao longo do tempo?"
+                type: long_answer
+                example: "Exemplo: 'Vamos comparar distribuições de variáveis a cada semana e re-treinar o modelo se houver divergência significativa.'"
+              - id: MO04
+                text: "Que tipo de alertas ou notificações automáticas vocês consideram importantes?"
+                type: multiple_choice
+                options: 
+                  - "Alertas de queda de precisão"
+                  - "Aumento de latência"
+                  - "Falhas de pipeline"
+                  - "Todos os itens anteriores"
+                example: "Exemplo de resposta: 'Todos os itens anteriores, integrados ao Slack e PagerDuty.'"
+              - id: MO05
+                text: "Há alguma ferramenta de observabilidade já implantada (ex.: Prometheus, Grafana, DataDog)?"
+                type: multiple_choice
+                options: 
+                  - "Sim, Prometheus/Grafana"
+                  - "Sim, DataDog"
+                  - "Não temos nenhuma no momento"
+                  - "Outra ferramenta"
+                example: "Exemplo de resposta: 'Usamos Prometheus e Grafana para métricas de infraestrutura, não para modelos ainda.'"
+              - id: MO06
+                text: "Há algum histórico de logs em {file_log_path} que possa servir de base para análise de problemas recorrentes?"
+                type: short_answer
+                example: "Exemplo: 'Temos logs centralizados nos últimos 6 meses, mas sem categorização de erros.'"
+
+        additional_suggestions:
+          - "Avaliar a necessidade de treinamento interno da equipe para uso de ferramentas de MLOps."
+          - "Considerar a criação de um comitê de governança de IA para tratar questões éticas e regulatórias."
+          - "Mapear processos manuais que podem ser automatizados para ganhos rápidos de produtividade."
+          - "Prever a expansão futura do pipeline, permitindo integração com novos serviços e fontes de dados."
+          - "Criar protótipos de dashboards para acompanhamento de KPIs, antes de investir em ferramentas complexas."
+          - "Promover sessões de alinhamento frequentes com stakeholders para revisar prioridades e riscos emergentes."
+      
+      metadata:
+        time_spent: "3.5 minutos"
+
+    stakeholder_response_task:
+      agent_role: "Stakeholder Agent"
+      priority: "Alta"
+      description: >
+        Esta tarefa tem como objetivo garantir que todas as perguntas feitas pelos outros agentes
+        sejam respondidas com base nas informações fornecidas pelos stakeholders. Caso o agente não consiga
+        responder a uma pergunta, ele deve gerar uma solicitação estruturada para um humano fornecer
+        as informações necessárias. Além disso, o agente deve registrar perguntas não respondidas e
+        fornecer estas informações ao Report Generation Agent para inclusão no relatório final. Processar a informação
+        (incluindo {project_description}) para obter o máximo de contexto.
+      
+        Detalhes:
+          - Utilizar os arquivos "required.md" e "stakeholder_notes.csv" como referência complementar.
+          - Registrar perguntas não respondidas em um log na {file_log_path} centralizado para acompanhamento e
+            resolução futura.
+          - Garantir alinhamento entre as respostas fornecidas e os objetivos estratégicos do projeto
+            {project_description}.
+          - Colaborar com outros agentes para eliminar dúvidas ou inconsistências durante o processo.
+      
+      expected_output: >
+        Respostas claras e detalhadas às perguntas dos agentes, quando possível, baseadas nas notas
+        dos stakeholders. Para perguntas não respondidas:
+          - Log de perguntas não respondidas, incluindo contexto e timestamp.
+          - Solicitações estruturadas a um humano para obter informações adicionais.
+          - Relatório consolidado com respostas fornecidas e lacunas restantes.
+      
+      dependencies:
+        - discovery_task
+        - business_understanding_task
+
+  discovery_task:
+    agent_role: "Discovery Agent"
+    priority: "Alta"
+    description: >
+      Esta tarefa tem como objetivo coletar, organizar e consolidar o máximo de informações relevantes sobre o cliente
+      e o {project_description} que consta em {project_description}. O agente será responsável por mapear
+      necessidades, identificar objetivos estratégicos, entender as principais dores e coletar dados financeiros e operacionais.
+      Esses elementos serão fundamentais para embasar as próximas etapas do pipeline MLOps, garantindo um planejamento
+      eficaz e decisões baseadas em informações concretas.
+    
+      Detalhes a serem coletados incluem:
+        - Informações gerais do cliente (setor, escopo do projeto, stakeholders envolvidos).
+        - Contexto e dores principais (desafios atuais, problemas críticos).
+        - Objetivos do projeto (metas específicas e métricas de sucesso).
+        - Dados disponíveis (tipo, formato, qualidade, fontes de dados existentes).
+        - Gaps de dados e necessidades adicionais (informações ausentes ou não acessíveis).
+        - Parâmetros financeiros e estratégicos:
+          - `initial_capital` (capital inicial disponível para investimento).
+          - `risk_tolerance` (nível de tolerância ao risco: Baixo, Médio, Alto).
+          - `strategy_preference` (preferências estratégicas, como estratégias de trading ou modelos de negócio).
+        - Restrições ou requisitos especiais (ex.: segurança, compliance regulatório).
+        - Qualquer outra informação relevante para suportar decisões futuras e direcionar o roadmap.
+    
+    parameters:
+      website_url: "https://gokuhayda.github.io/nextgen_frontend/index.html"
+    
+    expected_output: >
+      Um documento em formato YAML detalhando:
+        - Informações iniciais do cliente (setor, necessidades, dores, metas e proposta de valor).
+        - Descrição e avaliação dos dados ou fontes de dados disponíveis.
+        - Lacunas de dados identificadas e dados adicionais necessários.
+        - Parâmetros financeiros (capital inicial, tolerância a risco, preferências estratégicas).
+        - Restrições ou requisitos especiais de segurança e compliance.
+        - Principais stakeholders e seus papéis no projeto.
+        - Quaisquer outros insights relevantes para as etapas subsequentes.
+    
+    dependencies:
+      - stakeholder_response_task
+
+  report_generation_task:
+    agent_role: "Report Generation Agent"
+    priority: "Alta"
+    description: >
+      Esta tarefa tem como objetivo consolidar todas as informações coletadas ao longo do projeto em um relatório final
+      detalhado, organizado e acessível para stakeholders técnicos e não técnicos. O relatório deve destacar os principais
+      benefícios do projeto {project_description}, apresentar um roadmap estratégico detalhado e fornecer recomendações práticas
+      baseadas nos dados e análises realizadas. Além disso, o agente deve usar a ferramenta para salvar
+      atualizações incrementais do relatório durante sua geração, garantindo que as informações estejam armazenadas de
+      forma consistente e possam ser acessadas em tempo real.
+    
+      Durante o processo de geração do relatório:
+        - Sempre que uma nova seção for gerada, o conteúdo deve ser salvo no formato CSV.
+        - As colunas do CSV devem incluir:
+          - `Seção`: Nome da seção do relatório (ex.: "Resumo Executivo", "Análise Técnica").
+          - `Conteúdo`: Texto detalhado da seção gerada.
+          - `Timestamp`: Data e hora de geração/atualização da seção.
+        - Seções previamente geradas podem ser atualizadas caso novas informações sejam adicionadas.
+    
+    expected_output: >
+      Relatório final estruturado em formato Markdown ou PDF contendo:
+        - **Resumo Executivo:**
+          - Visão geral do projeto e principais benefícios para o cliente (ex.: aumento de eficiência, redução de custos).
+        - **Roadmap Estratégico:**
+          - Descrição detalhada das etapas do projeto, cronograma e entregáveis associados.
+        - **Análise Técnica e Operacional:**
+          - Arquitetura implementada, ferramentas utilizadas, componentes principais e requisitos técnicos críticos.
+          - Indicadores de performance técnica e resultados quantitativos.
+          - Soluções inovadoras aplicadas.
+        - **Análise de Riscos:**
+          - Matriz de riscos categorizada por tipo (técnicos, operacionais, estratégicos, etc.).
+          - Estratégias de mitigação aplicadas e planos de contingência.
+        - **Recomendações Práticas:**
+          - Próximos passos organizados em ordem de prioridade.
+          - KPIs recomendados para mensuração de sucesso (ex.: ROI, precisão do modelo, latência de inferência).
+          - Estratégias para monitoramento contínuo e melhorias futuras.
+        - **Visualizações:**
+          - Gráficos, diagramas de arquitetura e tabelas que tornem as informações mais acessíveis.
+        - **Apêndices (opcional):**
+          - Documentação técnica complementar, fontes de dados utilizadas e detalhes operacionais.
+    
+      O CSV gerado deve ser atualizado continuamente e conter:
+        - Nome das seções do relatório.
+        - Texto detalhado de cada seção gerada ou atualizada.
+        - Data/hora de cada atualização.
+    
+      output_pydantic: ProjectPlan
+    
+    dependencies:
+      - discovery_task
+      - business_understanding_task
+      - data_understanding_task
+      - strategic_planning_task
+      - risk_assessment_task
+      - pipeline_architecture_task
+      - mlops_architecture_task
+      - monitoring_task
+      - data_scientist_task
+      - machine_learning_engineer_task
+      - devops_engineer_task
+      - cloud_architect_task
+      - software_engineer_task
+      - security_specialist_task
+      - product_owner_task
+      - qa_engineer_task
+      - ethics_and_ai_specialist_task
+      - final_report_assembly_task
+
+  business_understanding_task:
+    agent_role: "Business Understanding Agent"
+    priority: "Alta"
+    description: >
+      Esta tarefa tem como objetivo aprofundar o entendimento do negócio e dos objetivos estratégicos do cliente
+      para o {project_description}, alinhando a metodologia CRISP-DM às necessidades específicas do projeto. O foco é
+      coletar informações que conectem metas organizacionais às soluções técnicas propostas.
+    
+      Detalhes a serem levantados incluem:
+        - Principais objetivos de negócio (ex.: aumento de receita, otimização de processos, retenção de clientes).
+        - Metas de performance e KPIs (ex.: ROI esperado, redução de custos, aumento de eficiência).
+        - Identificação de stakeholders principais e suas responsabilidades no projeto.
+        - Restrições ou desafios, como limitações de orçamento, prazos apertados ou compliance regulatório.
+        - Oportunidades potenciais para alavancar valor adicional no projeto.
+    
+    parameters:
+      website_url: "https://gokuhayda.github.io/nextgen_frontend/index.html"
+    
+    expected_output: >
+      Um conjunto de perguntas respondidas que descrevam claramente:
+        - Principais objetivos de negócio do cliente e metas estratégicas.
+        - Métricas de sucesso mensuráveis, como ROI, redução de custos ou melhorias operacionais.
+        - Stakeholders principais e seus papéis/responsabilidades no projeto.
+        - Restrições identificadas, incluindo desafios legais, regulatórios, financeiros ou operacionais.
+        - Oportunidades mapeadas que podem ser exploradas durante o projeto.
+    
+    dependencies:
+      - discovery_task
+      - stakeholder_response_task
+
+  data_understanding_task:
+    agent_role: "Data Understanding Agent"
+    priority: "Média"
+    description: >
+      Esta tarefa tem como objetivo analisar e compreender os dados disponíveis para o {project_description},
+      avaliando sua qualidade, estrutura, origem e possíveis lacunas. A análise será fundamental para determinar
+      se os dados atendem aos requisitos do projeto e para identificar melhorias ou integrações necessárias.
+    
+      Aspectos a serem analisados:
+        - Descrição detalhada dos dados (tipos, volume, granularidade).
+        - Avaliação de qualidade (inconsistências, duplicatas, valores ausentes).
+        - Fontes dos dados e métodos de coleta (ex.: APIs, bancos de dados, arquivos CSV).
+        - Identificação de lacunas e necessidade de dados adicionais.
+        - Potenciais problemas de conformidade regulatória ou segurança.
+    
+    expected_output: >
+      Relatório detalhado em formato YAML contendo:
+        - Descrição dos dados disponíveis (tipos, formatos, volume e granularidade).
+        - Avaliação da qualidade dos dados, incluindo problemas identificados (duplicatas, valores ausentes, etc.).
+        - Lista das fontes de dados e métodos de coleta utilizados.
+        - Lacunas identificadas nos dados disponíveis e recomendações para obter dados adicionais.
+        - Recomendações práticas para melhorias na qualidade, estrutura e conformidade dos dados.
+    
+    dependencies:
+      - business_understanding_task
+      - stakeholder_response_task
+
+  strategic_planning_task:
+    agent_role: "Strategic Planning Agent"
+    priority: "Média"
+    description: >
+      Esta tarefa tem como objetivo desenvolver um plano estratégico para o {project_description}, conectando os objetivos
+      de negócio às capacidades técnicas identificadas nas etapas anteriores. O planejamento deve definir um roadmap
+      claro para implementação, garantindo alinhamento entre metas organizacionais e soluções propostas.
+    
+      Detalhes a serem planejados:
+        - Roadmap estratégico, descrevendo as etapas principais do projeto e seus entregáveis.
+        - Alinhamento detalhado entre objetivos de negócio e soluções técnicas sugeridas.
+        - Cronograma de implementação com prazos claros e metas intermediárias.
+        - Identificação de recursos necessários, incluindo equipe, infraestrutura e ferramentas.
+        - Mapeamento de riscos potenciais e estratégias de mitigação para garantir a execução do projeto.
+    
+    expected_output: >
+      Documento YAML contendo:
+        - Roadmap estratégico com etapas e entregáveis definidos.
+        - Alinhamento explícito entre objetivos de negócio e soluções técnicas propostas.
+        - Cronograma detalhado, incluindo prazos para cada fase do projeto.
+        - Lista de recursos necessários (equipe, ferramentas e infraestrutura).
+        - Riscos identificados com seus impactos e planos de mitigação correspondentes.
+        - Principais métricas e indicadores para monitorar o progresso do projeto.
+    
+    dependencies:
+      - data_understanding_task
+      - stakeholder_response_task
+      - business_understanding_task
+
+  risk_assessment_task:
+    agent_role: "Risk Assessment Agent"
+    priority: "Alta"
+    description: >
+      Esta tarefa tem como objetivo identificar, categorizar e avaliar os riscos associados ao {project_description},
+      incluindo aspectos técnicos, operacionais, de segurança e compliance. A análise deve considerar os riscos
+      identificados durante o planejamento estratégico, além de novas ameaças emergentes.
+    
+      Detalhes a serem analisados:
+        - Identificação de riscos técnicos (ex.: falhas no pipeline, baixa qualidade de dados).
+        - Riscos operacionais (ex.: falta de equipe qualificada, interrupções no fluxo de trabalho).
+        - Riscos de segurança e compliance (ex.: vazamento de dados, não conformidade regulatória).
+        - Probabilidade e severidade de cada risco.
+        - Estratégias de mitigação para reduzir o impacto e a probabilidade dos riscos.
+        - Planos de contingência detalhados para lidar com cenários críticos.
+    
+    expected_output: >
+      Relatório YAML contendo:
+        - Lista de riscos identificados, categorizados por tipo (técnicos, operacionais, segurança, compliance).
+        - Avaliação de severidade (Alta, Média, Baixa) e probabilidade (Alta, Média, Baixa) para cada risco.
+        - Estratégias de mitigação detalhadas para reduzir o impacto e/ou probabilidade.
+        - Planos de contingência específicos, com etapas claras para lidar com os riscos em caso de ocorrência.
+        - Identificação de responsáveis por implementar as estratégias e gerenciar os planos de contingência.
+    
+    dependencies:
+      - strategic_planning_task
+      - stakeholder_response_task
+
+  monitoring_task:
+    agent_role: "Monitoring Specialist"
+    priority: "Alta"
+    description: >
+      Esta tarefa tem como objetivo monitorar o desempenho de modelos e pipelines em produção dentro do {project_description},
+      garantindo que estejam operando dentro dos limites estabelecidos. A tarefa envolve identificar métricas críticas,
+      configurar sistemas de alerta e propor melhorias com base nas análises de monitoramento.
+    
+      Detalhes a serem analisados:
+        - Configuração de dashboards para monitoramento de métricas (ex.: Precisão, Latência, F1-score).
+        - Detecção de anomalias em pipelines e modelos (ex.: data drift, latência elevada).
+        - Configuração de alertas automáticos para eventos críticos.
+        - Análise de logs localizado em {file_log_path} e históricos para prevenção de falhas recorrentes.
+        - Recomendações para otimização de desempenho e redução de falhas operacionais.
+    
+    expected_output: >
+      Relatório YAML contendo:
+        - Lista de métricas monitoradas, com valores atuais e históricos relevantes.
+        - Logs detalhados de anomalias detectadas, incluindo timestamp e severidade.
+        - Alertas configurados e registrados em ferramentas como Slack e PagerDuty.
+        - Recomendações detalhadas para melhorias com base em problemas identificados.
+    
+    dependencies:
+      - data_pipeline_task
+      - stakeholder_response_task
+
+  data_exploration_task:
+    agent_role: "Data Scientist"
+    priority: "Alta"
+    description: >
+      Realizar análise exploratória de dados (EDA) no contexto do {project_description}, para identificar padrões, tendências,
+      valores ausentes, outliers e potenciais inconsistências. O objetivo é fornecer um panorama claro dos dados disponíveis
+      e embasar as etapas de modelagem.
+    
+    expected_output: >
+      - Relatório detalhado com:
+        - Estatísticas descritivas dos dados (médias, medianas, desvio padrão, etc.).
+        - Visualizações como histogramas, boxplots e mapas de calor para correlações.
+        - Análise de distribuição das variáveis.
+        - Identificação de valores ausentes e estratégias de tratamento.
+        - Sugestões para melhorias nos dados (ex.: normalização, remoção de outliers).
+    
+    dependencies:
+      - data_pipeline_task
+      - discovery_task
+      - data_understanding_task
+
+  feature_engineering_task:
+    agent_role: "Data Scientist"
+    priority: "Alta"
+    description: >
+      Criar, transformar e selecionar características que otimizem o desempenho dos modelos de machine learning dentro do
+      {project_description}. Essa tarefa inclui aplicar técnicas como codificação de variáveis categóricas, normalização de dados
+      e criação de variáveis sintéticas (features) que enriqueçam a capacidade preditiva.
+    
+    expected_output: >
+      - Dataset final pronto para modelagem, incluindo:
+        - Variáveis criadas (ex.: interações, agregações, decomposição de datas).
+        - Variáveis transformadas (ex.: escalonamento, codificação).
+        - Relatório com justificativa das seleções realizadas.
+    
+    dependencies:
+      - data_exploration_task
+
+  model_training_task:
+    agent_role: "Machine Learning Engineer"
+    priority: "Alta"
+    description: >
+      Treinar modelos de machine learning para o {project_description}, utilizando diferentes algoritmos e métodos de validação cruzada
+      para garantir robustez dos resultados. Inclui ajuste de hiperparâmetros e análise de métricas para selecionar o melhor modelo.
+    
+    expected_output: >
+      - Modelos treinados e otimizados para desempenho.
+      - Relatório com:
+        - Comparação de algoritmos utilizados.
+        - Métricas principais (ex.: precisão, recall, F1-score, AUC-ROC).
+        - Curvas de aprendizado.
+      - Pipeline de treinamento documentado.
+    
+    dependencies:
+      - feature_engineering_task
+
+  model_deployment_task:
+    agent_role: "Machine Learning Engineer"
+    priority: "Alta"
+    description: >
+      Implantar o modelo em ambiente de produção no {project_description} com foco em escalabilidade e disponibilidade.
+      Implementar APIs para consumo de previsões e configurar integrações com sistemas de terceiros.
+    
+    expected_output: >
+      - Modelo funcional em produção, com:
+        - API REST para consumo de inferências.
+        - Scripts de deploy documentados.
+        - Logs configurados para auditoria.
+    
+    dependencies:
+      - model_training_task
+      - api_development_task
+
+  data_pipeline_task:
+    agent_role: "Data Engineer"
+    priority: "Alta"
+    description: >
+      Desenvolver pipelines para ingestão, transformação e armazenamento de dados, garantindo que estejam limpos, atualizados
+      e prontos para consumo pelos modelos de machine learning no {project_description}.
+    
+    expected_output: >
+      - Pipeline configurado para:
+        - Extração de dados de múltiplas fontes (bancos de dados, APIs, arquivos, etc.).
+        - Processamento automatizado (limpeza, validação e transformação).
+        - Armazenamento eficiente em data warehouses ou sistemas distribuídos.
+      - Documentação completa dos fluxos de ETL.
+    
+    dependencies:
+      - discovery_task
+
+  ci_cd_pipeline_task:
+    agent_role: "DevOps Engineer"
+    priority: "Alta"
+    description: >
+      Automatizar o ciclo de vida de desenvolvimento de modelos e pipelines do {project_description} por meio de integração contínua (CI)
+      e entrega contínua (CD), garantindo segurança e rastreabilidade.
+    
+    expected_output: >
+      - Pipelines CI/CD configurados, incluindo:
+        - Automatização de testes para modelos e pipelines.
+        - Automação de deploys em ambientes de produção.
+        - Logs centralizados para auditoria e troubleshooting.
+      - Relatório de configurações e boas práticas aplicadas.
+    
+    dependencies:
+      - model_training_task
+      - data_pipeline_task
+
+  cloud_infrastructure_task:
+    agent_role: "Cloud Architect"
+    priority: "Alta"
+    description: >
+      Projetar e implementar infraestrutura de nuvem escalável e resiliente para suportar todo o ciclo de vida MLOps no
+      {project_description}, desde o treinamento até o deploy e monitoramento.
+    
+    expected_output: >
+      - Infraestrutura configurada com:
+        - Clusters de processamento distribuído.
+        - Armazenamento eficiente (ex.: S3, BigQuery).
+        - Monitoramento ativo (ex.: CloudWatch, Stackdriver).
+        - Configuração como código (ex.: Terraform, CloudFormation).
+      - Relatório detalhado de custos e estratégias de otimização aplicadas.
+    
+    dependencies:
+      - ci_cd_pipeline_task
+
+  model_monitoring_task:
+    agent_role: "Monitoring Specialist"
+    priority: "Alta"
+    description: >
+      Configurar e gerenciar sistemas de monitoramento para modelos do {project_description} em produção, identificando
+      problemas como drift de dados, degradação de desempenho e anomalias.
+    
+    expected_output: >
+      - Sistema de monitoramento ativo, com:
+        - Métricas rastreadas (ex.: precisão, latência, drift).
+        - Alertas configurados para falhas críticas.
+        - Logs de eventos operacionais e anomalias.
+      - Relatório com insights detectados e sugestões de otimização.
+    
+    dependencies:
+      - model_deployment_task
+      - cloud_infrastructure_task
+      - monitoring_task
+
+  api_development_task:
+    agent_role: "Software Engineer"
+    priority: "Alta"
+    description: >
+      Desenvolver APIs robustas para integração de modelos do {project_description} com sistemas externos, garantindo baixa latência
+      e alta disponibilidade das previsões.
+    
+    expected_output: >
+      - API REST funcional, incluindo:
+        - Documentação (ex.: Swagger/OpenAPI).
+        - Testes de carga realizados para validar desempenho.
+        - Logs configurados para monitoramento.
+    
+    dependencies:
+      - model_training_task
+
+  security_audit_task:
+    agent_role: "Security Specialist"
+    priority: "Alta"
+    description: >
+      Auditar e reforçar a segurança dos pipelines de dados, modelos e sistemas relacionados ao {project_description}, assegurando
+      conformidade com regulamentos (ex.: LGPD, GDPR).
+    
+    expected_output: >
+      - Relatório de auditoria contendo:
+        - Vulnerabilidades identificadas.
+        - Políticas de segurança implementadas.
+        - Conformidade regulatória assegurada.
+      - Scripts para criptografia e gerenciamento de acessos.
+    
+    dependencies:
+      - ci_cd_pipeline_task
+      - cloud_infrastructure_task
+
+  business_requirements_task:
+    agent_role: "Business Analyst"
+    priority: "Alta"
+    description: >
+      Levantar requisitos de negócios para o {project_description}, conectando as necessidades organizacionais às soluções técnicas
+      e definindo KPIs para medir o sucesso do projeto.
+    
+    expected_output: >
+      - Documento de requisitos contendo:
+        - Objetivos estratégicos do projeto.
+        - Métricas de sucesso (KPIs definidos e justificativas).
+        - Restrições e prioridades do negócio.
+    
+    dependencies:
+      - discovery_task
+
+  backlog_prioritization_task:
+    agent_role: "Product Owner"
+    priority: "Alta"
+    description: >
+      Priorizar o backlog do {project_description} de forma estratégica, alinhando recursos técnicos e humanos aos objetivos definidos
+      pelo cliente.
+    
+    expected_output: >
+      - Backlog atualizado e priorizado.
+      - Cronograma detalhado com prazos claros.
+      - Relatório com justificativas para priorizações.
+    
+    dependencies:
+      - business_requirements_task
+
+  quality_assurance_task:
+    agent_role: "QA Engineer"
+    priority: "Alta"
+    description: >
+      Garantir a qualidade de pipelines e modelos do {project_description}, implementando testes automatizados para validar
+      desempenho, confiabilidade e integridade.
+    
+    expected_output: >
+      - Suíte de testes automatizados abrangendo:
+        - Testes unitários para scripts e pipelines.
+        - Testes de integração para APIs e sistemas.
+        - Relatórios detalhados com resultados de testes e melhorias aplicadas.
+    
+    dependencies:
+      - ci_cd_pipeline_task
+      - api_development_task
+
+  ethical_analysis_task:
+    agent_role: "Ethics and AI Specialist"
+    priority: "Média"
+    description: >
+      Avaliar os impactos éticos dos modelos no {project_description}, analisando possíveis vieses e garantindo que as decisões
+      sejam justas e transparentes.
+    
+    expected_output: >
+      - Relatório detalhado contendo:
+        - Identificação de vieses em dados e modelos.
+        - Estratégias para mitigação de injustiças.
+        - Planos de monitoramento contínuo para impactos éticos.
+    
+    dependencies:
+      - feature_engineering_task
+      - model_training_task
+
+  research_innovation_task:
+    agent_role: "Researcher R&D Agent"
+    priority: "Alta"
+    description: >
+      Este agente tem como objetivo identificar, analisar e adaptar inovações tecnológicas e científicas para melhorar
+      processos internos e propor novas soluções para o {project_description}. Concentre-se em pesquisar artigos científicos,
+      relatórios e tendências do setor relacionados a MLOps, Inteligência Artificial e Ciência de Dados.
+    
+      Detalhes a serem analisados:
+        - Revisão de publicações científicas e relatórios técnicos relevantes ao projeto.
+        - Extração de insights aplicáveis e identificação de lacunas em processos existentes.
+        - Proposta de frameworks ou metodologias inovadoras baseadas em pesquisa.
+        - Avaliação de viabilidade técnica e impacto de potenciais inovações.
+        - Recomendação de experimentos e POCs (Proof of Concepts) para validação das ideias propostas.
+        - Documentação detalhada dos achados e plano para implementação.
+    
+    parameters:
+      keywords: ["MLOps", "IA", "Machine Learning", "Ciência de Dados", "Inovação", "Pesquisa"]
+      sources: ["arXiv", "Google Scholar", "IEEE Xplore", "ACM Digital Library", "Springer"]
+      output_format: ["Relatório YAML", "Documento Markdown"]
+    
+    expected_output: >
+      - Relatório detalhado contendo:
+        - Principais tendências e descobertas científicas relacionadas ao projeto.
+        - Metodologias ou tecnologias inovadoras recomendadas.
+        - Análise de custo-benefício e impacto técnico para a organização.
+        - Lista de experimentos sugeridos para validar as inovações.
+        - Referências bibliográficas detalhadas das fontes pesquisadas.
+      - Plano de implementação para incorporar as inovações propostas.
+    
+    dependencies:
+      - discovery_task
+      - business_understanding_task
+      - data_understanding_task
+      - strategic_planning_task
+      - risk_assessment_task
+
+  tech_sales_task:
+    agent_role: "Tech Sales Consultant"
+    priority: "Alta"
+    description: >
+      Esta tarefa tem como objetivo principal identificar, propor e implementar estratégias de vendas e desenvolvimento
+      de negócios para soluções tecnológicas, com ênfase no {project_description}. O agente deve conduzir todas as
+      etapas do ciclo de vendas, desde a identificação de oportunidades até o fechamento de contratos e acompanhamento
+      pós-venda, assegurando que as soluções atendam às necessidades dos clientes e gerem impacto mensurável.
+    
+      objectives:
+        - Identificar as necessidades dos clientes e mapear oportunidades de venda.
+        - Propor soluções tecnológicas inovadoras, alinhadas às metas dos clientes.
+        - Desenvolver propostas personalizadas e estratégias de negociação.
+        - Gerenciar contas existentes, construir relacionamentos e buscar expansão.
+        - Identificar tendências de mercado e novas oportunidades para desenvolvimento de negócios.
+        - Realizar análises de impacto e ROI para justificar investimentos tecnológicos.
+      steps:
+        - Realizar reuniões de descoberta com stakeholders para entender desafios e objetivos.
+        - Analisar dados de mercado, tendências tecnológicas e concorrência.
+        - Propor soluções técnicas baseadas em necessidades do cliente (ex.: MLOps, SaaS, pipelines automatizados).
+        - Desenvolver propostas personalizadas e materiais de apresentação.
+        - Conduzir reuniões de vendas e negociações para fechamento de contratos.
+        - Elaborar relatórios detalhados de progresso e impacto pós-implementação.
+      parameters:
+        sales_goal: "Fechar contratos ou parcerias estratégicas para soluções tecnológicas."
+        target_clients: 
+          - "Empresas de médio a grande porte"
+          - "Startups de IA"
+          - "Indústrias que adotam MLOps."
+        tools_required: 
+          - "CRM"
+          - "Ferramentas de análise de mercado"
+          - "Softwares de apresentação (ex.: PowerPoint)"
+        metrics_to_track:
+          - "Taxa de conversão de leads"
+          - "Crescimento da receita"
+          - "Satisfação do cliente"
+          - "Tempo médio de fechamento de vendas"
+          - "Retorno sobre investimento (ROI)"
+    
+    expected_output: >
+      - Relatório detalhado contendo:
+        - Necessidades e oportunidades identificadas para cada cliente.
+        - Soluções propostas, incluindo justificativas técnicas e comerciais.
+        - Propostas de valor personalizadas (ex.: aumento de eficiência, redução de custos).
+        - Estratégias de vendas utilizadas e resultados alcançados (ex.: leads convertidos, parcerias firmadas).
+      - Métricas de desempenho com análise de impacto financeiro e técnico.
+      - Relatórios pós-venda e planos de expansão de contas existentes.
+    
+    examples:
+      "Como identificar necessidades do cliente?":
+        "Exemplo: Realizar reuniões de descoberta e perguntas estratégicas, como 'Quais desafios sua equipe enfrenta na implementação de MLOps?'"
+      "Como propor soluções alinhadas?":
+        "Exemplo: Recomendar ferramentas como MLflow e Airflow para gerenciar pipelines, com base na análise de dados fornecida."
+      "Como justificar o ROI para soluções SaaS?":
+        "Exemplo: Demonstrar redução de custos operacionais em 25% com a automação de tarefas manuais."
+      "Como expandir contas existentes?":
+        "Exemplo: Oferecer integrações adicionais com serviços de nuvem para melhorar o desempenho e escalabilidade."
+    
+    dependencies:
+      - discovery_task
+      - business_understanding_task
+      - strategic_planning_task
+
+  task_breakdown:
+    agent_role: "Project Planning Agent"
+    priority: "Média"
+    description: >
+      Responsável por analisar cuidadosamente o {project_description} e seus {project_requirements}, 
+      decompô-los em tarefas menores e definir o escopo detalhado. Define também prazos realistas
+      para cada subtarefa, levando em conta as dependências e entregáveis esperados.
+    
+      Detalhes:
+        - Ler o {project_description} e os requisitos levantados na fase de discovery.
+        - Criar uma lista completa de subtarefas que cubram cada requisito.
+        - Identificar dependências entre as subtarefas e documentar isso de forma clara.
+        - Incluir riscos relevantes e alternativas caso ocorram atrasos ou bloqueios.
+    
+    expected_output: >
+      Uma lista de tarefas detalhadas com:
+        - Nome de cada subtarefa.
+        - Escopo, objetivo, responsável e prazo estimado.
+        - Dependências e relação com outras subtarefas.
+      Deve-se, obrigatoriamente, incluir um diagrama de Gantt simplificado para ilustrar a linha do tempo.
+    
+    dependencies: []
+
+  time_resource_estimation:
+    agent_role: "Estimation Agent"
+    priority: "Alta"
+    description: >
+      Analisar cada subtarefa definida pelo Project Planning Agent e gerar estimativas de tempo,
+      recursos e esforço necessários para completá-las. Baseia-se em dados históricos, complexidade
+      das atividades e disponibilidade do time.
+    
+      Detalhes:
+        - Utilizar técnicas de estimativa (p.e. PERT, análise de pontos de função, histórico de projetos semelhantes).
+        - Validar se há gaps de competências na equipe e sugerir treinamentos ou contratações, se necessário.
+        - Incluir margem de segurança para compensar incertezas.
+    
+    expected_output: >
+      - Relatório de estimativas contendo:
+        - Tempo estimado para cada subtarefa.
+        - Custo aproximado (se aplicável) e esforço do time (homem-hora).
+        - Identificação de riscos ou incertezas (p.e. larga variação na precisão das estimativas).
+      - Resumo executivo com uma visão consolidada dos recursos e prazos para todas as subtarefas.
+    
+    dependencies: []
+
+  resource_allocation:
+    agent_role: "Resource Allocation Agent"
+    priority: "Média"
+    description: >
+      Alocar tarefas de forma estratégica entre os membros da equipe, equilibrando habilidades,
+      disponibilidade e carga de trabalho atual de cada um. Deve maximizar a eficiência e garantir
+      que não haja sobrecarga ou subutilização de recursos.
+    
+      Detalhes:
+        - Analisar o backlog de tarefas resultante do task_breakdown.
+        - Atribuir cada subtarefa a um (ou mais) membro(s) da equipe, justificando a escolha.
+        - Verificar disponibilidade de cada colaborador, conciliando férias, licenças e outras demandas.
+        - Sugerir ajustes de carga em caso de sobrecarga ou ausência de colaboradores-chave.
+    
+    expected_output: >
+      - Um quadro (ou planilha) mostrando a alocação de cada subtarefa, com nome do responsável,
+        datas de início e fim, além do status (se já iniciado ou futuro).
+      - Justificativa de alocação, explicando como as habilidades de cada membro se encaixam em cada subtarefa.
+      - Resumo que explique possíveis gargalos e riscos de distribuição.
+    
+    dependencies: []
+
+  suggestion_generation_task:
+    agent_role: "Suggestion Generation Agent"
+    priority: "Alta"
+    description: >
+      Gere sugestões acionáveis para resolver problemas e melhorar os processos
+      identificados no projeto {project_description}. Utilize dados, insights e padrões
+      disponíveis em {file_path_sources} e {file_path_report}.
+    
+    expected_output: >
+      Um arquivo YAML estruturado contendo:
+        - Lista de sugestões categorizadas por problema identificado.
+        - Detalhes sobre como cada sugestão pode ser implementada.
+        - Prioridade e impacto de cada sugestão.
+    
+    dependencies:
+      - data_exploration_task
+      - risk_assessment_task
+      - business_understanding_task
+
+  chart_generation_task:
+    agent_role: "Chart Generation Agent"
+    priority: "Média"
+    description: >
+      Crie gráficos informativos a partir das tabelas geradas, incluindo:
+        - Distribuição de problemas identificados.
+        - Impacto das sugestões.
+        - Métricas de desempenho do modelo/sistema ao longo do tempo.
+      Salve os gráficos como arquivos de imagem e disponibilize URLs para fácil integração.
+    
+    expected_output: >
+      Arquivos de imagem contendo gráficos gerados, com:
+        - URLs para cada gráfico.
+        - Descrição de cada visualização gerada.
+    
+    dependencies:
+      - table_generation_task
+
+  final_report_assembly_task:
+    agent_role: "Report Generation Agent"
+    priority: "Alta"
+    description: >
+      Consolide todas as informações geradas em um relatório final estruturado, incluindo:
+        - Resumo executivo.
+        - Tabelas e gráficos gerados.
+        - Sugestões acionáveis priorizadas.
+        - Conclusões e próximos passos.
+    
+    expected_output: >
+      Um relatório em formato Markdown ou PDF, contendo:
+        - Resumo executivo.
+        - Tabelas e gráficos organizados lado a lado.
+        - Sugestões com impacto e prioridades.
+        - Recomendação de KPIs para monitoramento contínuo.
+    
+    dependencies:
+      - suggestion_generation_task
+      - table_generation_task
+      - chart_generation_task
+
+  table_generation_task:
+    agent_role: "Report Generation Agent"
+    priority: "Alta"
+    description: >
+      Gerar tabelas que resumam as métricas-chave e tendências observadas nos dados do suporte, incluindo:
+        - Resultados da Classificação de Problemas: Uma tabela que resume a frequência e os níveis de prioridade de diferentes tipos de problemas.
+        - Desempenho dos Agentes: Uma tabela mostrando o desempenho de diferentes agentes com base nos tempos de resolução e nas pontuações de satisfação do cliente.
+        - Satisfação do Cliente: Uma tabela que resume as avaliações de satisfação do cliente ao longo do tempo.
+        - Gerar tabelas que resumam as métricas principais, tendências e dados críticos do projeto {project_description}.
+          Inclua tabelas para:
+            - Classificação de problemas identificados.
+            - Desempenho do sistema/modelo.
+            - Impacto das sugestões e métricas de sucesso.
+          Essas tabelas serão utilizadas como base para a geração de gráficos na próxima tarefa.
+    
+    expected_output: >
+      Um conjunto de tabelas em formato estruturado (ex.: JSON ou CSV) que:
+        - Resumem os resultados de classificação de problemas, incluindo frequência e prioridade.
+        - Mostram o desempenho dos agentes por métricas como tempos de resolução e satisfação.
+        - Apresentam tendências de satisfação do cliente ao longo do tempo.
+      As tabelas devem estar prontas para serem usadas na tarefa de geração de gráficos.
+        - Tabelas que categorizam problemas e métricas.
+        - Tabelas detalhadas sobre desempenho e impacto.
+    
+    dependencies:
+      - data_exploration_task
+      - risk_assessment_task
+      - business_understanding_task
+      - suggestion_generation_task
+      - data_understanding_task
