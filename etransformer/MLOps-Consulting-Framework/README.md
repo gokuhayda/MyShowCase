@@ -27,7 +27,7 @@ MLOps-Consulting-Framework/
 │   │   ├── discovery_phase/
 │   │   ├── pipeline_design_phase/
 │   │   ├── deployment_phase/
-│   │   ├── model_development_phase
+│   │   ├── model_development_phase/
 │   ├── sources/
 │       ├── project_description.md
 │       ├── required.md
