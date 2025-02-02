@@ -13,7 +13,7 @@ globals:
     file_log_pipeline_design: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs/pipeline_design_phase"
     file_log_deployment: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs/deployment_phase"
     file_log_model_development: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs/model_development_phase"
-
+    file_log: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs
     file_path_sources: "/home/goku/Documentos/mlops_consulting/knowledge/sources/"
 
 
