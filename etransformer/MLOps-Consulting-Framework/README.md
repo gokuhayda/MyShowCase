@@ -94,7 +94,7 @@ O processo segue um fluxo estruturado **CrewAI**, atribuindo tarefas a agentes e
 ```
 📌 **Relatórios intermediários:**  
 ```bash
-/home/goku/Documentos/mlops_consulting/knowledge/reports/
+.../mlops_consulting/knowledge/reports/
     ├── discovery_report.md
     ├── assessment_report.md
     ├── pipeline_design_report.md
