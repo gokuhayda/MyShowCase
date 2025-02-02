@@ -106,7 +106,7 @@ O processo segue um fluxo estruturado **CrewAI**, atribuindo tarefas a agentes e
 ```
 📌 **Relatório final consolidado:**  
 ```bash
-/home/goku/Documentos/consultoria/report/final_report.md
+.../report/final_report.md
 ```
 
 ---
