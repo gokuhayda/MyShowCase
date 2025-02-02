@@ -86,11 +86,11 @@ O processo segue um fluxo estruturado **CrewAI**, atribuindo tarefas a agentes e
 
 📌 **Questionário gerado:**  
 ```bash
-/home/goku/Documentos/mlops_consulting/questionnaires/questionnaire.yaml
+.../mlops_consulting/questionnaires/questionnaire.yaml
 ```
 📌 **Respostas do cliente:**  
 ```bash
-/home/goku/Documentos/mlops_consulting/responses/questionnaire_responses.yaml
+.../mlops_consulting/responses/questionnaire_responses.yaml
 ```
 📌 **Relatórios intermediários:**  
 ```bash
