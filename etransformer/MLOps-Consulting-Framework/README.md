@@ -25,8 +25,9 @@ MLOps-Consulting-Framework/
 │   ├── reports/
 │   │   ├── assessment_phase/
 │   │   ├── discovery_phase/
-│   │   ├── final_flux/
 │   │   ├── pipeline_design_phase/
+│   │   ├── deployment_phase/
+│   │   ├── model_development_phase
 │   ├── sources/
 │       ├── project_description.md
 │       ├── required.md
@@ -36,8 +37,9 @@ MLOps-Consulting-Framework/
 │   ├── logs/
 │   │   ├── assessment_phase/
 │   │   ├── discovery_phase/
-│   │   ├── final_flux/
 │   │   ├── pipeline_design_phase/
+│   │   ├── deployment_phase/
+│   │   ├── model_development_phase/
 │   ├── src/
 │   │   ├── core/
 │   │   │   ├── __init__.py
