@@ -1,19 +1,20 @@
+# Set the environment variable before running the code:
+# export MLOPS_PATH="/home/user/path/to/mlops_consulting"
+
 globals:
   file_paths:
-    project_description: "/home/goku/Documentos/mlops_consulting/knowledge/sources/project_description.md"
+    project_description: "${MLOPS_PATH}/knowledge/sources/project_description.md"
   
-    file_report_discovery: "/home/goku/Documentos/mlops_consulting/knowledge/reports/discovery_phase"
-    file_report_assessment: "/home/goku/Documentos/mlops_consulting/knowledge/reports/assessment_phase"
-    file_report_pipeline_design: "/home/goku/Documentos/mlops_consulting/knowledge/reports/pipeline_design_phase"
-    file_report_deployment: "/home/goku/Documentos/mlops_consulting/knowledge/reports/deployment_phase"
-    file_report_model_development: "/home/goku/Documentos/mlops_consulting/knowledge/reports/model_development_phase"
+    file_report_discovery: "${MLOPS_PATH}/knowledge/reports/discovery_phase"
+    file_report_assessment: "${MLOPS_PATH}/knowledge/reports/assessment_phase"
+    file_report_pipeline_design: "${MLOPS_PATH}/knowledge/reports/pipeline_design_phase"
+    file_report_deployment: "${MLOPS_PATH}/knowledge/reports/deployment_phase"
+    file_report_model_development: "${MLOPS_PATH}/knowledge/reports/model_development_phase"
 
-    file_log_discovery: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs/discovery_phase"
-    file_log_assessment: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs/assessment_phase"
-    file_log_pipeline_design: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs/pipeline_design_phase"
-    file_log_deployment: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs/deployment_phase"
-    file_log_model_development: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs/model_development_phase"
-    file_log: "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs
-    file_path_sources: "/home/goku/Documentos/mlops_consulting/knowledge/sources/"
-
-
+    file_log_discovery: "${MLOPS_PATH}/mlops_consulting_flow/logs/discovery_phase"
+    file_log_assessment: "${MLOPS_PATH}/mlops_consulting_flow/logs/assessment_phase"
+    file_log_pipeline_design: "${MLOPS_PATH}/mlops_consulting_flow/logs/pipeline_design_phase"
+    file_log_deployment: "${MLOPS_PATH}/mlops_consulting_flow/logs/deployment_phase"
+    file_log_model_development: "${MLOPS_PATH}/mlops_consulting_flow/logs/model_development_phase"
+    file_log: "${MLOPS_PATH}/mlops_consulting_flow/logs"
+    file_path_sources: "${MLOPS_PATH}/knowledge/sources/"
