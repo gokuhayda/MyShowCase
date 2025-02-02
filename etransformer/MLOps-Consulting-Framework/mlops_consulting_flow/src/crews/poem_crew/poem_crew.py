@@ -107,7 +107,7 @@ class MLOpsCrew:
         self.log_model_development_path = file_paths.get("file_log_model_development", "")
 
         self.sources_path_general = file_paths.get("file_path_sources", "")
-        self.log_path = file_paths.get("log_path", "/home/goku/Documentos/mlops_consulting/mlops_consulting_flow/logs")
+        self.log_path = file_paths.get("log_path", "")
 
         # Garante que todos os diretórios existam
         self.ensure_directories_exist(file_paths)
