@@ -1,4 +1,4 @@
-# eTechShowCase
+# MyShowCase
 
 Welcome to **eTechShowCase**, a public repository showcasing my technical experiments, projects, and learning journey across various fields of technology.
 
