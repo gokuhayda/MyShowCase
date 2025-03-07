@@ -34,4 +34,4 @@ Contributions, suggestions, and feedback are highly encouraged! If you'd like to
 
 📫 Connect with Me
 
-Find me on LinkedIn (https://www.linkedin.com/in/éric-sena) or GitHub to discuss tech, projects, or collaboration opportunities.
+Find me on LinkedIn (https://www.linkedin.com/in/eric-nextgen) or GitHub to discuss tech, projects, or collaboration opportunities.
