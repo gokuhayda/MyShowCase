@@ -1,0 +1,6 @@
+include README.md
+recursive-include config *
+recursive-include tools *
+recursive-include utils_tools *
+recursive-include core *
+recursive-include storage *

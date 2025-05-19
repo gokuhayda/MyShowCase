@@ -1,0 +1,33 @@
+python3.12 -m venv venv
+source venv/bin/activate
+python -m pip install --upgrade pip
+pip install crewai-tools
+pip install crewai
+pip install Flask
+pip install flask_cors
+pip install python-dotenv
+pip install torch
+pip install scikit-learn
+pip install deep_translator
+pip install PyYAML
+pip install cohere
+pip install llama-index
+pip install llama-index-embeddings-openai
+pip install llama-index-embeddings-huggingface
+pip install llama-index-llms-openai
+pip install llama-index-llms-ollama
+pip install langchain-community
+pip install langchain-openai
+pip install llama-index-vector-stores-deeplake
+pip install langchain-ollama
+pip install PyMuPDF
+pip install python-docx
+pip install langfuse
+pip install -qU langchain-ollama
+pip install llama-index-embeddings-langchain
+pip install streamlit
+pip install ragas
+pip install matplotlib
+pip install guardrails-ai
+snap install ollama
+# guardrails configure & guardrails hub install hub://groundedai/grounded_ai_hallucination;

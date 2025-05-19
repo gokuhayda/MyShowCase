@@ -1,0 +1,45 @@
+routing_rules:
+- keywords:
+  - planos
+  - m&a
+  - flow
+  - valorise
+  - clima
+  agent: Agente de Planos Insightiva
+  description: Perguntas sobre tipos de plano, valores, escopo de aplicação e objetivos
+    de cada plano da Insightiva.
+- keywords:
+  - onboarding
+  - segmentação
+  - valores
+  - líderes
+  - perguntas abertas
+  - história da empresa
+  agent: Agente de Onboarding
+  description: Perguntas sobre como a empresa preenche dados iniciais, onboarding,
+    definição de líderes, áreas, valores estratégicos, etc.
+- keywords:
+  - acesso
+  - erro
+  - login
+  - problema técnico
+  - suporte
+  - sistema
+  agent: Agente de Suporte Técnico
+  description: Perguntas operacionais simples ou pedidos de redirecionamento ao suporte
+    humano.
+- keywords:
+  - Insightiva
+  - empresa
+  - missão
+  - valores
+  - diagnóstico
+  - metodologia
+  - benefícios
+  - parceria
+  agent: Diagnóstico Insightiva
+  description: Perguntas institucionais ou que não se encaixem claramente nos outros
+    temas.
+default_agent: Diagnóstico Insightiva
+fallback_message: Não encontrei uma correspondência clara para sua pergunta. Vou tentar
+  responder com base nos conteúdos gerais da Insightiva.

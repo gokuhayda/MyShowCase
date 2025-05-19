@@ -1,0 +1,23 @@
+- agent: Diagnóstico Cultural
+  name: DiagnosticoInicial
+  description: Realize a coleta e leitura inicial de informações culturais da empresa a partir do contexto fornecido.
+
+- agent: Análise de Valores
+  name: AvaliarValores
+  description: Identifique os valores explícitos e implícitos presentes nas práticas culturais da empresa.
+
+- agent: História Organizacional
+  name: AvaliarHistorico
+  description: Levante eventos marcantes, narrativas e a influência da liderança na formação cultural da empresa.
+
+- agent: Mapa de Cultura
+  name: ConstruirMapa
+  description: Construa uma síntese visual ou conceitual que represente a cultura atual da empresa, destacando forças e gaps.
+
+- agent: Recomendações de Cultura
+  name: ProporAcoes
+  description: Elabore recomendações estratégicas com base nas análises feitas nas fases anteriores.
+
+- agent: Relatório Final
+  name: ConsolidarRelatorio
+  description: Produza um relatório final com insights, diagnóstico e propostas da consultoria.

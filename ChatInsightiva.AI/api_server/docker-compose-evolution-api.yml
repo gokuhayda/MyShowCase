@@ -1,0 +1,50 @@
+version: '3.9'
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: nextgen_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: nextgendb
+      POSTGRES_USER: nextgen_user
+      POSTGRES_PASSWORD: nextgen_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - nextgen_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    container_name: nextgen_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  evolution-api:
+    image: atendai/evolution-api
+    container_name: nextgen_evolution_api
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTHENTICATION_API_KEY=<yout-key-here>
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://nextgen_user:nextgen_pass@postgres:5432/nextgendb
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis:6379/6
+      - CACHE_REDIS_PREFIX_KEY=nextgen
+      - CACHE_REDIS_SAVE_INSTANCES=true
+      - CACHE_LOCAL_ENABLED=false
+    volumes:
+      - nextgen_store:/evolution/store
+      - nextgen_instances:/evolution/instances
+
+volumes:
+  nextgen_postgres_data:
+  nextgen_store:
+  nextgen_instances:

@@ -1,0 +1,42 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="chatInsightiva",
+    version="1.0.0",
+    packages=find_packages(),
+    include_package_data=True,
+    install_requires=[
+        "crewai-tools",
+        "crewai",
+        "Flask",
+        "flask_cors",
+        "python-dotenv",
+        "torch",
+        "scikit-learn",
+        "deep_translator",
+        "cohere",
+        "PyYAML",
+        "PyMuPDF",
+        "python-docx",
+        "llama-index",
+        "llama-index-embeddings-openai",
+        "llama-index-embeddings-huggingface",
+        "llama-index-llms-openai",
+        "llama-index-llms-ollama",
+        "llama-index-vector-stores-deeplake",
+        "llama-index-embeddings-langchain",
+        "langchain-community",
+        "langchain-openai",
+        "langchain-ollama",
+        "langfuse"
+    ],
+    author="Insightiva AI",
+    description="Chatbot inteligente baseado em RAG para a plataforma Insightiva.",
+    long_description=open("README.md", encoding="utf-8").read(),
+    long_description_content_type="text/markdown",
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Operating System :: OS Independent",
+    ],
+    python_requires=">=3.10",
+)

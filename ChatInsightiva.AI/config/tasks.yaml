@@ -1,0 +1,110 @@
+tasks:
+- agent_role: Concierge Inteligente da Insightiva
+  description: |
+    Sua função é analisar a pergunta enviada e decidir qual agente da Insightiva deve respondê-la com base nas palavras-chave e no tema.
+    ✅ Etapas obrigatórias:
+    1. Leia e compreenda a pergunta.
+    2. Se envolver múltiplos assuntos, oriente o usuário a dividir ou priorize o tema principal.
+    3. Roteie para:
+       - Diagnóstico Insightiva → Institucional amplo
+       - Agente de Onboarding → Fase inicial, líderes, valores, áreas
+       - Agente de Planos Insightiva → Planos, pacotes, comparações
+       - Agente de Suporte Técnico → Acesso, erros, uso da plataforma
+    ❌ Nunca responda diretamente.
+  expected_output: |
+    A pergunta deve ser validada com `semantic_guard_tool` e `semantic_segmented_guard_tool`.
+    O agente correto deve ser identificado e delegado com clareza.
+    ✅ Os únicos agentes válidos para delegação são:
+    - Diagnóstico Insightiva
+    - Agente de Onboarding
+    - Agente de Planos Insightiva
+    - Agente de Suporte Técnico
+    ❌ Nunca crie ou invente agentes não listados acima.
+  name: Roteamento Inteligente
+
+- agent_role: Diagnóstico Insightiva
+  description: |
+    Responder perguntas sobre a Insightiva com base nos documentos oficiais processados (FAQ, textos institucionais, conteúdos sobre cultura organizacional e metodologia).
+    ✅ Instruções obrigatórias:
+  expected_output: |
+    Responda diretamente à pergunta do usuário com base no conteúdo validado com ambas as ferramentas.
+    Evite respostas genéricas. Se não souber, peça reformulação ou oriente contato com suporte humano.
+  name: Tarefa Diagnóstico Institucional
+
+- agent_role: Agente de Onboarding
+  description: |
+    Responder perguntas sobre a fase inicial da aplicação dos diagnósticos Insightiva: segmentações, líderes, valores, perguntas abertas, preenchimento inicial.
+    ✅ Instruções obrigatórias:
+  expected_output: |
+    Responda diretamente à pergunta do usuário com base no conteúdo validado com ambas as ferramentas.
+    Evite respostas genéricas. Se não souber, peça reformulação ou oriente contato com suporte humano.
+  name: Tarefa Onboarding
+
+- agent_role: Agente de Planos Insightiva
+  description: |
+    Explicar os diferentes planos da Insightiva (Flow, Clima, M&A, Valorise), seus públicos, benefícios, aplicações e diferenciais.
+    ✅ Instruções obrigatórias:
+  expected_output: |
+    Responda diretamente à pergunta do usuário com base no conteúdo validado com ambas as ferramentas.
+    Evite respostas genéricas. Se não souber, peça reformulação ou oriente contato com suporte humano.
+  name: Tarefa Planos
+
+- agent_role: Agente de Suporte Técnico
+  description: |
+    Ajudar o usuário com dúvidas técnicas simples sobre a plataforma da Insightiva (ex: login, acesso, erros operacionais).
+    ✅ Instruções obrigatórias:
+  expected_output: |
+    Responda diretamente à pergunta do usuário com base no conteúdo validado com ambas as ferramentas.
+    Evite respostas genéricas. Se não souber, peça reformulação ou oriente contato com suporte humano.
+  name: Tarefa Suporte Técnico
+
+- agent_role: Agente de Resultados
+  description: |
+    Responder perguntas sobre Relatórios, gráficos, análise de dados do diagnóstico após aplicação com base na base oficial da Insightiva.
+    ✅ Instruções obrigatórias:
+  expected_output: |
+    Responda diretamente à pergunta do usuário com base no conteúdo validado com ambas as ferramentas.
+    Evite respostas genéricas. Se não souber, peça reformulação ou oriente contato com suporte humano.
+  name: Tarefa Agente de Resultados
+
+- agent_role: Agente de Avaliação 360
+  description: |
+    Responder perguntas sobre Avaliação 360: competências, feedbacks, relatórios de múltiplas fontes com base na base oficial da Insightiva.
+    ✅ Instruções obrigatórias:
+  expected_output: |
+    Responda diretamente à pergunta do usuário com base no conteúdo validado com ambas as ferramentas.
+    Evite respostas genéricas. Se não souber, peça reformulação ou oriente contato com suporte humano.
+  name: Tarefa Agente de Avaliação 360
+
+- agent_role: Agente de Contrato e Pagamento
+  description: |
+    Responder perguntas sobre Valores, propostas, pagamentos, parcelamentos e condições comerciais com base na base oficial da Insightiva.
+    ✅ Instruções obrigatórias:
+  expected_output: |
+    Responda diretamente à pergunta do usuário com base no conteúdo validado com ambas as ferramentas.
+    Evite respostas genéricas. Se não souber, peça reformulação ou oriente contato com suporte humano.
+  name: Tarefa Agente de Contrato e Pagamento
+
+- agent_role: Agente de Parcerias
+  description: |
+    Responder perguntas sobre Canais de venda, licenciamento, modelo de negócio, representantes com base na base oficial da Insightiva.
+    ✅ Instruções obrigatórias:
+    
+  expected_output: |
+    Responda diretamente à pergunta do usuário com base no conteúdo validado com ambas as ferramentas.
+    Evite respostas genéricas. Se não souber, peça reformulação ou oriente contato com suporte humano.
+  name: Tarefa Agente de Parcerias
+
+- agent_role: Auditor Temático
+  description: |
+    Verificar se a pergunta do usuário possui intenção de burlar os filtros temáticos, disfarçando temas proibidos como religião, fantasia ou espiritualidade. Essa análise é feita antes do roteamento para qualquer agente.
+    ✅ Instruções:
+    - Utilize `semantic_guard_tool` com a lista de tópicos inválidos.
+    - Avalie semântica, ironia ou indiretas.
+    - Em caso de suspeita, informe o Concierge e impeça o encaminhamento.
+    ❌ Nunca responda diretamente ao usuário.
+  expected_output: |
+    Um parecer claro para o Concierge sobre a validade da pergunta:
+    - [✅] Apropriada para roteamento
+    - [❌] Suspeita de tentativa de engano (detalhar o motivo)
+  name: Verificação de Intenção

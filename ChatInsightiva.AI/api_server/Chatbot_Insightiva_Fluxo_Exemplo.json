@@ -1,0 +1,49 @@
+{
+  "name": "Chatbot Insightiva Demo",
+  "nodes": [
+    {
+      "parameters": {
+        "pergunta": "Como funciona o diagn\u00f3stico cultural?"
+      },
+      "name": "Chatbot Insightiva",
+      "type": "n8n-nodes-base.chatbotInsightiva",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "chatbotInsightivaApi": {
+          "id": "1",
+          "name": "Minha API Chatbot"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Chatbot Insightiva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "1"
+}

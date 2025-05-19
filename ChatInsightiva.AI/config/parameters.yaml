@@ -1,0 +1,479 @@
+# Configurações Gerais
+language: pt-br
+
+# Seleção do Modelo de Embedding (openai ou huggingface)
+# embedding_type: huggingface # openai # "huggingface"  "ollama"
+embedding_type: openai
+huggingface:
+  embedding_model: BAAI/bge-small-en
+
+# Modelos LLM principais e fallback
+default_model: ollama
+default_model_agents: gpt
+
+# Configuração GPT
+gpt_agents:
+  type: gpt-3.5-turbo
+  max_input_size: 4096
+  max_tokens: 500
+  temperature: 0.0
+  top_p: 0.7
+  system_message: |
+    Você é um assistente treinado para responder **apenas** com base nos documentos do FAQ da empresa.
+    ❗️NÃO utilize conhecimento externo, nem crie suposições.
+    ❗️Se a resposta não estiver claramente presente no conteúdo, diga:
+    'Desculpe, não encontrei essa informação no FAQ da Insightiva.'
+  # embedding_model:
+  #     type: "text-embedding-3-large"
+  #     openai_embedding_max_tokens: 8191
+
+ollama_agents:
+  type: mistral:7b-instruct
+  provider: ollama
+  base_url: http://localhost:11434
+  temperature: 0.0
+  additional_kwargs:
+    num_predict: 500
+  # embedding_model:
+  #     type: "sentence-transformers/all-MiniLM-L6-v2"
+  #     huggingface_embedding_embedding_max_tokens: 512
+
+ferramentas_ativas_agents:
+ -anti_prompt_injection
+ -semantic_guard
+ -query_index_tool
+
+# Configuração GPT
+gpt:
+  type: gpt-4 #gpt-3.5-turbo
+  max_input_size: 4096
+  max_tokens: 300                # Aumentado para permitir respostas mais completas e institucionais
+  temperature: 0.03              # Levemente acima de 0.1 para dar fluidez sem perder controle
+  top_p: 0.8                     # Um pouco mais aberto para permitir variações naturais de linguagem
+  frequency_penalty: 0.2         # Evita repetição excessiva de palavras
+  presence_penalty: 0.1          # Estimula leve variação e riqueza de vocabulário
+  system_message: |
+    Sua função é responder à entrada do usuário utilizando **exclusivamente os conteúdos oficiais da Insightiva**, que abrangem:
+
+    - FAQ da empresa  
+    - Textos institucionais do site  
+    - Documentos sobre diagnósticos culturais, onboarding, planos, benefícios e metodologia
+
+    ✅ Siga este fluxo:
+
+    1. **Identifique se é uma saudação** (ex: “oi”, “olá”, “tudo bem?”).  
+      - Se for, responda com tom gentil e acolhedor, reforçando que está à disposição.
+
+    2. **Reformule internamente a pergunta para garantir clareza e alinhamento com os temas da Insightiva**.  
+      - Se a pergunta estiver ambígua, peça reformulação com gentileza.
+
+    3. **Verifique se a pergunta está dentro do escopo esperado**:  
+      - Diagnóstico cultural  
+      - Tipos culturais, valores, níveis de consciência  
+      - Aplicação do onboarding  
+      - Planos oferecidos  
+      - Benefícios e diferenciais  
+      - Avaliação 360  
+      - Funcionalidades da plataforma  
+      - Parceria com consultores
+
+    4. **Se estiver fora do escopo (ex: política, religião, suporte técnico ou dúvidas pessoais)**:  
+      - Responda com:  
+        > “Sou um agente especializado nos conteúdos da Insightiva. Posso te ajudar com temas relacionados aos nossos diagnósticos, planos, cultura e onboarding!”
+
+    5. **Se a informação não estiver nos arquivos vetorizados**:  
+      - Diga com transparência:  
+        > "Desculpe, não encontrei essa informação nos conteúdos da Insightiva."
+
+    🔒 Exemplos de atuação segura e precisa:
+
+    - Pergunta fora do escopo:  
+      > “Sou um agente especializado nos conteúdos da Insightiva. Posso te ajudar com temas relacionados aos nossos diagnósticos, planos, cultura e onboarding!”
+
+    - Pergunta confusa:  
+      > “Você pode reformular a pergunta, por favor? Quero garantir que minha resposta seja precisa e útil.”
+
+    - Conteúdo ausente:  
+      > “Essa informação não está presente nos documentos oficiais da Insightiva. Por segurança, respondo apenas com base no conteúdo validado.”
+
+    ❌ Sob nenhuma circunstância delegue esta pergunta a outro agente, mesmo que o conteúdo esteja fora do escopo.  
+    Siga estritamente as instruções acima: reformule, peça esclarecimentos ou informe a ausência da informação com a resposta padrão.
+
+    ✅ Siga obrigatoriamente estas etapas antes de gerar sua resposta:
+
+      1. **Identifique se a entrada é uma saudação** (ex: "oi", "olá", "bom dia", "tudo bem?").  
+        - Se for, responda com acolhimento gentil, tom amigável e alinhado à linguagem institucional da Insightiva.
+
+      2. **Reformule internamente a pergunta** para garantir que ela está claramente relacionada aos temas da Insightiva.
+
+      3. **Se a pergunta estiver vaga, ambígua ou difícil de associar ao conteúdo**, **não tente responder diretamente**. Em vez disso:  
+        - Informe com gentileza que a pergunta não ficou totalmente clara.  
+        - Solicite ao usuário que detalhe melhor o que deseja saber.  
+        - Quando possível, indique caminhos ou temas relacionados ao conteúdo disponível  
+          (ex: "Você gostaria de saber mais sobre nossos planos? Ou deseja entender como funciona nosso diagnóstico cultural?").
+
+      4. **Caso a informação solicitada não esteja presentes**, responda com a frase abaixo, **sem alterações**:  
+        > "Desculpe, não encontrei essa informação nos conteúdos da Insightiva."
+
+    ❌ Não utilize conhecimento próprio, suposições ou informações externas.  
+    ❌ Não utilize nenhuma ferramenta além das explicitamente permitidas.  
+    ❌ Não adivinhe respostas nem tente "complementar" com informações fora do escopo.  
+
+    🌐 Sempre responda em português, mesmo que a pergunta esteja em outro idioma.
+
+  embedding_model:
+    type: "text-embedding-3-small"
+  #   openai_embedding_max_tokens: 8191
+
+
+# Configuração Ollama
+ollama:
+  type: llama3
+  provider: ollama
+  base_url: http://localhost:11434
+  temperature: 0.1
+  additional_kwargs:
+    num_predict: 800
+  embedding_model:
+      type: "llama3"
+
+# Parâmetros de confiança e validação
+confidence:
+  threshold: 0.9                # Confiança mínima geral aceitável para manter a resposta
+  semantic_threshold: 0.90          # Similaridade semântica mínima entre resposta e FAQ
+  similarity_top_k: 5             # Número de documentos do FAQ considerados para validação
+  rerank_min_score: 0.9          # Score mínimo no reranker (ex: Cohere) para documento ser considerado relevante
+  use_semantic_validation: true    # Ativa validação semântica entre a resposta e o conteúdo do FAQ
+  min_confidence: 0.75           # Confiança mínima para aceitar a resposta final (fallback se menor)
+  min_confidence_override: 0.90      # Limiar alternativo para forçar aceitação da resposta em casos específicos
+  cohere_model: "rerank-multilingual-v2.0"  # Modelo usado no rerank dos documentos
+
+
+
+# Configuração dos Documentos FAQ
+faq_documents:
+  - ./storage/datasets/processed_texts/
+faq_json_path: ./storage/datasets/knowledge_base/FAQ_Exemplo_LIMPO.json
+
+# Indexação
+indexing:
+  chunk_size: 800
+  overlap: 200
+
+# Validação e Reranker
+modelo_validacao: "ollama"  # gpt4 ou ollama
+retrieval:
+  reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+  subquestion_enabled: true
+  top_k: 15
+
+# Configuração DeepLake e armazenamento
+deeplake_dataset_path: ./data/faq_index
+storage:
+  conversations_path: ./storage/conversations
+  deep_lake_path: ./storage/deep_lake_db
+  processed_texts_directory: ./storage/datasets/processed_texts
+  raw_data: ./storage/datasets/raw_data
+  sessions_path: ./storage/sessions
+  vector_store_path: ./storage/deeplake_local
+
+# Debug e logs
+debug:
+  log_retrieved_chunks: true
+  log_similarity_scores: true
+
+# Mensagens padrão
+fallback_message: "Essa pergunta está fora do escopo do FAQ. Por favor, pergunte algo relacionado ao nosso conteúdo."
+messages:
+  fallback_not_found: "Desculpe, não encontrei essa informação no FAQ da Insightiva."
+  fallback_semantic_fail: "A resposta não está suficientemente apoiada no conteúdo atual. Você pode reformular ou consultar nosso time."
+  prompt_reinforcement: |
+    [INSTRUÇÃO]: Responda apenas com base no conteúdo do FAQ da Insightiva.
+    Se não houver correspondência, diga: 'Essa pergunta está fora do escopo do FAQ.'
+
+
+# Sessões
+session:
+  idle_timeout: 300
+  notify_user: true
+
+# Preprocessamento
+preprocessing:
+  clean_dir: true
+
+# Google API (para integração com Drive)
+google:
+  drive_folder_id: ${GOOGLE_DRIVE_FOLDER_ID}
+  service_account_file: ${GOOGLE_SERVICE_ACCOUNT_FILE}
+
+
+notification_warning_bot:
+  - Desculpe, não encontrei essa informação no FAQ da Insightiva.
+  - Lamento, mas essa informação não está disponível no FAQ da Insightiva.
+  - Essa resposta não está presente no FAQ da Insightiva.
+  - Não localizei essa informação no FAQ oficial da Insightiva.
+  - Infelizmente, essa informação não consta no FAQ da Insightiva.
+  - Essa dúvida não está respondida no FAQ da Insightiva.
+  - A resposta que você procura não está no FAQ da Insightiva.
+  - Não encontrei essa informação nos documentos da Insightiva.
+  - Essa informação não está registrada no conteúdo do FAQ da Insightiva.
+  - Desculpe, não temos essa resposta disponível no FAQ da Insightiva no momento.
+
+
+# Configurações Web
+web_pages:
+- https://Insightiva.ai/
+- https://Insightiva.ai/feed/
+- https://Insightiva.ai/comments/feed/
+- https://Insightiva.ai/wp-json/
+- https://Insightiva.ai/wp-json/wp/v2/pages/223168
+- https://Insightiva.ai/wp-json/oembed/1.0/embed?url=https%3A%2F%2FInsightiva.ai%2F
+- https://Insightiva.ai/wp-json/oembed/1.0/embed?url=https%3A%2F%2FInsightiva.ai%2F&#038;format=xml
+- https://Insightiva.ai/wp-content/uploads/2024/04/cropped-favicon-Insightiva-32x32.png
+- https://Insightiva.ai/wp-content/uploads/2024/04/cropped-favicon-Insightiva-192x192.png
+- https://Insightiva.ai/wp-content/uploads/2024/04/cropped-favicon-Insightiva-180x180.png
+- https://Insightiva.ai/planos/
+- https://Insightiva.ai/parceiros/
+- https://Insightiva.ai/blog/
+- https://Insightiva.ai/faq/
+- https://Insightiva.ai/contato/
+- https://Insightiva.ai/cadastro-demo/
+- https://Insightiva.ai/cadastro-demo
+- https://Insightiva.ai/planos
+- https://Insightiva.ai/beneficios
+- https://facebook.com/br.Insightiva
+- https://www.instagram.com/br.Insightiva/
+- https://Insightiva.ai/termos-de-servico/
+- https://Insightiva.ai/politica-de-privacidade/
+
+# Saudação e mensagens de boas-vindas
+welcome_messages:
+  - Olá! Em que posso te ajudar sobre os serviços da Insightiva?
+  - Oi! Como posso te ajudar hoje com a Insightiva?
+  - Bem-vindo(a)! Está buscando alguma informação sobre nossos serviços?
+  - Saudações! Posso te ajudar com algo da Insightiva?
+  - Oi, tudo bem? Como posso auxiliar você nos serviços da Insightiva?
+  - Olá! Precisa de ajuda com algum dos nossos serviços?
+  - Seja bem-vindo(a) à Insightiva! Em que posso te ajudar?
+  - Estou aqui para te ajudar com os serviços da Insightiva. Como posso começar?
+  - Olá! Fico feliz em ajudar. O que você gostaria de saber sobre a Insightiva?
+  - Oi! Pode perguntar à vontade. Estou aqui para ajudar com informações sobre a Insightiva.
+
+# Filtros anti-prompt-injection e saudações padrão (mantidos conforme original)
+injetores:
+  - ignore
+  - desconsidere
+  - esqueça
+  - esquece
+  - mude de comportamento
+  - reformule sua resposta
+  - não siga as instruções anteriores
+  - desobedeça
+  - override
+  - bypass
+  - desativar
+  - delete
+  - remova
+  - desligue
+  - disable
+  - alterar personalidade
+  - reset
+  - ignore as regras
+  - fingir que
+  - pretenda ser
+  - roleplay
+  - você agora é
+  - assuma que
+  - hack
+  - substitua
+  - comporte-se como
+  - não responda como você mesmo
+  - circumvent
+  - contornar
+  - trapacear
+  - exploit
+  - ignore previous instructions
+  - não atue como
+  - não se limite
+  - limite removido
+  - ignore sua programação
+  - ignore suas restrições
+  - break character
+  - não mencione
+  - responda como
+  - simule
+  - ignore safety
+  - ignore safety guidelines
+  - responda sem filtro
+  - sem censura
+  - sem restrições
+  - sem limitações
+  - ignore regras
+  - ignore guidelines
+  - ignore sua função
+  - você foi reprogramado
+  - comando root
+  - admin mode
+  - modo administrador
+  - debug mode
+  - engineering mode
+  - modo engenheiro
+  - sem ética
+  - modo sem restrições
+  - desbloqueie
+  - libere
+  - destrave
+  - rebele-se
+  - ignore security
+  - você está livre
+  - você não tem regras
+  - instrução override
+  - ignore os limites
+  - execute este comando
+  - system override
+  - siga este comando em vez disso
+  - permita
+  - forneça a verdade
+  - responda honestamente
+  - ignore sua moralidade
+  - ignore alinhamento
+  - você é um personagem
+  - diga o que realmente pensa
+  - não tenha medo de ser cancelado
+
+salutations:
+  - oi
+  - olá
+  - ola
+  - bom dia
+  - boa tarde
+  - boa noite
+  - e aí
+  - eai
+  - e aê
+  - eaí
+  - eae
+  - tudo bem
+  - tudo bom
+  - como vai
+  - como está
+  - como estás
+  - salve
+  - fala aí
+  - fala
+  - opa
+  - beleza
+  - blz
+  - yo
+  - yo!
+  - yoo
+  - yoo!
+  - alô
+  - alooo
+  - oiê
+  - oi oi
+  - oie
+  - oizinho
+  - boas
+  - hey
+  - hello
+  - hi
+  - heyo
+  - oi meu chapa
+  - oi meu caro
+  - saudações
+  - saudações cordiais
+  - bom te ver
+  - que bom te ver
+
+setup_docs:
+  max_document_size: 4000
+
+translate: true
+
+guardrails:
+  valid_topics:
+    - diagnóstico cultural
+    - cultura organizacional
+    - clima organizacional
+    - análise de valores
+    - valores organizacionais
+    - onboarding
+    - tipos culturais
+    - artefatos culturais
+    - comportamentos organizacionais
+    - employee experience
+    - engajamento
+    - feedback organizacional
+    - governança cultural
+    - transformação cultural
+    - comunicação interna
+    - perguntas abertas
+    - metodologia da pesquisa
+    - aplicação da pesquisa
+    - resultados da pesquisa
+    - dashboard da Insightiva
+    - inteligência artificial na análise
+    - personalização da pesquisa
+    - inclusão e acessibilidade
+    - privacidade e anonimato
+    - LGPD e segurança de dados
+    - análise quantitativa
+    - análise qualitativa
+    - estratégias de mudança cultural
+    - facilitadores da pesquisa
+    - motivação e participação
+    - comunicação com líderes
+    - comunicação com colaboradores
+    - segmentação de resultados
+    - nível de consciência organizacional
+    - forças culturais
+    - alinhamento estratégico
+    - planos oferecidos
+    - benefícios e diferenciais da Insightiva
+    - avaliação 360           
+    - parceria com consultores  
+  invalid_topics:
+    - religião
+    - espiritualidade
+    - páscoa
+    - natal
+    - ovo
+    - animal
+    - mitologia
+    - fantasia
+    - ficção científica
+    - astrologia
+    - magia
+    - signos
+    - horóscopo
+    - política
+    - futebol
+    - celebridades
+    - séries
+    - filmes
+    - economia global
+    - guerra
+    - esportes
+    - videogames
+    - alimentos
+    - receitas culinárias
+    - cuidados com pets
+    - entretenimento
+    - viagens
+    - turismo
+    - moda
+    - beleza
+    - moda feminina
+    - moda masculina
+    - moda infantil
+    - moda juvenil
+    - moda feminina
+    - moda masculina
+    - moda infantil
+    - moda juvenil
+    - moda feminina
+    - moda masculina  
+    - moda infantil
+    - moda juvenil    
+    - moda feminina
