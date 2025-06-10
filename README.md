@@ -1,6 +1,6 @@
 # MyShowCase
 
-Welcome to **eTechShowCase**, a public repository showcasing my technical experiments, projects, and learning journey across various fields of technology.
+Welcome to **MyShowCase**, a public repository showcasing my technical experiments, projects, and learning journey across various fields of technology.
 
 ## 📌 About the Project
 This repository aims to:
