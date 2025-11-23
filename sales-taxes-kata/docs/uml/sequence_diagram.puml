@@ -1,0 +1,34 @@
+@startuml
+autonumber
+skinparam dpi 150
+
+actor User
+participant Main
+participant TaxConfigurationFactory
+participant TaxCalculator
+participant Product
+participant BasicSalesTax
+participant ImportDutyTax
+
+User -> Main : run main.py
+Main -> TaxConfigurationFactory : get_active_strategies("DEFAULT")
+TaxConfigurationFactory --> Main : [BasicSalesTax, ImportDutyTax]
+
+Main -> TaxCalculator : __init__(strategies)
+Main -> Product : create Product
+Product --> Main : Product instance
+
+Main -> TaxCalculator : get_total_tax(product)
+
+TaxCalculator -> BasicSalesTax : calculate_tax(product)
+BasicSalesTax --> TaxCalculator : basicTax
+
+TaxCalculator -> ImportDutyTax : calculate_tax(product)
+ImportDutyTax --> TaxCalculator : importTax
+
+TaxCalculator -> TaxCalculator : _round_tax(total)
+TaxCalculator --> Main : roundedTotal
+
+Main -> User : print(roundedTotal)
+
+@enduml
