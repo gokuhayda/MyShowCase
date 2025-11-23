@@ -1,0 +1,22 @@
+@startuml
+skinparam dpi 150
+
+package "Functional Core (Pure)" {
+    [domain.py\nProduct]
+    [contract.py\nTaxStrategy]
+    [concrete.py\nStrategies]
+    [orchestrator.py\nTaxCalculator]
+}
+
+package "Imperative Shell (Impure)" {
+    [main.py]
+    [factory.py\nComposition Root]
+}
+
+[main.py] --> [factory.py\nComposition Root]
+[factory.py\nComposition Root] --> [orchestrator.py\nTaxCalculator]
+[orchestrator.py\nTaxCalculator] --> [contract.py\nTaxStrategy]
+[contract.py\nTaxStrategy] --> [concrete.py\nStrategies]
+[concrete.py\nStrategies] --> [domain.py\nProduct]
+
+@enduml
