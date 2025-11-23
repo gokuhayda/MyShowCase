@@ -26,9 +26,9 @@ Esse padrão é altamente valorizado em entrevistas TW:
 """
 
 from decimal import Decimal
-from domain import Product
-from factory import TaxConfigurationFactory
-from orchestrator import TaxCalculator
+from kata.domain import Product
+from kata.factory import TaxConfigurationFactory
+from kata.orchestrator import TaxCalculator
 
 
 if __name__ == '__main__':
