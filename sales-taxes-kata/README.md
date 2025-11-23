@@ -1,53 +1,53 @@
+
 # 🧠 Sales Taxes Kata — A Thoughtworks‑Style Engineering Exercise
 
 Este repositório apresenta uma implementação profissional do *Sales Taxes Problem*, estruturada segundo práticas amplamente utilizadas em consultorias de elite como a **Thoughtworks**.  
-O foco aqui não é apenas “fazer funcionar”, mas demonstrar:
-
-- Engenharia de software rigorosa  
-- Arquitetura pensada  
-- Isolamento de efeitos colaterais  
-- Abordagem funcional + orientação a objetos  
-- Extensibilidade real (OCP)  
-- Polimorfismo seguro (LSP)  
-- Clareza de comunicação e verbalização técnica  
-- Testabilidade (TDD friendly)
-
-Se você está se preparando para entrevistas sênior — especialmente TW — este repositório demonstra exatamente o tipo de raciocínio, design e clareza técnica esperado.
+O objetivo é demonstrar engenharia de software sênior, arquitetura clara e comunicação técnica de alto nível.
 
 ---
 
-# 🌐 Arquitetura Geral — Functional Core / Imperative Shell
+# 🏷️ Badges
 
-A arquitetura adota o padrão defendido historicamente pela Thoughtworks:
+![Python Version](https://img.shields.io/badge/python-3.11+-blue)
+![Tests](https://img.shields.io/badge/tests-passing-green)
+![Design](https://img.shields.io/badge/architecture-FunctionalCore%2FImperativeShell-purple)
+![Pattern](https://img.shields.io/badge/pattern-Strategy-orange)
+![SOLID](https://img.shields.io/badge/SOLID-Compliant-brightgreen)
 
-**Functional Core (puro):**  
-- Regras de negócio determinísticas  
-- Zero side-effects  
-- Testes simples e estáveis  
-- Facilidade para refatoração  
+---
 
-**Imperative Shell (impuro):**  
+# 🌐 Arquitetura — Functional Core, Imperative Shell & Strategy-Driven Design
+
+A arquitetura segue um padrão muito valorizado pela Thoughtworks:
+
+## **Functional Core (puro)**
+- Regras de negócio 100% determinísticas  
+- Zero side effects  
+- Fácil de testar e refatorar  
+- Modelos e cálculos puros
+
+## **Imperative Shell (impuro)**
 - Entrada/saída  
 - Arredondamentos  
-- Configuração (factory)  
+- Configuração (Factory Pattern)  
 - Composição do sistema  
 
-### Motivação arquitetural
-A TW valoriza muito *separação de responsabilidades, testabilidade e clareza cognitiva*.  
-A divisão clara entre *pureza* e *efeitos colaterais* ajuda a criar sistemas mais previsíveis, fáceis de evoluir e resilientes a mudanças — exatamente o perfil de design avaliado em pair programming.
+Essa separação reduz acoplamento, aumenta previsibilidade e facilita pairing.
 
 ---
 
-# 🧱 Estrutura do Projeto
+# 📁 Estrutura do Projeto
 
 ```
-📁 project/
- ┣ domain.py            → Entidade Product (imutável, funcional)
- ┣ contract.py          → Abstração TaxStrategy (DIP + ISP)
- ┣ concrete.py          → Estratégias concretas (Strategy Pattern)
- ┣ orchestrator.py      → TaxCalculator (polimorfismo + LSP)
- ┣ factory.py           → Composição e ativação das estratégias
- ┗ tests/               → Testes unitários (TDD)
+📁 sales-taxes-kata/
+ ┣ 🐍 main.py                    → Entry point (Imperative Shell)
+ ┣ 📦 kata/                      → Functional Core + business logic
+ ┃   ┣ domain.py                 → Product entity
+ ┃   ┣ contract.py               → TaxStrategy (ISP + DIP)
+ ┃   ┣ concrete.py               → Concrete strategies (Strategy Pattern)
+ ┃   ┣ orchestrator.py           → TaxCalculator (LSP + OCP)
+ ┃   ┗ factory.py                → Composition root / wiring
+ ┗ 🧪 tests/                     → Unit tests (TDD)
 ```
 
 ---
@@ -55,48 +55,40 @@ A divisão clara entre *pureza* e *efeitos colaterais* ajuda a criar sistemas ma
 # 🧩 Padrões e Princípios Demonstrados
 
 ## ✔ Strategy Pattern
-Cada regra de imposto é encapsulada em uma “estratégia”.  
-O orquestrador **não sabe** que tipo de taxa está sendo aplicada.
+Cada imposto é isolado como uma estratégia independente.
 
-### Por que Thoughtworks gosta disso?
-- Remove condicionais (`if`, `elif`) difíceis de manter  
-- Permite evolução independente  
-- Reduz acoplamento entre política e mecanismo  
+- O orquestrador **não conhece** as classes concretas  
+- Extensões não quebram código existente  
+- Polimorfismo puro (LSP)
 
----
+## ✔ SOLID aplicado
 
-## ✔ SOLID aplicado de forma explícita
+### **S — SRP**  
+Cada classe tem uma única razão para mudar.
 
-### **S — SRP**
-Cada módulo tem uma única razão para mudar.
+### **O — OCP**  
+Novos impostos?  
+Basta criar uma nova estratégia — sem tocar no `TaxCalculator`.
 
-### **O — OCP**
-Novas taxas?  
-Crie uma classe.  
-Não toque no orquestrador.
+### **L — LSP**  
+Todas as estratégias podem ser substituídas sem quebrar o orquestrador.
 
-### **L — LSP**
-O `TaxCalculator` confia que todas as estratégias respeitam o contrato.
+### **I — ISP**  
+Interface pequena, clara e específica.
 
-### **I — ISP**
-A interface é pequena, intencional e limpa.
-
-### **D — DIP**
-Orquestrador depende da *abstração*, não das implementações.
-
-Este kata é praticamente um showcase perfeito de SOLID aplicado em código real.
+### **D — DIP**  
+O orquestrador depende de abstrações, não implementações.
 
 ---
 
-# 🔎 Código de Exemplo — Uso Completo
+# 🔎 Exemplo de Uso
 
 ```python
-from factory import TaxConfigurationFactory
-from orchestrator import TaxCalculator
-from domain import Product
+from kata.factory import TaxConfigurationFactory
+from kata.orchestrator import TaxCalculator
+from kata.domain import Product
 from decimal import Decimal
 
-# Estratégias ativas de imposto (DEFAULT = SalesTax + ImportDuty)
 strategies = TaxConfigurationFactory.get_active_strategies()
 
 calculator = TaxCalculator(strategies)
@@ -110,7 +102,7 @@ product = Product(
 
 tax = calculator.get_total_tax(product)
 
-print(f"Total tax: {tax}")  
+print(f"Total tax: {tax}")
 ```
 
 ### Saída esperada:
@@ -120,13 +112,9 @@ Total tax: 7.15
 
 ---
 
-# 🎯 Regras de Arredondamento — Estilo Thoughtworks
+# 🎯 Regra de Arredondamento (Estilo Thoughtworks)
 
-```
-Sempre arredonde PARA CIMA para o múltiplo de 0.05 mais próximo.
-```
-
-Exemplos:
+Sempre arredonde **para cima** até o múltiplo de 0.05 mais próximo.
 
 | Valor | Arredondado |
 |-------|-------------|
@@ -134,67 +122,47 @@ Exemplos:
 | 41.76 | 41.80 |
 | 0.01  | 0.05  |
 
-Regra implementada em `orchestrator.py`.
+Implementado em `TaxCalculator._round_tax`.
 
 ---
 
 # 🧪 Testes (TDD)
 
-Exemplo de teste para imposto básico:
+Exemplo:
 
 ```python
 def test_basic_tax_non_exempt():
-    p = Product("Book", Decimal("10.00"), is_imported=False, is_exempt=False)
+    p = Product("Book", Decimal("10.00"), False, False)
     strategies = [BasicSalexTax()]
     tax = TaxCalculator(strategies).get_total_tax(p)
     assert tax == Decimal("1.00")
 ```
 
-Exemplo para importados:
+Testes são:
 
-```python
-def test_import_duty():
-    p = Product("Chocolate Importado", Decimal("10.00"), True, True)
-    strategies = [ImportDutyTax()]
-    tax = TaxCalculator(strategies).get_total_tax(p)
-    assert tax == Decimal("0.50")
-```
-
-### Por que TDD combina perfeitamente aqui?
-- Classes puras → baixa complexidade cognitiva  
-- Funções determinísticas → testes confiáveis  
-- Princípios SOLID → testes independentes  
+- pequenos  
+- determinísticos  
+- independentes  
+- fáceis de ler  
+- guiados por comportamento  
 
 ---
 
-# 🧠 Senioridade: O Que Este Kata Demonstra
+# 🏆 Por que esta solução combina com a cultura da Thoughtworks?
 
-✔ entendimento profundo de abstrações  
-✔ uso intencional de padrões  
-✔ testabilidade pensada desde o início  
-✔ domínio de princípios de design  
-✔ clareza arquitetural (core vs shell)  
-✔ comunicação e nomeação profissional  
-✔ código extensível e sustentável  
-✔ orientação à prática TW (verbalização, trade-offs, decisões arquiteturais)  
+Este kata demonstra:
 
-Este repositório mostra não apenas como você codifica —  
-mas **como você pensa software**.
+- separação intencional de responsabilidades  
+- código orientado a princípios, não a atalhos  
+- pureza do domínio + orquestração explícita  
+- uso forte de abstrações  
+- testabilidade e clareza arquitetural  
+- decisões explicáveis em pairing  
+
+Esse é exatamente o tipo de raciocínio que a TW avalia em entrevistas.
 
 ---
 
 # 📜 Licença
+
 MIT License.
-
----
-
-Se quiser integrar:
-
-- 🌐 versão em inglês  
-- 📈 Github Actions (CI)  
-- 📊 cobertura de testes  
-- 🎨 banner visual “Sales Taxes Kata — Thoughtworks Edition”  
-
-Posso gerar tudo automaticamente.  
-Só pedir!
-
