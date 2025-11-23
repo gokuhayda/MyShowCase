@@ -149,7 +149,7 @@ Testes são:
 
 ---
 
-# 🏆 Por que esta solução combina com a cultura da Thoughtworks?
+# 🏆 Por que esta solução combina com a cultura da elite DS?
 
 Este kata demonstra:
 
