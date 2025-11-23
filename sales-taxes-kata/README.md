@@ -113,7 +113,7 @@ Total tax: 7.15
 
 ---
 
-# 🎯 Regra de Arredondamento (Estilo Thoughtworks)
+# 🎯 Regra de Arredondamento
 
 Sempre arredonde **para cima** até o múltiplo de 0.05 mais próximo.
 
