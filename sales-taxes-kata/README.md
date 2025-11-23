@@ -1,5 +1,5 @@
 
-# 🧠 Sales Taxes Kata — A Thoughtworks‑Style Engineering Exercise
+# 🧠 Sales Taxes Kata — A Engineering Exercise
 
 Este repositório apresenta uma implementação profissional do *Sales Taxes Problem*, estruturada segundo práticas amplamente utilizadas em consultorias de elite.  
 O objetivo é demonstrar engenharia de software sênior, arquitetura clara e comunicação técnica de alto nível.
