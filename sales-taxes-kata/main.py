@@ -19,7 +19,7 @@ Aqui nós apenas:
 3. Chamamos o orquestrador
 4. Exibimos resultados
 
-Esse padrão é altamente valorizado em entrevistas TW:
+Esse padrão é altamente valorizado em entrevistas:
 • o domínio é puro
 • as regras são extensíveis
 • o main é apenas um cliente do sistema
