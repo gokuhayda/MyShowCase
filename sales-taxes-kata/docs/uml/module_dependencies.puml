@@ -1,0 +1,12 @@
+@startuml
+skinparam dpi 150
+
+[kata/domain.py] --> [kata/contract.py]
+[kata/contract.py] --> [kata/concrete.py]
+[kata/contract.py] --> [kata/orchestrator.py]
+[kata/concrete.py] --> [kata/orchestrator.py]
+[kata/factory.py] --> [kata/concrete.py]
+[kata/factory.py] --> [kata/orchestrator.py]
+[main.py] --> [kata/factory.py]
+
+@enduml
