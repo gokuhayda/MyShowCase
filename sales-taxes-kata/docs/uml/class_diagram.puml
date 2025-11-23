@@ -1,1 +1,43 @@
 
+@startuml
+skinparam classAttributeIconSize 0
+skinparam dpi 150
+
+class Product {
+    +name: str
+    +price: Decimal
+    +is_imported: bool
+    +is_exempt: bool
+}
+
+interface TaxStrategy {
+    +calculate_tax(product: Product): Decimal
+}
+
+class BasicSalesTax {
+    +RATE: Decimal
+    +calculate_tax(product: Product): Decimal
+}
+
+class ImportDutyTax {
+    +RATE: Decimal
+    +calculate_tax(product: Product): Decimal
+}
+
+class TaxCalculator {
+    -strategies: List<TaxStrategy>
+    +get_total_tax(product: Product): Decimal
+    +_round_tax(value: Decimal): Decimal
+}
+
+class TaxConfigurationFactory {
+    +get_active_strategies(region: str): List<TaxStrategy>
+}
+
+Product --> TaxStrategy : usado por
+TaxStrategy <|.. BasicSalesTax
+TaxStrategy <|.. ImportDutyTax
+TaxCalculator --> TaxStrategy : usa
+TaxConfigurationFactory --> TaxStrategy : fornece estratégias
+
+@enduml
