@@ -48,7 +48,7 @@ Essa separação reduz acoplamento, aumenta previsibilidade e facilita pairing.
  ┃   ┣ orchestrator.py           → TaxCalculator (LSP + OCP)
  ┃   ┗ factory.py                → Composition root / wiring
  ┗ 🧪 tests/                     → Unit tests (TDD)
- ┗ 🧪 docs/                      → Diagramas UML
+ ┗ 🧪 docs/                      → Diagramas UML + GLOSSARY
 ```
 
 ---
