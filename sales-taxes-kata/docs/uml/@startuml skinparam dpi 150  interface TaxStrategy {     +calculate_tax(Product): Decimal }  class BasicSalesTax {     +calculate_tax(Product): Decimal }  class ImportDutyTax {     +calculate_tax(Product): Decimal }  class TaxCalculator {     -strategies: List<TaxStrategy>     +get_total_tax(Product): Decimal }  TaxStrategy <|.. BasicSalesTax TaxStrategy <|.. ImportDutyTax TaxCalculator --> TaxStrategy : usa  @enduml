@@ -1,0 +1,25 @@
+@startuml
+skinparam dpi 150
+
+interface TaxStrategy {
+    +calculate_tax(Product): Decimal
+}
+
+class BasicSalesTax {
+    +calculate_tax(Product): Decimal
+}
+
+class ImportDutyTax {
+    +calculate_tax(Product): Decimal
+}
+
+class TaxCalculator {
+    -strategies: List<TaxStrategy>
+    +get_total_tax(Product): Decimal
+}
+
+TaxStrategy <|.. BasicSalesTax
+TaxStrategy <|.. ImportDutyTax
+TaxCalculator --> TaxStrategy : usa
+
+@enduml
