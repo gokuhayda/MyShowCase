@@ -1,39 +1,54 @@
+import numpy as np
 from scipy.stats import beta
 from ab_testing_advanced_cohens_h import ExperimentStrategy
 
 class BayesianSimulationStrategy(ExperimentStrategy):
     """
-    Estima tamanho de amostra via Simulação de Monte Carlo.
-    Pergunta: 'Quantas amostras preciso para que, se a diferença for real,
-    eu tenha X% de certeza que B > A?'
-    """
+    Estratégia Bayesiana para estimar tamanho de amostra em Testes A/B.
     
-    def calculate_sample_size(self, baseline: float, mde: float, alpha: float = 0.05, power: float = 0.8) -> int:
-        # Simplificação para o Kata: Bayesiano geralmente precisa de menos dados,
-        # mas computacionalmente é mais pesado simular.
-        # Aqui usamos uma heurística ou simulação rápida.
-        
-        target = baseline + mde
-        required_certainty = 1 - alpha # ex: 95%
-        
-        # Simulação iterativa (simplificada para didática)
+    A pergunta aqui é:
+        "Se a diferença for real, quantas observações preciso para ter X% de certeza 
+        de que a Variante B é melhor do que A?"
+    
+    - Usamos priors Beta(1,1) (não informativos)
+    - Simulação Monte Carlo dos posteriores
+    - Cálculo empírico de P(B > A)
+    """
+
+    def calculate_sample_size(
+        self, 
+        baseline: float, 
+        mde: float, 
+        alpha: float = 0.05, 
+        power: float = 0.8
+    ) -> int:
+
+        # Probabilidade-alvo: P(B > A)
+        required_certainty = 1 - alpha  # ex: 95%
+        target = baseline + mde         # taxa da variante B
+
+        # Loop incremental de busca (simples e didático)
         for n in range(100, 10000, 100):
-            # Simulamos conversões esperadas
+
+            # Conversões esperadas para cada variante
             conv_a = int(n * baseline)
             conv_b = int(n * target)
-            
-            # Posterior Beta(alpha+conv, beta+n-conv)
-            # Priors fracos (1,1)
-            posterior_a = beta(1 + conv_a, 1 + n - conv_a)
-            posterior_b = beta(1 + conv_b, 1 + n - conv_b)
-            
-            # P(B > A) aproximado via amostragem
+
+            # Posteriores Beta
+            post_a = beta(1 + conv_a, 1 + n - conv_a)
+            post_b = beta(1 + conv_b, 1 + n - conv_b)
+
+            # Amostragem Monte Carlo
             samples = 2000
-            samp_a = posterior_a.rvs(samples)
-            samp_b = posterior_b.rvs(samples)
+            samp_a = post_a.rvs(samples)
+            samp_b = post_b.rvs(samples)
+
+            # Estimativa empírica de P(B > A)
             prob_b_better = np.mean(samp_b > samp_a)
-            
+
+            # Critério de parada
             if prob_b_better >= required_certainty:
                 return n
-                
-        return 10000 # Max cap
+
+        # Caso extremo (não convergiu)
+        return 10000
