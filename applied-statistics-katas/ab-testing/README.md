@@ -1,4 +1,4 @@
-# 📊 A/B Testing Kata — Sample Size Calculator (Thoughtworks Edition)
+# 📊 A/B Testing Kata — Sample Size Calculator
 
 > “Conduct experiments and develop hypotheses using advanced statistics.”
 
