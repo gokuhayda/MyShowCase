@@ -1,4 +1,4 @@
-# 📘 Glossário Técnico - Sessão 4: O Sistema de Frete Sênior
+# 📘 Glossário 
 
 Este glossário ajuda a traduzir conceitos de Python moderno e Design Patterns para stakeholders, explicando termos técnicos e mostrando exemplos práticos.
 
