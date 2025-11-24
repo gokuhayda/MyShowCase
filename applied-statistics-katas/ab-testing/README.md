@@ -34,7 +34,7 @@ Esse cálculo é essencial para evitar:
 
 - Testes inconclusivos  
 - Peeking (olhar antes da hora)  
-- P-hacking  ((ou data dredging, fishing) é um erro estatístico grave que acontece quando alguém manipula o processo de análise até “encontrar”
+- P-hacking  (ou data dredging, fishing) é um erro estatístico grave que acontece quando alguém manipula o processo de análise até “encontrar”
 um resultado estatisticamente significativo — mesmo quando esse resultado não é real.É basicamente “forçar” os dados a contar uma história que eles não contam.)
 - Decisões enviesadas baseadas em intuição  
 
@@ -124,14 +124,19 @@ Isso se chama **Peeking** (Early Stopping sem correção).
 ---
 
 ## 🛠️ Como Executar
+
+```python
 from ab_testing import SampleSizeCalculator
 
 calculator = SampleSizeCalculator()
 
 tamanho_amostra = calculator.calculate_sample_size(
-baseline_rate=0.10,
-minimum_detectable_effect=0.02
+    baseline_rate=0.10,
+    minimum_detectable_effect=0.02
 )
+
+print(f"Necessários {tamanho_amostra} usuários por variante.")
+
 
 print(f"Necessários {tamanho_amostra} usuários por variante.")
 
