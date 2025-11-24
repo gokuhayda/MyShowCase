@@ -78,9 +78,10 @@ A estatística aqui não é tratada como números abstratos, mas como ferramenta
 
 ## 📁 Estrutura do Projeto
 applied-statistics-katas/
-    └── ab-testing/
-            ├── README.md
-            └── ab_testing.py
+└── ab-testing/
+    ├── README.md
+    └── ab_testing.py
+
 ---
 
 ## 🔍 Sobre a Implementação
