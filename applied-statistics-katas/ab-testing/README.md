@@ -142,3 +142,20 @@ print(f"Necessários {tamanho_amostra} usuários por variante.")
 print(f"Necessários {tamanho_amostra} usuários por variante.")
 ```
 ---
+
+## 📈 Interpretação do Resultado
+
+Imagine que o cálculo retorne **6.000 usuários por grupo**.
+
+Se seu site recebe **100 usuários por dia**, então:
+
+
+### Conclusão
+
+- ➡ **O teste é inviável**  
+- ➡ **Sugere alternativas**, como:  
+  - testes qualitativos  
+  - análise bayesiana  
+  - simulação  
+  - bootstrapping  
+  - experimentos sintéticos  
