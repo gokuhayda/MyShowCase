@@ -16,7 +16,7 @@ import unittest
 import pandas as pd
 import numpy as np
 from unittest.mock import patch, Mock
-from cleaners import SalesDataCleaner, CleanerStrategy
+from .cleaners import SalesDataCleaner, CleanerStrategy
 
 
 class TestSalesDataCleaner(unittest.TestCase):
