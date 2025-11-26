@@ -71,7 +71,7 @@ Para um Sênior, a resposta não é apenas "sintaxe", é sobre **Design de Códi
 
 O seu código é limpo e pede as dependências no construtor. Você não precisa de "magia negra" para substituir nada, você apenas entrega o mock na mão da classe.
 
-**Mentalidade ThoughtWorks:** ✅ **PREFERIDO**. Mostra baixo acoplamento.
+**Mentalidade:** ✅ **PREFERIDO**. Mostra baixo acoplamento.
 
 ```python
 # ✅ Código Bem Desenhado (Com DI)
@@ -109,7 +109,7 @@ def test_analise():
 
 A classe cria o objeto sozinha ou importa uma função globalmente. Você não tem como "passar" o mock, então precisa usar `patch` para invadir o módulo e trocar a referência à força.
 
-**Mentalidade ThoughtWorks:** ⚠️ **NECESSÁRIO**, mas é sinal de acoplamento forte. Usado em código **Legado** ou **fronteiras de bibliotecas** (pandas, requests).
+**Mentalidade:** ⚠️ **NECESSÁRIO**, mas é sinal de acoplamento forte. Usado em código **Legado** ou **fronteiras de bibliotecas** (pandas, requests).
 
 ```python
 # ❌ Código Acoplado (Sem DI)
@@ -228,7 +228,7 @@ def test_pipeline():
     # ...
 ```
 
-### 🎓 Para a Entrevista ThoughtWorks
+### 🎓 Para a Entrevista 
 
 **Se perguntarem:** "Por que você usa `Mock()` em vez de `patch()`?"
 
