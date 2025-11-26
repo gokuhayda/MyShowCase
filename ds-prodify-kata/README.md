@@ -73,11 +73,12 @@ model = pipeline.run("vendas.csv")
 ## 📁 Estrutura do Projeto
 
 ```
-project/
-├── loaders.py          # Interface e implementação de carregamento
-├── cleaners.py         # Interface e implementação de limpeza
-├── trainers.py         # Lógica de treinamento
-├── orchestrator.py     # Orquestração da pipeline
+ds-prodify-kata
+/kata/
+    ├── loaders.py          # Interface e implementação de carregamento
+    ├── cleaners.py         # Interface e implementação de limpeza
+    ├── trainers.py         # Lógica de treinamento
+    ├── orchestrator.py     # Orquestração da pipeline
 └── tests/
     ├── test_loaders.py
     ├── test_cleaners.py
