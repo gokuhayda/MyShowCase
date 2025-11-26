@@ -11,7 +11,7 @@ Testa a funcionalidade de carregamento de dados, garantindo que:
 import unittest
 import pandas as pd
 from unittest.mock import patch, Mock
-from loaders import CsvLoader, LoaderStrategy
+from .loaders import CsvLoader, LoaderStrategy
 
 
 class TestCsvLoader(unittest.TestCase):
