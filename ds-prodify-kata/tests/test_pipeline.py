@@ -15,10 +15,10 @@ import pandas as pd
 from unittest.mock import Mock, patch, call
 from dataclasses import dataclass
 
-from orchestrator import TrainingPipeline
-from loaders import CsvLoader, LoaderStrategy
-from cleaners import SalesDataCleaner, CleanerStrategy
-from trainers import ModelTrainer
+from .orchestrator import TrainingPipeline
+from .loaders import CsvLoader, LoaderStrategy
+from .cleaners import SalesDataCleaner, CleanerStrategy
+from .trainers import ModelTrainer
 
 
 class TestTrainingPipelineStructure(unittest.TestCase):
