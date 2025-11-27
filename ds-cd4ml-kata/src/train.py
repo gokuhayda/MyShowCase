@@ -50,3 +50,6 @@ def train():
     os.makedirs("models", exist_ok=True)
     joblib.dump(model, "models/model.pkl")
     print("✅ Modelo salvo em models/model.pkl")
+
+if __name__ == "__main__":
+    train()
