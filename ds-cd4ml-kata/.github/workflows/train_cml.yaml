@@ -1,0 +1,34 @@
+name: Model Training & Evaluation
+
+on: [push]
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install Dependencies
+        run: |
+          pip install pandas scikit-learn joblib pytest
+          
+      - name: Train Model
+        run: |
+          python src/train.py
+          
+      - name: Run Quality Gates (Tests)
+        run: |
+          # Se este teste falhar, o pipeline para e o Pull Request fica vermelho ❌
+          python -m unittest src/tests/test_model_metrics.py
+          
+      - name: Write CML Report (Opcional - Simulação)
+        if: success()
+        run: |
+          echo "## Relatório de Treino 🚀" >> report.md
+          cat metrics/scores.json >> report.md
+          # Em um ambiente real com CML (Continuous Machine Learning),
+          # isso apareceria como comentário no seu PR.
