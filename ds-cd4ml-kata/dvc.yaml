@@ -1,0 +1,12 @@
+stages:
+  train:
+    cmd: python src/train.py
+    deps:
+      - src/train.py
+      # Se tivesse um arquivo de dados, estaria aqui:
+      # - data/raw/iris.csv
+    outs:
+      - models/model.pkl
+    metrics:
+      - metrics/scores.json:
+          cache: false
