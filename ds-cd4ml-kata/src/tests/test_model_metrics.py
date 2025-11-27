@@ -22,3 +22,7 @@ class TestModelQuality(unittest.TestCase):
         
         # O Threshold de Aceitação
         self.assertGreaterEqual(accuracy, 0.80, "❌ Modelo rejeitado: Acurácia abaixo de 80%")
+
+
+if __name__ == "__main__":
+    unittest.main()
