@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data (gerenciado pelo DVC)
+/data/raw/*
+/data/processed/*
+!/data/raw/.gitkeep
+!/data/processed/.gitkeep
+
+# IMPORTANTÍSSIMO: permitir arquivos .dvc em qualquer subpasta
+!data/**/*.dvc
+
+# Models (gerenciado pelo DVC)
+/models/*.pkl
+/models/*.h5
+/models/*.pt
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# DVC
+/dvc.lock
