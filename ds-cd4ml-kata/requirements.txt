@@ -1,0 +1,94 @@
+###########################################
+# CD4ML Requirements
+# Dependências organizadas por etapa do ciclo:
+# - Data Quality & Validation
+# - Feature Engineering & Model Training
+# - Experiment Tracking
+# - Model Packaging & Serving
+# - CI/CD, Versionamento e Infra de Dados
+###########################################
+
+###############################
+# 1. Core Data & ML
+###############################
+
+# Manipulação de dados tabulares e séries.
+pandas==2.2.1
+
+# Operações numéricas e matrizes; base científica do ecossistema Python.
+numpy==1.26.4
+
+# Algoritmos tradicionais de ML, validação, métricas, pipelines.
+scikit-learn==1.4.2
+
+
+###############################
+# 2. Data Validation & Quality Gates (MANDATÓRIO em CD4ML)
+###############################
+
+# Framework robusto para testes de qualidade de dados:
+# esquema, expectativas, profiling, data docs.
+great-expectations==0.18.15
+
+# Validação declarativa de DataFrames via type checking, schemas e constraints.
+pandera==0.18.3
+
+
+###############################
+# 3. Experiment Tracking (MLOps)
+###############################
+
+# Rastreio de experimentos, artefatos, métricas, modelos, registry.
+mlflow==2.12.1
+
+
+###############################
+# 4. Data & Model Drift Monitoring
+###############################
+
+# Monitoramento de drift, dashboards automáticos, métricas estatísticas.
+evidently==0.4.28
+
+
+###############################
+# 5. Versionamento de Dados e Modelos (DVC)
+###############################
+
+# Versionamento reprodutível de dados, pipelines e modelos.
+dvc==3.45.0
+
+# Integração S3 para armazenar dados/modelos versionados remotamente.
+dvc-s3==3.1.0
+
+
+###############################
+# 6. Testing & Quality Gates
+###############################
+
+# Framework principal de testes.
+pytest==8.1.1
+
+# Cálculo de cobertura de testes.
+pytest-cov==5.0.0
+
+
+###############################
+# 7. Utilities & Config
+###############################
+
+# Carregar variáveis de ambiente (.env) — essencial em CD4ML para separar config de código.
+python-dotenv==1.0.1
+
+# Leitura e escrita de YAML (pipelines, configs de experimentos, specs de dados).
+pyyaml==6.0.1
+
+
+###############################
+# 8. Model Serving (API de inferência)
+###############################
+
+# Framework leve e rápido para servir modelos como APIs REST.
+fastapi==0.115.0
+
+# Servidor de produção ASGI para rodar a API.
+uvicorn==0.30.1
