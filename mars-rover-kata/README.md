@@ -19,6 +19,7 @@ O enunciado completo está em: **problem.md**
 
 ## 📂 Estrutura do Projeto
 
+```
 mars-rover-kata/
 ├── README.md
 ├── problem.md
@@ -35,7 +36,7 @@ mars-rover-kata/
 ├── init.py
 ├── test_rover_basic.py
 └── test_rover_commands.py
-
+```
 
 
 ---
