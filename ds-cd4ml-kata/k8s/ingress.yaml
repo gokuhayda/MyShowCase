@@ -1,0 +1,177 @@
+# ============================================================================
+# Kubernetes Ingress - HTTP Routing
+# ============================================================================
+# Roteamento HTTP avançado com SSL/TLS
+#
+# Features:
+#   - Domain-based routing
+#   - Path-based routing
+#   - SSL/TLS termination
+#   - URL rewriting
+#   - Rate limiting
+#
+# Requires: Ingress Controller (nginx, traefik, etc)
+#
+# Install nginx-ingress:
+#   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml
+# ============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wine-quality-ingress
+  namespace: default
+  annotations:
+    # Ingress class
+    kubernetes.io/ingress.class: nginx
+    
+    # SSL redirect
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    
+    # CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"  # 100 requests/second
+    
+    # Timeout
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+    
+    # Body size (para uploads grandes)
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    
+    # Custom headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-API-Version: 1.0.0";
+      more_set_headers "X-ML-Model: RandomForest";
+
+spec:
+  # --------------------------------------------------------------------------
+  # TLS - SSL/TLS certificates
+  # --------------------------------------------------------------------------
+  tls:
+  - hosts:
+    - wine-api.example.com
+    - api.wine-quality.com
+    secretName: wine-api-tls  # Secret com certificado SSL
+  
+  # --------------------------------------------------------------------------
+  # Rules - Regras de roteamento
+  # --------------------------------------------------------------------------
+  rules:
+  
+  # Rule 1: Domain principal
+  - host: wine-api.example.com
+    http:
+      paths:
+      
+      # Path 1: API principal
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wine-quality-api
+            port:
+              number: 80
+      
+      # Path 2: Docs (opcional - pode restringir)
+      - path: /docs
+        pathType: Prefix
+        backend:
+          service:
+            name: wine-quality-api
+            port:
+              number: 80
+  
+  # Rule 2: Domain alternativo
+  - host: api.wine-quality.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wine-quality-api
+            port:
+              number: 80
+
+---
+# ============================================================================
+# TLS Secret - SSL Certificate
+# ============================================================================
+# Criar secret com certificado SSL:
+#   kubectl create secret tls wine-api-tls \
+#     --cert=path/to/cert.pem \
+#     --key=path/to/key.pem
+#
+# Ou usar cert-manager para gerar automaticamente (Let's Encrypt):
+#   https://cert-manager.io/
+# ============================================================================
+
+# Exemplo de secret TLS (não commitar cert real!)
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: wine-api-tls
+#   namespace: default
+# type: kubernetes.io/tls
+# data:
+#   tls.crt: <base64-encoded-cert>
+#   tls.key: <base64-encoded-key>
+
+# ============================================================================
+# NOTAS DE CONFIGURAÇÃO
+# ============================================================================
+#
+# 1. PATH TYPES
+# --------------
+# Prefix: Match qualquer path que COMEÇA com o especificado
+#   path: /api → matches /api, /api/predict, /api/v1/predict
+#
+# Exact: Match EXATO
+#   path: /api → matches APENAS /api
+#
+# ImplementationSpecific: Depende do Ingress Controller
+#
+# 2. RATE LIMITING
+# -----------------
+# nginx.ingress.kubernetes.io/limit-rps: "100"
+#   - 100 requests por segundo por IP
+#   - Excesso retorna 429 (Too Many Requests)
+#
+# Útil para:
+#   - Proteção contra DDoS
+#   - Fair usage
+#   - Cost control (API cobrada por request)
+#
+# 3. SSL/TLS
+# -----------
+# Opções:
+#   a) Self-signed (dev/test)
+#   b) Let's Encrypt (gratuito, cert-manager)
+#   c) Certificado comercial (prod enterprise)
+#
+# Criar self-signed (dev only):
+#   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+#     -keyout tls.key -out tls.crt \
+#     -subj "/CN=wine-api.example.com"
+#
+#   kubectl create secret tls wine-api-tls \
+#     --cert=tls.crt --key=tls.key
+#
+# 4. MULTIPLE DOMAINS
+# --------------------
+# Ingress pode rotear múltiplos domínios:
+#   - wine-api.example.com → wine-quality-api
+#   - monitoring.example.com → prometheus
+#   - logs.example.com → kibana
+#
+# 5. HEALTH CHECKS
+# -----------------
+# Ingress controller faz health checks automáticos usando:
+#   - Readiness probe dos pods
+#   - Se pod not ready → remove do load balancing
+#
+# ============================================================================

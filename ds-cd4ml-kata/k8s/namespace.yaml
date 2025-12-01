@@ -1,0 +1,108 @@
+# ============================================================================
+# Namespaces - Environment Isolation
+# ============================================================================
+# Separar ambientes (dev, staging, prod)
+#
+# Benefits:
+#   - Isolamento de recursos
+#   - RBAC por namespace
+#   - Resource quotas
+#   - Network policies
+# ============================================================================
+
+---
+# Development
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: development
+  labels:
+    environment: dev
+
+---
+# Staging
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    environment: staging
+
+---
+# Production
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    environment: prod
+
+---
+# ============================================================================
+# ResourceQuota - Limite de recursos por namespace
+# ============================================================================
+# Evita que um namespace consuma todos os recursos do cluster
+# ============================================================================
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: development
+
+spec:
+  hard:
+    requests.cpu: "10"        # Máximo 10 CPUs
+    requests.memory: "20Gi"   # Máximo 20 GB RAM
+    limits.cpu: "20"          # Máximo 20 CPUs (burst)
+    limits.memory: "40Gi"     # Máximo 40 GB RAM (burst)
+    pods: "20"                # Máximo 20 pods
+    services: "10"            # Máximo 10 services
+    persistentvolumeclaims: "5"  # Máximo 5 PVCs
+
+---
+# Staging quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: staging
+
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: "40Gi"
+    limits.cpu: "40"
+    limits.memory: "80Gi"
+    pods: "50"
+
+---
+# Production quota (mais generoso)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: production
+
+spec:
+  hard:
+    requests.cpu: "50"
+    requests.memory: "100Gi"
+    limits.cpu: "100"
+    limits.memory: "200Gi"
+    pods: "100"
+
+# ============================================================================
+# USO
+# ============================================================================
+#
+# Deploy para staging:
+#   kubectl apply -f k8s/ -n staging
+#
+# Ver recursos:
+#   kubectl get all -n staging
+#
+# Ver quota:
+#   kubectl describe quota -n staging
+#
+# ============================================================================

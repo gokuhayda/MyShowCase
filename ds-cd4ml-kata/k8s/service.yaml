@@ -1,0 +1,153 @@
+
+# ============================================================================
+# Kubernetes Service - Load Balancer
+# ============================================================================
+# Expõe os pods através de um load balancer
+#
+# Features:
+#   - Load balancing entre pods
+#   - Service discovery (DNS interno)
+#   - Health check integration
+#   - Session affinity (opcional)
+#
+# Access:
+#   - Interno: http://wine-quality-api.default.svc.cluster.local:8000
+#   - Externo: http://<EXTERNAL-IP>:80
+# ============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: wine-quality-api
+  namespace: default
+  labels:
+    app: wine-quality-api
+  annotations:
+    description: "Wine Quality API Service"
+
+spec:
+  # --------------------------------------------------------------------------
+  # Type - Tipo de serviço
+  # --------------------------------------------------------------------------
+  # LoadBalancer: Expõe externamente (AWS ELB, GCP LB, etc)
+  # ClusterIP: Interno apenas (default)
+  # NodePort: Expõe em porta fixa de cada node
+  type: LoadBalancer
+  
+  # --------------------------------------------------------------------------
+  # Selector - Quais pods este service vai balancear
+  # --------------------------------------------------------------------------
+  selector:
+    app: wine-quality-api
+  
+  # --------------------------------------------------------------------------
+  # Ports - Mapeamento de portas
+  # --------------------------------------------------------------------------
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80          # Porta do service (externa)
+    targetPort: 8000  # Porta do container
+    # nodePort: 30000 # Apenas se type: NodePort
+  
+  # --------------------------------------------------------------------------
+  # Session Affinity - Sticky sessions
+  # --------------------------------------------------------------------------
+  # sessionAffinity: ClientIP  # Mesmo cliente → mesmo pod
+  # sessionAffinityConfig:
+  #   clientIP:
+  #     timeoutSeconds: 3600
+
+---
+# ============================================================================
+# Service (ClusterIP) - Para acesso interno
+# ============================================================================
+# Service adicional para comunicação interna (entre pods)
+# Útil para monitoramento, métricas, etc
+# ============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: wine-quality-api-internal
+  namespace: default
+  labels:
+    app: wine-quality-api
+
+spec:
+  type: ClusterIP  # Apenas interno
+  selector:
+    app: wine-quality-api
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000
+    targetPort: 8000
+
+# ============================================================================
+# NOTAS DE CONFIGURAÇÃO
+# ============================================================================
+#
+# 1. TIPOS DE SERVICE
+# --------------------
+# LoadBalancer:
+#   - Pros: Expõe externamente, integra com cloud provider
+#   - Cons: Custo (cada LB cobra), IP fixo
+#   - Uso: Produção (AWS, GCP, Azure)
+#
+# ClusterIP:
+#   - Pros: Interno, sem custo adicional
+#   - Cons: Não acessível externamente
+#   - Uso: Microserviços internos, databases
+#
+# NodePort:
+#   - Pros: Simples, não precisa cloud LB
+#   - Cons: Porta fixa (30000-32767), menos seguro
+#   - Uso: Dev/test local (minikube)
+#
+# 2. DNS INTERNO
+# ---------------
+# Kubernetes cria DNS automaticamente:
+#   <service-name>.<namespace>.svc.cluster.local
+#
+# Exemplos:
+#   - wine-quality-api.default.svc.cluster.local
+#   - wine-quality-api (dentro do mesmo namespace)
+#
+# Uso em outro pod:
+#   curl http://wine-quality-api:8000/health
+#
+# 3. LOAD BALANCING
+# ------------------
+# Service distribui tráfego entre pods usando:
+#   - Round-robin (padrão)
+#   - Least connections
+#   - Random
+#
+# Configurado automaticamente pelo kube-proxy.
+#
+# 4. EXTERNAL IP
+# ---------------
+# Para obter IP externo:
+#   kubectl get service wine-quality-api
+#
+# Output:
+#   NAME                TYPE           EXTERNAL-IP     PORT(S)        AGE
+#   wine-quality-api    LoadBalancer   35.123.45.67    80:31234/TCP   5m
+#
+# Acessar:
+#   curl http://35.123.45.67/health
+#
+# 5. SESSION AFFINITY
+# --------------------
+# Por padrão, requests de mesmo cliente podem ir para pods diferentes.
+#
+# Para manter sticky session:
+#   sessionAffinity: ClientIP
+#
+# Útil para:
+#   - Cache local em pod
+#   - WebSockets
+#   - Debugging (sempre mesmo pod)
+#
+# ============================================================================

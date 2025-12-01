@@ -1,0 +1,427 @@
+# ============================================================================
+# GitHub Actions CI/CD Pipeline - CD4ML Production Project
+# ============================================================================
+# Pipeline completo de ML com quality gates automatizados
+#
+# Triggers:
+#   - push: Em qualquer branch
+#   - pull_request: Em PRs para main
+#   - workflow_dispatch: Manual (botão no GitHub)
+#
+# Jobs:
+#   1. test-data-quality: Valida qualidade dos dados
+#   2. train-and-test: Treina modelo e valida métricas
+#   3. deploy: Deploy para produção (apenas em main)
+#
+# Secrets necessários (GitHub Settings → Secrets):
+#   - AWS_ACCESS_KEY_ID (para DVC remote em S3, opcional)
+#   - AWS_SECRET_ACCESS_KEY (para DVC remote em S3, opcional)
+#   - DAGSHUB_TOKEN (para DVC remote em DagsHub, opcional)
+# ============================================================================
+
+name: CD4ML Pipeline
+
+on:
+  # Executar em push para qualquer branch
+  push:
+    branches:
+      - '**'
+  
+  # Executar em pull requests para main
+  pull_request:
+    branches:
+      - main
+  
+  # Permitir execução manual via GitHub UI
+  workflow_dispatch:
+
+# Variáveis de ambiente globais
+env:
+  PYTHON_VERSION: '3.10'
+  DVC_CACHE: .dvc/cache
+
+jobs:
+  # ==========================================================================
+  # JOB 1: TEST DATA QUALITY
+  # ==========================================================================
+  # Valida qualidade dos dados ANTES de treinar
+  # 
+  # Por que primeiro:
+  #   - Fail fast: Se dados ruins, não adianta treinar
+  #   - Rápido: Testes de dados são rápidos (~30s)
+  #   - Barato: Não gasta compute em treino se dados estão ruins
+  #
+  # Testes executados (16 tests):
+  #   - Schema compliance
+  #   - Missing values
+  #   - Duplicates
+  #   - Target distribution
+  #   - Feature ranges
+  #   - Data leakage
+  #   - Sample size
+  # ==========================================================================
+  
+  test-data-quality:
+    name: 🧪 Test Data Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ----------------------------------------------------------------------
+      # Setup: Checkout código
+      # ----------------------------------------------------------------------
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      # ----------------------------------------------------------------------
+      # Setup: Python
+      # ----------------------------------------------------------------------
+      - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'  # Cache de dependências pip
+      
+      # ----------------------------------------------------------------------
+      # Setup: Instalar dependências
+      # ----------------------------------------------------------------------
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      # ----------------------------------------------------------------------
+      # Setup: DVC (Data Version Control)
+      # ----------------------------------------------------------------------
+      - name: 🔧 Setup DVC
+        uses: iterative/setup-dvc@v1
+      
+      # ----------------------------------------------------------------------
+      # Data: Download dados (se necessário)
+      # ----------------------------------------------------------------------
+      - name: 📊 Download data
+        run: |
+          # Tentar puxar do DVC remote (se configurado)
+          dvc pull data/raw/wine_quality.csv || echo "DVC remote not configured, using local data"
+          
+          # Se não existir, baixar manualmente
+          if [ ! -f data/raw/wine_quality.csv ]; then
+            echo "Downloading data from source..."
+            python src/data/download_data.py
+          fi
+      
+      # ----------------------------------------------------------------------
+      # ETL: Preparar dados
+      # ----------------------------------------------------------------------
+      - name: 🔧 Prepare data (ETL)
+        run: |
+          python src/data/make_dataset.py
+      
+      # ----------------------------------------------------------------------
+      # Test: Qualidade dos dados
+      # ----------------------------------------------------------------------
+      - name: ✅ Run data quality tests
+        run: |
+          pytest src/tests/test_data_quality.py -v --tb=short --color=yes
+      
+      # ----------------------------------------------------------------------
+      # Artifact: Upload dados processados (para próximo job)
+      # ----------------------------------------------------------------------
+      - name: 📤 Upload processed data
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-data
+          path: data/processed/
+          retention-days: 1  # Manter por 1 dia (apenas para este workflow)
+
+  # ==========================================================================
+  # JOB 2: TRAIN AND TEST MODEL
+  # ==========================================================================
+  # Treina modelo e valida quality gates
+  # 
+  # Depende de: test-data-quality (precisa passar primeiro!)
+  #
+  # Quality Gates (modelo só passa se TODOS atenderem):
+  #   ✅ Accuracy ≥ 75%
+  #   ✅ Precision ≥ 73%
+  #   ✅ Recall ≥ 73%
+  #   ✅ F1 ≥ 73%
+  #   ✅ Overfitting gap ≤ 10%
+  #
+  # Se falhar: Pipeline para, não faz deploy
+  # ==========================================================================
+  
+  train-and-test:
+    name: 🎯 Train Model & Validate
+    runs-on: ubuntu-latest
+    needs: test-data-quality  # Só roda se test-data-quality passar
+    
+    steps:
+      # ----------------------------------------------------------------------
+      # Setup: Checkout código
+      # ----------------------------------------------------------------------
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      # ----------------------------------------------------------------------
+      # Setup: Python
+      # ----------------------------------------------------------------------
+      - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      # ----------------------------------------------------------------------
+      # Setup: Instalar dependências
+      # ----------------------------------------------------------------------
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      # ----------------------------------------------------------------------
+      # Setup: DVC
+      # ----------------------------------------------------------------------
+      - name: 🔧 Setup DVC
+        uses: iterative/setup-dvc@v1
+      
+      # ----------------------------------------------------------------------
+      # Data: Download dados processados (do job anterior)
+      # ----------------------------------------------------------------------
+      - name: 📊 Download processed data
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+          path: data/processed/
+      
+      # ----------------------------------------------------------------------
+      # Train: Treinar modelo
+      # ----------------------------------------------------------------------
+      - name: 🎓 Train model
+        run: |
+          python src/models/train.py
+      
+      # ----------------------------------------------------------------------
+      # Test: Validar métricas do modelo
+      # ----------------------------------------------------------------------
+      - name: ✅ Test model metrics (Quality Gates)
+        run: |
+          pytest src/tests/test_model_metrics.py -v --tb=short --color=yes
+      
+      # ----------------------------------------------------------------------
+      # Test: Validar inferência
+      # ----------------------------------------------------------------------
+      - name: ✅ Test inference
+        run: |
+          pytest src/tests/test_inference.py -v --tb=short --color=yes
+      
+      # ----------------------------------------------------------------------
+      # Report: Gerar relatório de métricas
+      # ----------------------------------------------------------------------
+      - name: 📊 Generate metrics report
+        if: always()  # Sempre roda, mesmo se testes falharem
+        run: |
+          echo "# 📊 Model Metrics Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Quality Gates" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Ler métricas do metrics.json
+          python << 'PYTHON'
+          import json
+          import os
+          
+          with open('models/metrics.json', 'r') as f:
+              metrics = json.load(f)
+          
+          # Adicionar ao GitHub Step Summary
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write("| Metric | Value | Threshold | Status |\n")
+              f.write("|--------|-------|-----------|--------|\n")
+              
+              checks = [
+                  ('Accuracy', metrics['test_accuracy'], 0.75),
+                  ('Precision', metrics['test_precision'], 0.73),
+                  ('Recall', metrics['test_recall'], 0.73),
+                  ('F1-Score', metrics['test_f1'], 0.73),
+              ]
+              
+              for name, value, threshold in checks:
+                  status = '✅' if value >= threshold else '❌'
+                  f.write(f"| {name} | {value:.4f} | ≥ {threshold:.2f} | {status} |\n")
+              
+              # Overfitting
+              gap = metrics['accuracy_gap']
+              status = '✅' if gap <= 0.10 else '❌'
+              f.write(f"| Overfitting Gap | {gap:.4f} | ≤ 0.10 | {status} |\n")
+              
+              f.write("\n## Cross-Validation\n\n")
+              f.write(f"- CV Accuracy: {metrics['cv_accuracy_mean']:.4f} ± {metrics['cv_accuracy_std']:.4f}\n")
+          PYTHON
+      
+      # ----------------------------------------------------------------------
+      # Artifact: Upload modelo treinado
+      # ----------------------------------------------------------------------
+      - name: 📤 Upload trained model
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: |
+            models/model.pkl
+            models/metrics.json
+          retention-days: 30  # Manter por 30 dias
+      
+      # ----------------------------------------------------------------------
+      # Artifact: Upload para DVC remote (se configurado)
+      # ----------------------------------------------------------------------
+      - name: 📤 Push model to DVC remote
+        if: github.ref == 'refs/heads/main'  # Só em main branch
+        env:
+          # Configurar credenciais DVC (DagsHub ou S3)
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          # Adicionar modelo ao DVC (se ainda não estiver)
+          dvc add models/model.pkl || true
+          
+          # Push para remote (se configurado)
+          dvc push || echo "DVC remote not configured or credentials missing"
+        continue-on-error: true  # Não falhar se DVC remote não configurado
+
+  # ==========================================================================
+  # JOB 3: DEPLOY TO PRODUCTION
+  # ==========================================================================
+  # Deploy do modelo para produção
+  # 
+  # Condições:
+  #   - Só roda em main branch
+  #   - Só roda se train-and-test passar
+  #   - Só roda se quality gates passarem
+  #
+  # Ações:
+  #   - Tag no Git (model-v1.0.0)
+  #   - Release no GitHub
+  #   - (Futuro: Deploy para AWS/GCP/Azure)
+  # ==========================================================================
+  
+  deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: train-and-test  # Só roda se treino passar
+    if: github.ref == 'refs/heads/main'  # Só em main branch
+    
+    steps:
+      # ----------------------------------------------------------------------
+      # Setup: Checkout código
+      # ----------------------------------------------------------------------
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch completo (para tags)
+      
+      # ----------------------------------------------------------------------
+      # Artifact: Download modelo treinado
+      # ----------------------------------------------------------------------
+      - name: 📥 Download trained model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: models/
+      
+      # ----------------------------------------------------------------------
+      # Deploy: Criar tag de versão
+      # ----------------------------------------------------------------------
+      - name: 🏷️ Create version tag
+        id: version
+        run: |
+          # Ler accuracy do metrics.json
+          ACCURACY=$(python -c "import json; print(json.load(open('models/metrics.json'))['test_accuracy'])")
+          
+          # Gerar versão (ex: v1.0.0-acc0.87)
+          VERSION="v1.0.$(date +%Y%m%d%H%M)-acc${ACCURACY}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "📌 Version: ${VERSION}"
+      
+      # ----------------------------------------------------------------------
+      # Deploy: Criar GitHub Release
+      # ----------------------------------------------------------------------
+      - name: 🎉 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Model Release ${{ steps.version.outputs.version }}
+          body: |
+            # 🎯 Model Deployment
+            
+            **Accuracy:** $(python -c "import json; print(f\"{json.load(open('models/metrics.json'))['test_accuracy']:.2%}\")")
+            **F1-Score:** $(python -c "import json; print(f\"{json.load(open('models/metrics.json'))['test_f1']:.2%}\")")
+            
+            ## Quality Gates
+            ✅ All quality gates passed
+            
+            ## Files
+            - `model.pkl`: Trained Random Forest model
+            - `metrics.json`: Performance metrics
+            
+            ## Usage
+```python
+            from src.models.predict import WineQualityPredictor
+            
+            predictor = WineQualityPredictor()
+            result = predictor.predict_with_confidence(sample)
+```
+          files: |
+            models/model.pkl
+            models/metrics.json
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # ----------------------------------------------------------------------
+      # Deploy: Notificação de sucesso
+      # ----------------------------------------------------------------------
+      - name: 📢 Deployment notification
+        run: |
+          echo "# 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Model version: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Branch: main" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+# ============================================================================
+# WORKFLOW SUMMARY
+# ============================================================================
+#
+# 📊 Pipeline Completo:
+#
+#   push/PR → test-data-quality (30s)
+#                    ↓ ✅
+#            train-and-test (2-3 min)
+#                    ↓ ✅
+#            deploy (apenas main, 30s)
+#                    ↓
+#            🎉 Model em produção!
+#
+# ⏱️ Tempo Total: ~3-4 minutos
+#
+# 💰 Custo: GRATUITO (GitHub Actions free tier: 2000 min/mês)
+#
+# 🔒 Segurança:
+#   - Secrets gerenciados pelo GitHub
+#   - Modelo versionado (Git tags)
+#   - Rastreabilidade completa (quem, quando, o quê)
+#
+# 🎯 Quality Gates Automáticos:
+#   - Se accuracy < 75% → ❌ Pipeline falha
+#   - Se overfitting > 10% → ❌ Pipeline falha
+#   - Deploy só acontece se TUDO passar ✅
+#
+# 📈 Melhorias Futuras:
+#   - [ ] Deploy para AWS SageMaker
+#   - [ ] A/B testing automático
+#   - [ ] Drift detection em produção
+#   - [ ] Notificações Slack/Email
+#   - [ ] Performance profiling
+#   - [ ] Security scanning
+#
+# ============================================================================

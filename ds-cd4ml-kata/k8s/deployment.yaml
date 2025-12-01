@@ -1,0 +1,314 @@
+
+# ============================================================================
+# Kubernetes Deployment - Wine Quality API
+# ============================================================================
+# Deploy da API FastAPI com auto-scaling e health checks
+#
+# Features:
+#   - Rolling updates (zero downtime)
+#   - Health checks (liveness + readiness)
+#   - Resource limits (CPU/Memory)
+#   - Multi-replica (HA)
+#   - Auto-restart on failure
+#
+# Apply:
+#   kubectl apply -f k8s/deployment.yaml
+#
+# Scale:
+#   kubectl scale deployment wine-quality-api --replicas=5
+# ============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wine-quality-api
+  namespace: default
+  labels:
+    app: wine-quality-api
+    version: v1.0.0
+    tier: api
+    component: ml-inference
+  annotations:
+    description: "Wine Quality Prediction API"
+    maintainer: "gokuhayda@github.com"
+
+spec:
+  # --------------------------------------------------------------------------
+  # Replicas - Número de pods
+  # --------------------------------------------------------------------------
+  replicas: 3  # 3 pods para high availability
+  
+  # --------------------------------------------------------------------------
+  # Strategy - Estratégia de deploy
+  # --------------------------------------------------------------------------
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Máximo 1 pod extra durante update
+      maxUnavailable: 0  # Sem downtime (sempre mantém réplicas disponíveis)
+  
+  # --------------------------------------------------------------------------
+  # Selector - Como identificar pods deste deployment
+  # --------------------------------------------------------------------------
+  selector:
+    matchLabels:
+      app: wine-quality-api
+  
+  # --------------------------------------------------------------------------
+  # Template - Especificação dos pods
+  # --------------------------------------------------------------------------
+  template:
+    metadata:
+      labels:
+        app: wine-quality-api
+        version: v1.0.0
+    
+    spec:
+      # ----------------------------------------------------------------------
+      # Container principal
+      # ----------------------------------------------------------------------
+      containers:
+      - name: api
+        image: cd4ml-wine-quality:latest
+        imagePullPolicy: IfNotPresent  # Use local image se disponível
+        
+        # --------------------------------------------------------------------
+        # Comando para iniciar API
+        # --------------------------------------------------------------------
+        command: ["uvicorn"]
+        args:
+          - "api.main:app"
+          - "--host=0.0.0.0"
+          - "--port=8000"
+          - "--workers=2"  # 2 workers por pod
+        
+        # --------------------------------------------------------------------
+        # Portas expostas
+        # --------------------------------------------------------------------
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        
+        # --------------------------------------------------------------------
+        # Environment Variables
+        # --------------------------------------------------------------------
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: WORKERS
+          value: "2"
+        
+        # --------------------------------------------------------------------
+        # Resource Limits
+        # --------------------------------------------------------------------
+        # IMPORTANTE: Ajustar baseado em profiling real!
+        resources:
+          requests:
+            cpu: "250m"      # 0.25 CPU
+            memory: "512Mi"  # 512 MB
+          limits:
+            cpu: "1000m"     # 1 CPU
+            memory: "1Gi"    # 1 GB
+        
+        # --------------------------------------------------------------------
+        # Liveness Probe - "Está vivo?"
+        # --------------------------------------------------------------------
+        # Se falhar, Kubernetes MATA e REINICIA o pod
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30  # Aguardar 30s após start
+          periodSeconds: 10        # Verificar a cada 10s
+          timeoutSeconds: 5        # Timeout de 5s
+          successThreshold: 1      # 1 sucesso = healthy
+          failureThreshold: 3      # 3 falhas = restart
+        
+        # --------------------------------------------------------------------
+        # Readiness Probe - "Está pronto para receber tráfego?"
+        # --------------------------------------------------------------------
+        # Se falhar, Kubernetes REMOVE do load balancer (mas não mata)
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10  # Aguardar 10s após start
+          periodSeconds: 5         # Verificar a cada 5s
+          timeoutSeconds: 3        # Timeout de 3s
+          successThreshold: 1      # 1 sucesso = ready
+          failureThreshold: 3      # 3 falhas = not ready
+        
+        # --------------------------------------------------------------------
+        # Startup Probe - "Iniciou corretamente?"
+        # --------------------------------------------------------------------
+        # Para apps lentas na inicialização
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 10  # 10 falhas * 5s = 50s para iniciar
+        
+        # --------------------------------------------------------------------
+        # Volume Mounts (se necessário)
+        # --------------------------------------------------------------------
+        # volumeMounts:
+        # - name: model-storage
+        #   mountPath: /app/models
+        #   readOnly: true
+      
+      # ----------------------------------------------------------------------
+      # Restart Policy
+      # ----------------------------------------------------------------------
+      restartPolicy: Always
+      
+      # ----------------------------------------------------------------------
+      # Volumes (se necessário)
+      # ----------------------------------------------------------------------
+      # volumes:
+      # - name: model-storage
+      #   persistentVolumeClaim:
+      #     claimName: model-pvc
+
+---
+# ============================================================================
+# HorizontalPodAutoscaler - Auto-scaling
+# ============================================================================
+# Escala automaticamente baseado em CPU/Memory
+#
+# Comportamento:
+#   - CPU > 70% → adiciona pods (até 10)
+#   - CPU < 30% → remove pods (mínimo 3)
+# ============================================================================
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: wine-quality-api-hpa
+  namespace: default
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: wine-quality-api
+  
+  # --------------------------------------------------------------------------
+  # Min/Max replicas
+  # --------------------------------------------------------------------------
+  minReplicas: 3   # Mínimo 3 pods (HA)
+  maxReplicas: 10  # Máximo 10 pods (custo vs performance)
+  
+  # --------------------------------------------------------------------------
+  # Metrics - O que observar para escalar
+  # --------------------------------------------------------------------------
+  metrics:
+  
+  # CPU
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70  # Scale up se CPU > 70%
+  
+  # Memory
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80  # Scale up se Memory > 80%
+  
+  # --------------------------------------------------------------------------
+  # Behavior - Como escalar
+  # --------------------------------------------------------------------------
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60  # Aguardar 60s antes de scale up
+      policies:
+      - type: Percent
+        value: 50  # Aumentar 50% dos pods por vez
+        periodSeconds: 60
+      - type: Pods
+        value: 2   # Ou adicionar 2 pods por vez
+        periodSeconds: 60
+      selectPolicy: Max  # Usar a política que adiciona MAIS pods
+    
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Aguardar 5min antes de scale down
+      policies:
+      - type: Percent
+        value: 25  # Reduzir 25% dos pods por vez
+        periodSeconds: 60
+      - type: Pods
+        value: 1   # Ou remover 1 pod por vez
+        periodSeconds: 60
+      selectPolicy: Min  # Usar a política que remove MENOS pods
+
+# ============================================================================
+# NOTAS DE CONFIGURAÇÃO
+# ============================================================================
+#
+# 1. RESOURCE LIMITS
+# -------------------
+# Os valores de CPU/Memory devem ser ajustados baseado em:
+#   - Profiling real da aplicação
+#   - Testes de carga (locust, k6)
+#   - Monitoramento em produção (Prometheus)
+#
+# Exemplo de profiling:
+#   kubectl top pods
+#   kubectl top nodes
+#
+# 2. HEALTH CHECKS
+# -----------------
+# Liveness vs Readiness:
+#   - Liveness: Detecta deadlock/crash → REINICIA pod
+#   - Readiness: Detecta sobrecarga → REMOVE do LB
+#
+# Dica: Usar endpoints diferentes se necessário
+#   - /health → liveness (rápido, sem deps)
+#   - /ready → readiness (pode verificar DB, cache, etc)
+#
+# 3. ROLLING UPDATE
+# ------------------
+# maxSurge=1, maxUnavailable=0:
+#   - Sempre mantém 3 pods rodando
+#   - Adiciona 1 novo pod
+#   - Aguarda novo pod ready
+#   - Mata 1 pod antigo
+#   - Repete até substituir todos
+#   - ZERO DOWNTIME ✅
+#
+# 4. AUTO-SCALING
+# ----------------
+# HPA escala baseado em:
+#   - CPU/Memory (resource metrics)
+#   - Custom metrics (ex: request rate via Prometheus)
+#
+# Exemplo de escala:
+#   - 3 pods normalmente
+#   - Pico de tráfego → CPU sobe para 80%
+#   - HPA adiciona 2 pods → total 5
+#   - CPU volta para 60%
+#   - HPA aguarda 5min
+#   - Remove 1 pod → total 4
+#
+# 5. NAMESPACES
+# --------------
+# Para ambientes diferentes:
+#   - default (ou production)
+#   - staging
+#   - development
+#
+# Deploy em staging:
+#   kubectl apply -f k8s/deployment.yaml -n staging
+#
+# ============================================================================

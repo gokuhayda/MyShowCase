@@ -1,0 +1,15 @@
+artifact_uri: file:///home/goku/Documentos/thoughtWorks/KATA/MyShowCase/ds-cd4ml-kata/mlruns/738938986320903144/ad604b12b01c41fcbe531d00403dc705/artifacts
+end_time: 1764440126196
+entry_point_name: ''
+experiment_id: '738938986320903144'
+lifecycle_stage: active
+run_id: ad604b12b01c41fcbe531d00403dc705
+run_name: respected-midge-368
+run_uuid: ad604b12b01c41fcbe531d00403dc705
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1764440122305
+status: 3
+tags: []
+user_id: goku

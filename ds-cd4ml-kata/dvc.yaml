@@ -1,0 +1,315 @@
+
+# ============================================================================
+# DVC Pipeline - CD4ML Production Project
+# ============================================================================
+# Este arquivo define o pipeline de ML como um DAG (Directed Acyclic Graph).
+# DVC gerencia dependências, cache e reprodutibilidade.
+#
+# Comandos úteis:
+#   dvc dag          - Visualizar grafo de dependências
+#   dvc repro        - Reproduzir pipeline (só refaz o que mudou)
+#   dvc metrics show - Ver métricas de todos os stages
+#   dvc params diff  - Comparar parâmetros entre commits
+#
+# Benefícios:
+#   ✅ Cache inteligente (não refaz se não mudou)
+#   ✅ Reprodutibilidade (DAG versionado no Git)
+#   ✅ Rastreabilidade (quem depende de quem)
+#   ✅ Paralelização automática
+# ============================================================================
+
+stages:
+  # ==========================================================================
+  # STAGE 1: DOWNLOAD DATA
+  # ==========================================================================
+  # Baixa dataset do UCI Machine Learning Repository
+  # 
+  # Quando executa:
+  #   - Sempre na primeira vez
+  #   - Se src/data/download_data.py mudar
+  #
+  # Output:
+  #   - data/raw/wine_quality.csv (versionado pelo DVC)
+  # ==========================================================================
+  
+  download_data:
+    cmd: python src/data/download_data.py
+    
+    deps:
+      - src/data/download_data.py
+    
+    outs:
+      # cache: true significa que DVC vai versionar este arquivo
+      - data/raw/wine_quality.csv:
+          cache: true
+    
+    desc: >
+      Download Wine Quality dataset from UCI ML Repository.
+      Dataset: 1599 red wine samples, 12 features.
+      Target: Quality score (3-8).
+
+  # ==========================================================================
+  # STAGE 2: PREPARE DATA (ETL + Feature Engineering)
+  # ==========================================================================
+  # Transforma dados raw em features prontas para treino
+  # 
+  # Quando executa:
+  #   - Se wine_quality.csv mudou (nova versão dos dados)
+  #   - Se make_dataset.py mudou (lógica de ETL alterada)
+  #   - Se schemas.py mudou (validação alterada)
+  #
+  # Validações:
+  #   - Schema compliance (Pandera)
+  #   - Ranges válidos
+  #   - Sem missing values
+  #
+  # Output:
+  #   - data/processed/wine_features.csv
+  # ==========================================================================
+  
+  prepare_data:
+    cmd: python src/data/make_dataset.py
+    
+    deps:
+      - data/raw/wine_quality.csv         # Dados de entrada
+      - src/data/make_dataset.py          # Script de ETL
+      - src/data/schemas.py               # Schemas de validação
+    
+    outs:
+      - data/processed/wine_features.csv:
+          cache: true
+    
+    desc: >
+      ETL pipeline: transform raw data into features.
+      Steps:
+        1. Load and validate raw data (Pandera schema)
+        2. Clean column names (remove spaces)
+        3. Create binary target (quality >= 6)
+        4. Validate processed data
+      Output: 1599 samples, 12 columns (11 features + 1 target)
+
+  # ==========================================================================
+  # STAGE 3: TRAIN MODEL
+  # ==========================================================================
+  # Treina modelo RandomForest com hiperparâmetros de params.yaml
+  # 
+  # Quando executa:
+  #   - Se wine_features.csv mudou (novos dados processados)
+  #   - Se train.py mudou (lógica de treino alterada)
+  #   - Se params.yaml mudou (hiperparâmetros alterados)
+  #
+  # Parâmetros usados (de params.yaml):
+  #   - model.* (n_estimators, max_depth, etc)
+  #   - data.* (test_size, random_state, stratify)
+  #   - cv.* (n_splits, shuffle)
+  #
+  # Quality Gates validados:
+  #   - metrics.min_accuracy (≥ 75%)
+  #   - metrics.min_precision (≥ 73%)
+  #   - metrics.min_recall (≥ 73%)
+  #   - metrics.min_f1 (≥ 73%)
+  #   - metrics.max_train_test_gap (≤ 10%)
+  #
+  # Outputs:
+  #   - models/model.pkl (modelo treinado)
+  #   - models/metrics.json (métricas de avaliação)
+  #
+  # MLflow:
+  #   - Loga params, metrics, e model automaticamente
+  #   - Experiment: wine-quality-classification
+  # ==========================================================================
+  
+  train:
+    cmd: python src/models/train.py
+    
+    deps:
+      - data/processed/wine_features.csv  # Features de treino
+      - src/models/train.py               # Script de treino
+    
+    params:
+      # Parâmetros que influenciam o treino
+      # Se mudarem, DVC sabe que precisa retreinar
+      - model                   # Hiperparâmetros do modelo
+      - data                    # Config de train/test split
+      - metrics                 # Quality gates
+      - cv                      # Cross-validation config
+    
+    outs:
+      # Modelo treinado (versionado)
+      - models/model.pkl:
+          cache: true
+    
+    metrics:
+      # Métricas para comparação entre experimentos
+      # cache: false significa que sempre pega valor mais recente
+      - models/metrics.json:
+          cache: false
+    
+    desc: >
+      Train Random Forest classifier.
+      Algorithm: RandomForestClassifier
+      Features: 11 physicochemical properties
+      Target: Binary classification (good wine vs bad wine)
+      Validation: 5-fold cross-validation
+      Quality gates: All metrics must exceed thresholds
+      Tracking: MLflow (experiment: wine-quality-classification)
+
+  # ==========================================================================
+  # STAGE 4: EVALUATE MODEL (Opcional - pode ser integrado ao train)
+  # ==========================================================================
+  # Avalia modelo em test set e gera relatórios
+  # 
+  # Este stage é OPCIONAL e pode ser combinado com 'train'.
+  # Mantido separado aqui para clareza didática.
+  #
+  # Quando executar separado:
+  #   - Se quiser avaliar modelo existente sem retreinar
+  #   - Se quiser gerar plots/relatórios adicionais
+  #   - Se treino é muito lento e avaliação rápida
+  # ==========================================================================
+  
+  # evaluate:
+  #   cmd: python src/models/evaluate.py
+  #   
+  #   deps:
+  #     - data/processed/wine_features.csv
+  #     - models/model.pkl
+  #     - src/models/evaluate.py
+  #   
+  #   outs:
+  #     - reports/confusion_matrix.png
+  #     - reports/feature_importance.png
+  #   
+  #   metrics:
+  #     - reports/metrics_detailed.json:
+  #         cache: false
+  #   
+  #   desc: >
+  #     Evaluate model on test set and generate reports.
+  #     Outputs: confusion matrix, feature importance, detailed metrics.
+
+# ============================================================================
+# PLOTS (Visualizações)
+# ============================================================================
+# DVC pode renderizar plots automaticamente de métricas
+# 
+# Uso:
+#   dvc plots show models/metrics.json
+#   dvc plots diff <commit1> <commit2>
+# ============================================================================
+
+plots:
+  # Plot de métricas ao longo dos commits
+  - models/metrics.json:
+      x: test_accuracy
+      y: test_f1
+      title: "Accuracy vs F1-Score"
+
+# ============================================================================
+# NOTAS SOBRE O PIPELINE
+# ============================================================================
+#
+# 1. CACHE INTELIGENTE
+# --------------------
+# DVC só re-executa stages se:
+#   - Dependências (deps) mudaram
+#   - Parâmetros (params) mudaram
+#   - Comando (cmd) mudou
+#
+# Exemplo:
+#   - Muda params.yaml (n_estimators: 100 → 200)
+#   - dvc repro
+#   - DVC pula download_data e prepare_data (cache hit)
+#   - DVC re-executa apenas train (params mudaram)
+#
+# 2. REPRODUTIBILIDADE
+# ---------------------
+# Para reproduzir experimento de 6 meses atrás:
+#
+#   git checkout <commit-6-meses>
+#   dvc checkout
+#   dvc repro
+#
+# Você terá:
+#   ✅ Código exato (Git)
+#   ✅ Dados exatos (DVC)
+#   ✅ Params exatos (params.yaml no Git)
+#   ✅ MESMO resultado garantido!
+#
+# 3. COMPARAÇÃO DE EXPERIMENTOS
+# ------------------------------
+# Comparar 2 commits:
+#
+#   dvc params diff <commit1> <commit2>
+#   dvc metrics diff <commit1> <commit2>
+#
+# Ver como mudanças em params afetaram métricas!
+#
+# 4. PARALELIZAÇÃO
+# -----------------
+# DVC detecta automaticamente stages independentes
+# e pode executá-los em paralelo:
+#
+#   dvc repro --jobs 4
+#
+# No nosso caso, stages são sequenciais (A → B → C)
+# então não há paralelização possível.
+#
+# 5. REMOTE STORAGE
+# -----------------
+# Push/Pull de artifacts:
+#
+#   dvc push   # Upload model.pkl, datasets para S3/GCS
+#   dvc pull   # Download artifacts do remote
+#
+# Benefício: Repo Git fica leve (só ponteiros)
+# Dados pesados ficam em S3/GCS/Azure
+#
+# 6. INTEGRAÇÃO CI/CD
+# --------------------
+# No GitHub Actions:
+#
+#   - uses: iterative/setup-dvc@v1
+#   - run: dvc pull
+#   - run: dvc repro
+#   - run: dvc push
+#
+# Pipeline completo automatizado!
+#
+# ============================================================================
+# COMANDOS ÚTEIS
+# ============================================================================
+#
+# Ver DAG:
+#   dvc dag
+#
+# Executar pipeline:
+#   dvc repro
+#
+# Executar apenas um stage:
+#   dvc repro train
+#
+# Ver métricas:
+#   dvc metrics show
+#   dvc metrics show --all-commits  # Histórico
+#
+# Ver parâmetros:
+#   dvc params show
+#
+# Comparar experimentos:
+#   dvc metrics diff HEAD~1 HEAD
+#   dvc params diff HEAD~1 HEAD
+#
+# Plots:
+#   dvc plots show
+#   dvc plots diff experiment1 experiment2
+#
+# Status:
+#   dvc status       # O que mudou
+#   dvc diff         # Diferenças detalhadas
+#
+# Push/Pull:
+#   dvc push         # Upload artifacts
+#   dvc pull         # Download artifacts
+#
+# ============================================================================

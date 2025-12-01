@@ -1,0 +1,125 @@
+# ============================================================================
+# PersistentVolumeClaim - Storage for Models
+# ============================================================================
+# Armazenamento persistente para modelos treinados
+#
+# Features:
+#   - Sobrevive restart de pods
+#   - Compartilhado entre pods (ReadOnlyMany)
+#   - Backup automático (depende do storage class)
+# ============================================================================
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-storage-pvc
+  namespace: default
+  labels:
+    app: wine-quality-api
+
+spec:
+  # --------------------------------------------------------------------------
+  # Access Modes
+  # --------------------------------------------------------------------------
+  # ReadWriteOnce (RWO): Mount em 1 node, read-write
+  # ReadOnlyMany (ROX): Mount em N nodes, read-only
+  # ReadWriteMany (RWX): Mount em N nodes, read-write (raro, caro)
+  accessModes:
+  - ReadOnlyMany  # Múltiplos pods podem ler o modelo
+  
+  # --------------------------------------------------------------------------
+  # Storage Class
+  # --------------------------------------------------------------------------
+  # Define o tipo de storage (SSD, HDD, network)
+  # Varia por cloud provider:
+  #   - AWS: gp2, gp3, io1
+  #   - GCP: standard, ssd
+  #   - Azure: managed-premium, managed-standard
+  storageClassName: standard  # Ajustar para seu cluster
+  
+  # --------------------------------------------------------------------------
+  # Resources
+  # --------------------------------------------------------------------------
+  resources:
+    requests:
+      storage: 10Gi  # 10 GB para modelos
+
+---
+# ============================================================================
+# PersistentVolume - Storage Definition (opcional)
+# ============================================================================
+# Em cloud providers, PVs são criados automaticamente.
+# Este exemplo é para clusters on-premise ou local (minikube).
+# ============================================================================
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: model-storage-pv
+
+spec:
+  capacity:
+    storage: 10Gi
+  
+  accessModes:
+  - ReadOnlyMany
+  
+  persistentVolumeReclaimPolicy: Retain  # Ou Delete
+  
+  storageClassName: standard
+  
+  # Local storage (exemplo - não usar em produção!)
+  hostPath:
+    path: /mnt/data/models
+    type: DirectoryOrCreate
+
+# ============================================================================
+# USO NO DEPLOYMENT
+# ============================================================================
+#
+# volumes:
+# - name: model-volume
+#   persistentVolumeClaim:
+#     claimName: model-storage-pvc
+#
+# volumeMounts:
+# - name: model-volume
+#   mountPath: /app/models
+#   readOnly: true
+#
+# ============================================================================
+# NOTAS
+# ============================================================================
+#
+# 1. MODEL UPDATES
+# -----------------
+# Para atualizar modelo:
+#   a) Upload novo modelo para PV
+#   b) Trigger rolling update (muda annotation ou env var)
+#   c) Pods carregam novo modelo no startup
+#
+# Ou melhor: Usar ConfigMap com model version
+#   env:
+#   - name: MODEL_VERSION
+#     valueFrom:
+#       configMapKeyRef:
+#         name: model-config
+#         key: version
+#
+#   Atualizar ConfigMap → rolling update automático
+#
+# 2. BACKUP
+# ----------
+# PVs em cloud têm snapshot automático.
+# Para backup manual:
+#   - AWS: EBS snapshots
+#   - GCP: Persistent disk snapshots
+#   - Velero: Backup/restore para K8s
+#
+# 3. PERFORMANCE
+# ---------------
+# SSD vs HDD:
+#   - SSD: Melhor para I/O intensivo (training)
+#   - HDD: Suficiente para inference (model loading)
+#
+# ============================================================================

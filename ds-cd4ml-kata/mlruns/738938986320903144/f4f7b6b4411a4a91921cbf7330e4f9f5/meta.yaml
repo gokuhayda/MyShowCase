@@ -1,0 +1,15 @@
+artifact_uri: file:///home/goku/Documentos/thoughtWorks/KATA/MyShowCase/ds-cd4ml-kata/mlruns/738938986320903144/f4f7b6b4411a4a91921cbf7330e4f9f5/artifacts
+end_time: 1764439970294
+entry_point_name: ''
+experiment_id: '738938986320903144'
+lifecycle_stage: active
+run_id: f4f7b6b4411a4a91921cbf7330e4f9f5
+run_name: big-mare-133
+run_uuid: f4f7b6b4411a4a91921cbf7330e4f9f5
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1764439970286
+status: 4
+tags: []
+user_id: goku
