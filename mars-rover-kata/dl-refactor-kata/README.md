@@ -293,3 +293,31 @@ Este projeto foi criado como parte da preparação para entrevistas técnicas on
 
 **⭐ Se este projeto te ajudou, considere dar uma estrela!**
 
+
+## 📂 Estrutura do Projeto
+
+```
+dl-refactor-kata/
+├── README.md                    # Documentação principal
+├── pyproject.toml              # Poetry/pip dependencies
+├── .gitignore                  # Arquivos a ignorar
+├── .github/
+│   └── workflows/
+│       └── tests.yml           # CI/CD com GitHub Actions
+├── src/
+│   └── dl_trainer/
+│       ├── __init__.py
+│       ├── trainer.py          # Classe Trainer
+│       ├── callbacks.py        # Callbacks concretos
+│       └── protocols.py        # Interface/Protocol
+├── tests/
+│   ├── __init__.py
+│   ├── test_trainer.py
+│   └── test_callbacks.py
+├── examples/
+│   ├── basic_usage.py          # Exemplo simples
+│   └── advanced_usage.py       # Com múltiplos callbacks
+└── docs/
+    ├── ARCHITECTURE.md         # Decisões de design
+    └── PATTERNS.md             # Design patterns aplicados
+```
