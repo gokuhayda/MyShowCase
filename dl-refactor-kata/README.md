@@ -68,24 +68,6 @@ trainer.fit(train_loader, epochs=100)
 - ✅ Cada callback testável isoladamente
 - ✅ Segue Open/Closed Principle (SOLID)
 
----
-
-## 🚀 Instalação
-
-### Opção 1: Poetry (recomendado)
-```bash
-git clone https://github.com/seu-usuario/dl-refactor-kata.git
-cd dl-refactor-kata
-poetry install
-poetry shell
-```
-
-### Opção 2: pip
-```bash
-git clone https://github.com/seu-usuario/dl-refactor-kata.git
-cd dl-refactor-kata
-pip install -e .
-```
 
 ---
 
@@ -275,8 +257,8 @@ MIT License - veja [LICENSE](LICENSE) para detalhes.
 ## 👤 Autor
 
 **[Seu Nome]**
-- GitHub: [@seu-usuario](https://github.com/seu-usuario)
-- LinkedIn: [seu-perfil](https://linkedin.com/in/seu-perfil)
+- GitHub: [@gokuhayda](https://github.com/gokuhayda)
+- LinkedIn: [meu-perfil](https://linkedin.com/in/eric-nextgen)
 
 ---
 
