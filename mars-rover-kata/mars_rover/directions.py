@@ -2,9 +2,11 @@ from abc import ABC, abstractmethod
 from .entities import Position
 
 class Direction(ABC):
-
+    """é um objeto que sabe andar e girar."""
+    
     @abstractmethod
     def move(self, pos: Position) -> Position:
+        """calcula a nova posição baseado na direção."""
         pass
 
     @abstractmethod
