@@ -7,7 +7,7 @@ Um guia completo e prático de SQL Avançado para Cientistas de Dados que querem
 ## 📂 Estrutura do Projeto
 
 ```
-sql-katas/
+data-sqL-katas/
 ├── README.md
 ├── .gitignore
 ├── setup/
