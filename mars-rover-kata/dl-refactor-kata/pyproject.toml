@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "dl-refactor-kata"
+version = "0.1.0"
+description = "Deep Learning Trainer refactoring using Callback Pattern"
+authors = ["Seu Nome <seu.email@example.com>"]
+readme = "README.md"
+packages = [{include = "dl_trainer", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-watch = "^4.2.0"
+black = "^23.7.0"
+flake8 = "^6.1.0"
+mypy = "^1.5.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --cov=src/dl_trainer --cov-report=term-missing"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
