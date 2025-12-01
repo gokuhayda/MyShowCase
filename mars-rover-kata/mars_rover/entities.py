@@ -9,7 +9,9 @@ class Position:
 
 @dataclass(frozen=True)
 class Plateau:
-    """Representa o ambiente onde o rover navega."""
+    """Representa o ambiente onde o rover navega.
+    Define até onde o rover pode ir, evitando sair do mapa.
+    """
     width: int
     height: int
 
