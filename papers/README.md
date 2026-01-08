@@ -19,19 +19,19 @@ This research program explores the intersection of **Hyperbolic Geometry**, **Ri
 ```
 .
 ├── papers/
-│   ├── 01_Phenomenal_Manifold_Hypothesis.pdf
-│   ├── 02_Topological_Signature_Consciousness.pdf
-│   ├── 03_Lorentz_Manifold_Transformers.pdf
-│   ├── 04_Psi_Former_Architecture.pdf
-│   └── 05_Hyperbolic_NCA.pdf
-├── src/
-│   ├── common/             # Shared geometric & dynamical libs (Lorentz, Kuramoto)
-│   ├── pmh_reconstruction/ # Code for Paper 1 (Manifold Reconstruction)
-│   ├── gw_topology/        # Code for Paper 2 (Color Ring Toy Model)
-│   ├── lmt_model/          # Code for Paper 3 (Transformer Implementation)
-│   ├── psi_former/         # Code for Paper 4 (K-FAC & Scaling)
-│   └── hyperbolic_nca/     # Code for Paper 5 (Pentagrid Automata)
-└── README.md
+    ├── 01_Phenomenal_Manifold_Hypothesis.pdf
+    ├── 02_Topological_Signature_Consciousness.pdf
+    ├── 03_Lorentz_Manifold_Transformers.pdf
+    ├── 04_Psi_Former_Architecture.pdf
+    └── 05_Hyperbolic_NCA.pdf
+    ├── src/
+    │   ├── common/             # Shared geometric & dynamical libs (Lorentz, Kuramoto)
+    │   ├── pmh_reconstruction/ # Code for Paper 1 (Manifold Reconstruction)
+    │   ├── gw_topology/        # Code for Paper 2 (Color Ring Toy Model)
+    │   ├── lmt_model/          # Code for Paper 3 (Transformer Implementation)
+    │   ├── psi_former/         # Code for Paper 4 (K-FAC & Scaling)
+    │   └── hyperbolic_nca/     # Code for Paper 5 (Pentagrid Automata)
+    └── README.md
 ```
 
 ---
