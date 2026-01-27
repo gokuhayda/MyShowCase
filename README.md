@@ -92,7 +92,7 @@ MyShowCase/
 │   ├── src/cgt/                  →    Core library (geometry, models, losses)
 │   ├── experiments/              →    Ablations, benchmarks, unified executor
 │   ├── notebooks/                →    Training notebooks (CGT, H-LLM)
-│   └── README_TECHNICAL.md       →    Full technical documentation
+│   └── README.md                 →    Full technical documentation
 │
 └── README.md                     → This document
 ```
