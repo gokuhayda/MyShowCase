@@ -1,4 +1,3 @@
-
 # 🚀 MyShowCase — Technical Portfolio
 
 **Data Science • Machine Learning Engineering • MLOps • Software Craftsmanship**
@@ -52,9 +51,16 @@ Welcome to my technical portfolio. This repository showcases real-world projects
 - Embeddings & Vector Databases
 - LLM-Powered System Architectures
 
+### 🔹 Geometric Deep Learning & Non-Euclidean AI *(Research)*
+- Hyperbolic Neural Networks & Lorentz Manifolds
+- Geometric Representation Learning
+- Contrastive Learning in Non-Euclidean Spaces
+- Topological Data Analysis (TDA) for ML
+- Riemannian Optimization
+
 ---
 
-## 📁 Repository Structure
+## 📂 Repository Structure
 
 Each module is independent and self-contained, making technical evaluation straightforward:
 
@@ -82,10 +88,49 @@ MyShowCase/
 │   ├── sales-taxes-kata/
 │   └── shipping-system-kata/
 │
+├── cgt-hyperbolic-embeddings/    → ⭐ Original Research: Geometric Deep Learning
+│   ├── src/cgt/                  →    Core library (geometry, models, losses)
+│   ├── experiments/              →    Ablations, benchmarks, unified executor
+│   ├── notebooks/                →    Training notebooks (CGT, H-LLM)
+│   └── README_TECHNICAL.md       →    Full technical documentation
+│
 └── README.md                     → This document
 ```
 
 **Each folder contains its own README** with project objectives, tech stack, technical decisions, and key learnings.
+
+---
+
+## ⭐ Featured Research Project
+
+### CGT-Hyperbolic-Embeddings
+
+**Contrastive Geometric Transfer: 24× Sentence Embedding Compression via Hyperbolic Geometry**
+
+| Metric | Value |
+|--------|-------|
+| Compression | 384d → 16d (24×) |
+| Performance Retention | 97.1% Spearman on STS-B |
+| Storage Reduction | 96% |
+| Geometry | Lorentz (Hyperboloid) Model |
+
+**What it implements:**
+- Complete Lorentz manifold operations (exp/log maps, geodesics, Fréchet mean)
+- CGT student-teacher framework with multi-objective loss
+- **H-LLM**: Full Hyperbolic Transformer with geodesic attention
+- Ψ-SLM extensions: H-NCA, H-AKOrN, topological field
+- Gromov-Wasserstein structural alignment
+- Falsification protocols (F1-F3) for scientific rigor
+
+**Key Differentiators:**
+- 🔬 **Original research** with 15+ peer-documented papers on Zenodo
+- 📐 **Mathematically rigorous** — all operations have closed-form derivations
+- 🧪 **Falsifiable** — explicit protocols to disprove claims
+- 🚫 **No hype** — clear separation between implemented vs. theoretical
+
+**Publications:** [Zenodo Collection](https://doi.org/10.5281/zenodo.18379741)
+
+> *"This project demonstrates the intersection of geometric deep learning, representation theory, and production ML engineering."*
 
 ---
 
@@ -107,12 +152,13 @@ MyShowCase/
 
 ## 💼 Professional Context
 
-With **9+ years of experience** in AI, Data Science, and MLOps, I've delivered production ML systems across **finance, renewable energy, and biometrics industries**. My approach combines:
+With **9+ years of experience** in AI, Data Science, and MLOps, I've delivered production ML systems across **finance, renewable energy, biometrics, and e-commerce industries**. My approach combines:
 
 - **Robust engineering practices** (TDD, Clean Code, SOLID)
 - **Production-grade MLOps** (AWS, Azure, Databricks, Kubernetes)
 - **Hands-on AI innovation** (LLMs, Computer Vision, Predictive Analytics)
-- **Interdisciplinary insight** (Psychology, Human-Centered AI)
+- **Geometric Deep Learning research** (Hyperbolic NNs, Topological ML)
+- **Interdisciplinary insight** (Psychology, Psychoanalysis, Human-Centered AI)
 
 Currently focused on **Senior Data Scientist/ML Engineer** roles where engineering excellence meets AI innovation.
 
@@ -123,14 +169,17 @@ Currently focused on **Senior Data Scientist/ML Engineer** roles where engineeri
 This repository is distributed under the **MIT License**.  
 Feel free to use the code while maintaining proper attribution.
 
+**Exception:** The `cgt-hyperbolic-embeddings/` project is licensed under **CC BY-NC-SA 4.0** with additional restrictions on AI training use. See its README for details.
+
 ---
 
 ## 🤝 Connect & Collaborate
 
 I'm always open to meaningful conversations, technical collaborations, and career opportunities.
 
-- 📬 **LinkedIn:** [linkedin.com/in/eric-arayai](https://www.linkedin.com/in/eric-arayai)
+- 📬 **LinkedIn:** [linkedin.com/in/eric-araya](https://www.linkedin.com/in/eric-araya)
 - 🌐 **Portfolio:** [gokuhayda.github.io/ArayAI](https://gokuhayda.github.io/ArayAI/index.html)
+- 📺 **YouTube:** [youtube.com/@ericreis-z3u](https://youtube.com/@ericreis-z3u)
 - 💼 **Open to opportunities:** Senior Data Scientist | ML Engineer | MLOps Specialist
 
 ---
