@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H-NCA WebGPU Simulator | Geometric Intelligence Architecture</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a24;
+            --accent-cyan: #00fff7;
+            --accent-magenta: #ff00aa;
+            --accent-gold: #ffd700;
+            --accent-blue: #4169e1;
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888a0;
+            --text-muted: #555566;
+            --border-color: rgba(255,255,255,0.08);
+            --glow-cyan: 0 0 20px rgba(0,255,247,0.3);
+            --glow-magenta: 0 0 20px rgba(255,0,170,0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1rem 2rem;
+            background: linear-gradient(180deg, var(--bg-primary) 0%, transparent 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 1.4rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-magenta) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .logo-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-dot.error {
+            background: #ff4444;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,247,0.4); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(0,255,247,0); }
+        }
+        
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            gap: 0;
+            min-height: 100vh;
+            padding-top: 70px;
+        }
+        
+        /* Panels */
+        .panel {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            overflow-y: auto;
+            height: calc(100vh - 70px);
+        }
+        
+        .panel:last-child {
+            border-right: none;
+            border-left: 1px solid var(--border-color);
+        }
+        
+        .panel-header {
+            font-family: 'Syne', sans-serif;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .panel-header::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta));
+            border-radius: 2px;
+        }
+        
+        /* Control Groups */
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .control-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .control-value {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+        
+        /* Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            outline: none;
+            margin: 0.5rem 0;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: var(--glow-cyan);
+            transition: transform 0.15s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        /* Buttons */
+        .btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+        }
+        
+        .btn:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border: none;
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            box-shadow: var(--glow-cyan);
+            transform: translateY(-1px);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+        
+        /* Select */
+        select {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            outline: none;
+        }
+        
+        select:focus {
+            border-color: var(--accent-cyan);
+        }
+        
+        /* Canvas Container */
+        .canvas-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-primary);
+            overflow: hidden;
+        }
+        
+        #mainCanvas {
+            border-radius: 50%;
+            box-shadow: 
+                0 0 60px rgba(0,255,247,0.1),
+                0 0 120px rgba(255,0,170,0.05),
+                inset 0 0 60px rgba(0,0,0,0.5);
+        }
+        
+        /* Poincaré Disk Border */
+        .disk-border {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .disk-border-outer {
+            width: calc(min(60vh, 60vw) + 8px);
+            height: calc(min(60vh, 60vw) + 8px);
+            border: 2px solid var(--accent-cyan);
+            opacity: 0.3;
+        }
+        
+        .disk-border-inner {
+            width: calc(min(60vh, 60vw) + 20px);
+            height: calc(min(60vh, 60vw) + 20px);
+            border: 1px solid var(--accent-magenta);
+            opacity: 0.15;
+        }
+        
+        /* Metrics Cards */
+        .metric-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .metric-card.highlight {
+            border-color: var(--accent-cyan);
+            background: linear-gradient(135deg, rgba(0,255,247,0.05) 0%, transparent 100%);
+        }
+        
+        .metric-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-value {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            line-height: 1;
+        }
+        
+        .metric-value.magenta { color: var(--accent-magenta); }
+        .metric-value.gold { color: var(--accent-gold); }
+        .metric-value.blue { color: var(--accent-blue); }
+        
+        .metric-unit {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        /* Progress Bars */
+        .progress-container {
+            margin-top: 0.75rem;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-primary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
+            transition: width 0.3s ease;
+        }
+        
+        /* Mini Charts */
+        .mini-chart {
+            width: 100%;
+            height: 60px;
+            margin-top: 0.75rem;
+        }
+        
+        .mini-chart canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Topology Display */
+        .topology-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .betti-number {
+            text-align: center;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+        
+        .betti-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        
+        .betti-value {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+        
+        /* Info Box */
+        .info-box {
+            background: linear-gradient(135deg, rgba(65,105,225,0.1) 0%, transparent 100%);
+            border: 1px solid rgba(65,105,225,0.3);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .info-box h4 {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-blue);
+        }
+        
+        .info-box p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        /* Equation Display */
+        .equation {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            color: var(--accent-cyan);
+            overflow-x: auto;
+            white-space: nowrap;
+            margin: 0.5rem 0;
+        }
+        
+        /* WebGPU Not Supported */
+        .webgpu-fallback {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .webgpu-fallback h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--accent-magenta), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .webgpu-fallback p {
+            color: var(--text-secondary);
+            max-width: 500px;
+            line-height: 1.6;
+        }
+        
+        /* Phase Histogram */
+        .histogram-container {
+            margin-top: 1rem;
+        }
+        
+        .histogram-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .histogram-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            width: 40px;
+        }
+        
+        .histogram-track {
+            flex: 1;
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .histogram-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Visualization Mode Buttons */
+        .viz-modes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .viz-mode-btn {
+            padding: 0.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .viz-mode-btn:hover {
+            border-color: var(--accent-cyan);
+        }
+        
+        .viz-mode-btn.active {
+            background: linear-gradient(135deg, rgba(0,255,247,0.1) 0%, transparent 100%);
+            border-color: var(--accent-cyan);
+        }
+        
+        .viz-mode-btn span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        
+        .viz-mode-btn.active span {
+            color: var(--accent-cyan);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 280px 1fr 280px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            
+            .panel {
+                height: auto;
+                max-height: 300px;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .panel:last-child {
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+            }
+            
+            .canvas-container {
+                min-height: 400px;
+            }
+        }
+
+        /* Loading animation */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--bg-tertiary);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Cluster colors */
+        .cluster-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .cluster-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+        }
+
+        .cluster-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div id="webgpu-fallback" class="webgpu-fallback" style="display: none;">
+        <h1>WebGPU Required</h1>
+        <p>This simulator requires WebGPU support. Please use a modern browser like Chrome 113+, Edge 113+, or Firefox Nightly with WebGPU enabled.</p>
+        <p style="margin-top: 1rem; color: var(--text-muted);">Falling back to Canvas 2D rendering...</p>
+        <button class="btn btn-primary" style="margin-top: 1.5rem;" onclick="startFallback()">Continue with Canvas 2D</button>
+    </div>
+
+    <header>
+        <div>
+            <div class="logo">H-NCA Simulator</div>
+            <div class="logo-sub">Hyperbolic Neural Cellular Automata • WebGPU</div>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Initializing...</span>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Left Panel: Controls -->
+        <div class="panel" id="controlsPanel">
+            <div class="panel-header">Simulation Parameters</div>
+            
+            <div class="info-box">
+                <h4>H-NCA Architecture</h4>
+                <p>Hyperbolic Neural Cellular Automata on a {5,4} pentagrid tessellation with H-AKORN phase dynamics for temporal binding.</p>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Coupling Strength (K)</span>
+                    <span class="control-value" id="kValue">2.5</span>
+                </div>
+                <input type="range" id="couplingK" min="0" max="10" step="0.1" value="2.5">
+                <div class="equation">K_c ≈ 2/π·g(0) ≈ 1.27</div>
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Step Size (ε)</span>
+                    <span class="control-value" id="epsilonValue">0.05</span>
+                </div>
+                <input type="range" id="epsilon" min="0.001" max="0.2" step="0.001" value="0.05">
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Hyperbolic Layers</span>
+                    <span class="control-value" id="layersValue">5</span>
+                </div>
+                <input type="range" id="layers" min="2" max="8" step="1" value="5">
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Natural Frequency Spread (σ)</span>
+                    <span class="control-value" id="sigmaValue">1.0</span>
+                </div>
+                <input type="range" id="sigma" min="0.1" max="3" step="0.1" value="1.0">
+            </div>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span>Curvature (κ)</span>
+                    <span class="control-value" id="curvatureValue">-1.0</span>
+                </div>
+                <input type="range" id="curvature" min="-2" max="-0.1" step="0.1" value="-1">
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn" id="resetBtn">Reset</button>
+                <button class="btn btn-primary" id="playPauseBtn">▶ Play</button>
+            </div>
+            
+            <div style="margin-top: 1.5rem;">
+                <div class="panel-header">Visualization Mode</div>
+                <div class="viz-modes">
+                    <div class="viz-mode-btn active" data-mode="phase">
+                        <span>Phase θᵢ</span>
+                    </div>
+                    <div class="viz-mode-btn" data-mode="magnitude">
+                        <span>|hᵢ| Magnitude</span>
+                    </div>
+                    <div class="viz-mode-btn" data-mode="cluster">
+                        <span>Clusters</span>
+                    </div>
+                    <div class="viz-mode-btn" data-mode="coupling">
+                        <span>Coupling Aᵢⱼ</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1.5rem;">
+                <div class="panel-header">Geometry</div>
+                <select id="geometrySelect">
+                    <option value="pentagrid">Pentagrid {5,4}</option>
+                    <option value="heptagrid">Heptagrid {7,3}</option>
+                    <option value="order5square">Square {4,5}</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Center: Canvas -->
+        <div class="canvas-container">
+            <div class="disk-border disk-border-inner"></div>
+            <div class="disk-border disk-border-outer"></div>
+            <canvas id="mainCanvas"></canvas>
+        </div>
+        
+        <!-- Right Panel: Metrics -->
+        <div class="panel" id="metricsPanel">
+            <div class="panel-header">Real-time Metrics</div>
+            
+            <div class="metric-card highlight">
+                <div class="metric-title">Kuramoto Order Parameter R(t)</div>
+                <div class="metric-value" id="orderParam">0.000</div>
+                <div class="metric-unit">Synchronization: <span id="syncStatus">Incoherent</span></div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="orderParamBar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <canvas class="mini-chart" id="orderChart"></canvas>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Phase Variance σ²</div>
+                <div class="metric-value magenta" id="phaseVariance">0.000</div>
+                <div class="metric-unit">Circular variance</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Integrated Information Φ_proxy</div>
+                <div class="metric-value gold" id="phiProxy">0.000</div>
+                <div class="metric-unit">Φ = R × Vol(ℋ)</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Detected Clusters</div>
+                <div class="metric-value blue" id="clusterCount">1</div>
+                <div class="metric-unit">Coherent phase groups</div>
+                <div class="cluster-legend" id="clusterLegend"></div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Topology (Betti Numbers)</div>
+                <div class="topology-display">
+                    <div class="betti-number">
+                        <div class="betti-value" id="betti0">1</div>
+                        <div class="betti-label">β₀</div>
+                    </div>
+                    <div class="betti-number">
+                        <div class="betti-value" id="betti1">0</div>
+                        <div class="betti-label">β₁</div>
+                    </div>
+                    <div class="betti-number">
+                        <div class="betti-value" id="betti2">0</div>
+                        <div class="betti-label">β₂</div>
+                    </div>
+                </div>
+                <div class="metric-unit" style="margin-top: 0.5rem;">Persistent homology estimate</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Phase Distribution</div>
+                <div class="histogram-container" id="phaseHistogram"></div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">System Info</div>
+                <div class="metric-unit">
+                    <div>Cells: <span id="cellCount">0</span></div>
+                    <div>FPS: <span id="fpsValue">0</span></div>
+                    <div>Step: <span id="stepCount">0</span></div>
+                    <div>Time: <span id="simTime">0.00</span>s</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // H-NCA WebGPU Simulator
+        // Geometric Intelligence Architecture
+        // ============================================
+        
+        // Global state
+        let device = null;
+        let context = null;
+        let pipeline = null;
+        let bindGroup = null;
+        let uniformBuffer = null;
+        let cellBuffer = null;
+        let cellBufferRead = null;
+        let vertexBuffer = null;
+        
+        let isPlaying = false;
+        let useWebGPU = true;
+        let animationId = null;
+        let lastTime = 0;
+        let frameCount = 0;
+        let fps = 0;
+        let stepCount = 0;
+        
+        // Simulation parameters
+        const params = {
+            K: 2.5,           // Coupling strength
+            epsilon: 0.05,    // Step size
+            layers: 5,        // Hyperbolic layers
+            sigma: 1.0,       // Natural frequency spread
+            curvature: -1.0,  // Hyperbolic curvature
+            vizMode: 'phase'  // Visualization mode
+        };
+        
+        // Cell data (CPU fallback)
+        let cells = [];
+        let adjacency = [];
+        
+        // Chart data
+        const orderHistory = [];
+        let orderChart = null;
+        
+        // ============================================
+        // Hyperbolic Geometry Functions
+        // ============================================
+        
+        class HyperbolicGeometry {
+            static lorentzInner(u, v) {
+                // Lorentz inner product: -u[0]*v[0] + u[1]*v[1] + u[2]*v[2]
+                return -u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+            }
+            
+            static lorentzNorm(u) {
+                return Math.sqrt(Math.abs(this.lorentzInner(u, u)));
+            }
+            
+            static hyperboloidToKlein(p) {
+                // Project from hyperboloid to Klein disk
+                return [p[1] / p[0], p[2] / p[0]];
+            }
+            
+            static hyperboloidToPoincare(p) {
+                // Project from hyperboloid to Poincaré disk
+                const denom = 1 + p[0];
+                return [p[1] / denom, p[2] / denom];
+            }
+            
+            static poincareToHyperboloid(p) {
+                // Inverse projection from Poincaré to hyperboloid
+                const r2 = p[0] * p[0] + p[1] * p[1];
+                const scale = 2 / (1 - r2);
+                return [
+                    (1 + r2) / (1 - r2),
+                    scale * p[0],
+                    scale * p[1]
+                ];
+            }
+            
+            static geodesicDistance(p, q) {
+                // Geodesic distance on hyperboloid
+                const inner = this.lorentzInner(p, q);
+                return Math.acosh(Math.max(1, -inner));
+            }
+            
+            static poincareDistance(p, q) {
+                // Distance in Poincaré disk model
+                const dx = q[0] - p[0];
+                const dy = q[1] - p[1];
+                const r1 = p[0] * p[0] + p[1] * p[1];
+                const r2 = q[0] * q[0] + q[1] * q[1];
+                const num = dx * dx + dy * dy;
+                const denom = (1 - r1) * (1 - r2);
+                return Math.acosh(1 + 2 * num / denom);
+            }
+            
+            static expMap(p, v, t = 1) {
+                // Exponential map at p in direction v with step t
+                const vnorm = Math.sqrt(Math.abs(this.lorentzInner(v, v)));
+                if (vnorm < 1e-10) return [...p];
+                
+                const tv = t * vnorm;
+                const c = Math.cosh(tv);
+                const s = Math.sinh(tv) / vnorm;
+                
+                return [
+                    p[0] * c + v[0] * s,
+                    p[1] * c + v[1] * s,
+                    p[2] * c + v[2] * s
+                ];
+            }
+            
+            static logMap(p, q) {
+                // Logarithm map: direction from p to q
+                const inner = -this.lorentzInner(p, q);
+                const d = Math.acosh(Math.max(1, inner));
+                if (d < 1e-10) return [0, 0, 0];
+                
+                const scale = d / Math.sinh(d);
+                return [
+                    scale * (q[0] - inner * p[0]),
+                    scale * (q[1] - inner * p[1]),
+                    scale * (q[2] - inner * p[2])
+                ];
+            }
+            
+            static projectToTangent(p, v) {
+                // Project v to tangent space at p
+                const inner = this.lorentzInner(p, v);
+                return [
+                    v[0] + inner * p[0],
+                    v[1] + inner * p[1],
+                    v[2] + inner * p[2]
+                ];
+            }
+        }
+        
+        // ============================================
+        // Pentagrid {5,4} Tessellation Generator
+        // ============================================
+        
+        class TessellationGenerator {
+            static generatePentagrid(layers) {
+                const cells = [];
+                const adjacency = new Map();
+                
+                // Center cell
+                cells.push({
+                    id: 0,
+                    position: [1, 0, 0], // On hyperboloid: (t, x, y) with -t² + x² + y² = -1
+                    poincare: [0, 0],
+                    phase: Math.random() * 2 * Math.PI,
+                    omega: (Math.random() - 0.5) * 2 * params.sigma, // Natural frequency
+                    magnitude: 0.5 + Math.random() * 0.5,
+                    layer: 0,
+                    neighbors: []
+                });
+                adjacency.set(0, []);
+                
+                // Generate layers using hyperbolic expansion
+                let currentId = 1;
+                const cellsByLayer = [[0]];
+                
+                for (let layer = 1; layer <= layers; layer++) {
+                    const layerCells = [];
+                    const numCells = Math.floor(5 * Math.pow(2, layer - 1)); // Exponential growth
+                    
+                    for (let i = 0; i < numCells; i++) {
+                        const angle = (2 * Math.PI * i) / numCells + (layer % 2) * Math.PI / numCells;
+                        
+                        // Radial distance in Poincaré disk (approaches 1 asymptotically)
+                        const r = Math.tanh(layer * 0.4);
+                        
+                        const px = r * Math.cos(angle);
+                        const py = r * Math.sin(angle);
+                        
+                        // Convert to hyperboloid
+                        const hyp = HyperbolicGeometry.poincareToHyperboloid([px, py]);
+                        
+                        cells.push({
+                            id: currentId,
+                            position: hyp,
+                            poincare: [px, py],
+                            phase: Math.random() * 2 * Math.PI,
+                            omega: (Math.random() - 0.5) * 2 * params.sigma,
+                            magnitude: 0.5 + Math.random() * 0.5,
+                            layer: layer,
+                            neighbors: []
+                        });
+                        
+                        adjacency.set(currentId, []);
+                        layerCells.push(currentId);
+                        currentId++;
+                    }
+                    
+                    cellsByLayer.push(layerCells);
+                }
+                
+                // Build adjacency based on hyperbolic distance
+                const maxDist = 1.2; // Threshold for connection
+                for (let i = 0; i < cells.length; i++) {
+                    for (let j = i + 1; j < cells.length; j++) {
+                        const dist = HyperbolicGeometry.poincareDistance(
+                            cells[i].poincare,
+                            cells[j].poincare
+                        );
+                        
+                        if (dist < maxDist) {
+                            cells[i].neighbors.push(j);
+                            cells[j].neighbors.push(i);
+                            adjacency.get(i).push(j);
+                            adjacency.get(j).push(i);
+                        }
+                    }
+                }
+                
+                return { cells, adjacency };
+            }
+            
+            static generateHeptagrid(layers) {
+                // Similar to pentagrid but with 7-gons
+                return this.generatePentagrid(layers); // Simplified for now
+            }
+        }
+        
+        // ============================================
+        // H-AKORN Dynamics (CPU Implementation)
+        // ============================================
+        
+        class HAKORNDynamics {
+            static computeKuramotoOrder(cells) {
+                // R = |1/N Σ exp(i·θ_k)|
+                let sumReal = 0;
+                let sumImag = 0;
+                
+                for (const cell of cells) {
+                    sumReal += Math.cos(cell.phase);
+                    sumImag += Math.sin(cell.phase);
+                }
+                
+                const N = cells.length;
+                return Math.sqrt(sumReal * sumReal + sumImag * sumImag) / N;
+            }
+            
+            static computeMeanPhase(cells) {
+                let sumReal = 0;
+                let sumImag = 0;
+                
+                for (const cell of cells) {
+                    sumReal += Math.cos(cell.phase);
+                    sumImag += Math.sin(cell.phase);
+                }
+                
+                return Math.atan2(sumImag, sumReal);
+            }
+            
+            static computePhaseVariance(cells) {
+                // Circular variance: 1 - R
+                const R = this.computeKuramotoOrder(cells);
+                return 1 - R;
+            }
+            
+            static hyperbolicAttention(cell_i, cell_j) {
+                // Attention weight based on hyperbolic distance
+                const dist = HyperbolicGeometry.geodesicDistance(
+                    cell_i.position,
+                    cell_j.position
+                );
+                
+                // Exponential decay with distance
+                return Math.exp(-dist * Math.abs(params.curvature));
+            }
+            
+            static step(cells, dt) {
+                const K = params.K;
+                const newPhases = [];
+                
+                for (let i = 0; i < cells.length; i++) {
+                    const cell = cells[i];
+                    let coupling = 0;
+                    
+                    // Sum over neighbors with hyperbolic attention
+                    for (const j of cell.neighbors) {
+                        const neighbor = cells[j];
+                        const A_ij = this.hyperbolicAttention(cell, neighbor);
+                        coupling += A_ij * Math.sin(neighbor.phase - cell.phase);
+                    }
+                    
+                    // Kuramoto dynamics: dθ/dt = ω + K/N Σ A_ij sin(θ_j - θ_i)
+                    const dtheta = cell.omega + (K / cell.neighbors.length) * coupling;
+                    newPhases.push((cell.phase + dt * dtheta) % (2 * Math.PI));
+                }
+                
+                // Update phases
+                for (let i = 0; i < cells.length; i++) {
+                    cells[i].phase = newPhases[i];
+                    if (cells[i].phase < 0) cells[i].phase += 2 * Math.PI;
+                }
+            }
+            
+            static detectClusters(cells, threshold = 0.3) {
+                // Detect phase-coherent clusters
+                const clusters = [];
+                const visited = new Set();
+                
+                for (let i = 0; i < cells.length; i++) {
+                    if (visited.has(i)) continue;
+                    
+                    const cluster = [i];
+                    visited.add(i);
+                    
+                    // BFS to find connected cells with similar phase
+                    const queue = [i];
+                    while (queue.length > 0) {
+                        const current = queue.shift();
+                        
+                        for (const neighbor of cells[current].neighbors) {
+                            if (visited.has(neighbor)) continue;
+                            
+                            // Check phase similarity
+                            const phaseDiff = Math.abs(cells[current].phase - cells[neighbor].phase);
+                            const minDiff = Math.min(phaseDiff, 2 * Math.PI - phaseDiff);
+                            
+                            if (minDiff < threshold) {
+                                visited.add(neighbor);
+                                cluster.push(neighbor);
+                                queue.push(neighbor);
+                            }
+                        }
+                    }
+                    
+                    clusters.push(cluster);
+                }
+                
+                return clusters;
+            }
+            
+            static estimateBettiNumbers(cells, clusters) {
+                // Simplified Betti number estimation
+                // β₀ = number of connected components (clusters)
+                // β₁ ≈ loops in the network (edges - nodes + components)
+                
+                const beta0 = clusters.length;
+                
+                let totalEdges = 0;
+                for (const cell of cells) {
+                    totalEdges += cell.neighbors.length;
+                }
+                totalEdges /= 2; // Each edge counted twice
+                
+                // Euler characteristic approximation
+                const beta1 = Math.max(0, totalEdges - cells.length + beta0);
+                
+                // β₂ is typically 0 for 2D manifolds
+                const beta2 = 0;
+                
+                return { beta0, beta1, beta2 };
+            }
+        }
+        
+        // ============================================
+        // Visualization
+        // ============================================
+        
+        class Renderer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.resize();
+                
+                window.addEventListener('resize', () => this.resize());
+            }
+            
+            resize() {
+                const size = Math.min(
+                    window.innerHeight * 0.6,
+                    window.innerWidth * 0.4
+                );
+                this.canvas.width = size;
+                this.canvas.height = size;
+                this.centerX = size / 2;
+                this.centerY = size / 2;
+                this.radius = size / 2 - 20;
+            }
+            
+            clear() {
+                this.ctx.fillStyle = '#0a0a0f';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw Poincaré disk boundary
+                this.ctx.beginPath();
+                this.ctx.arc(this.centerX, this.centerY, this.radius, 0, 2 * Math.PI);
+                this.ctx.strokeStyle = 'rgba(0, 255, 247, 0.2)';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+                
+                // Inner glow
+                const gradient = this.ctx.createRadialGradient(
+                    this.centerX, this.centerY, 0,
+                    this.centerX, this.centerY, this.radius
+                );
+                gradient.addColorStop(0, 'rgba(0, 255, 247, 0.03)');
+                gradient.addColorStop(0.7, 'rgba(255, 0, 170, 0.02)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.fill();
+            }
+            
+            poincareToScreen(p) {
+                return [
+                    this.centerX + p[0] * this.radius,
+                    this.centerY - p[1] * this.radius // Y inverted
+                ];
+            }
+            
+            phaseToColor(phase, mode = 'phase') {
+                if (mode === 'phase') {
+                    // HSL color wheel based on phase
+                    const hue = (phase / (2 * Math.PI)) * 360;
+                    return `hsl(${hue}, 80%, 60%)`;
+                } else if (mode === 'magnitude') {
+                    // Intensity based on magnitude
+                    const intensity = Math.floor(200 + 55 * phase);
+                    return `rgb(${intensity}, ${Math.floor(intensity * 0.6)}, ${intensity})`;
+                }
+                return '#00fff7';
+            }
+            
+            drawCell(cell, clusters, mode) {
+                const [sx, sy] = this.poincareToScreen(cell.poincare);
+                
+                // Size based on layer (perspective)
+                const baseSize = 8 - cell.layer * 0.8;
+                const size = Math.max(3, baseSize);
+                
+                // Color based on mode
+                let color;
+                switch (mode) {
+                    case 'phase':
+                        color = this.phaseToColor(cell.phase);
+                        break;
+                    case 'magnitude':
+                        const m = cell.magnitude;
+                        color = `rgb(${Math.floor(255 * m)}, ${Math.floor(100 * m)}, ${Math.floor(200 * m)})`;
+                        break;
+                    case 'cluster':
+                        // Find which cluster this cell belongs to
+                        let clusterIdx = 0;
+                        for (let i = 0; i < clusters.length; i++) {
+                            if (clusters[i].includes(cell.id)) {
+                                clusterIdx = i;
+                                break;
+                            }
+                        }
+                        const hue = (clusterIdx * 137.5) % 360; // Golden angle
+                        color = `hsl(${hue}, 70%, 55%)`;
+                        break;
+                    case 'coupling':
+                        // Show connection strength
+                        const avgCoupling = cell.neighbors.reduce((sum, j) => {
+                            return sum + HAKORNDynamics.hyperbolicAttention(cell, cells[j]);
+                        }, 0) / Math.max(1, cell.neighbors.length);
+                        const intensity = Math.floor(255 * avgCoupling);
+                        color = `rgb(${intensity}, ${Math.floor(intensity * 0.5)}, ${255 - intensity})`;
+                        break;
+                    default:
+                        color = '#00fff7';
+                }
+                
+                // Draw glow
+                this.ctx.beginPath();
+                this.ctx.arc(sx, sy, size + 4, 0, 2 * Math.PI);
+                this.ctx.fillStyle = color.replace(')', ', 0.2)').replace('rgb', 'rgba').replace('hsl', 'hsla');
+                this.ctx.fill();
+                
+                // Draw cell
+                this.ctx.beginPath();
+                this.ctx.arc(sx, sy, size, 0, 2 * Math.PI);
+                this.ctx.fillStyle = color;
+                this.ctx.fill();
+            }
+            
+            drawEdge(cell_i, cell_j, alpha = 0.15) {
+                const [sx1, sy1] = this.poincareToScreen(cell_i.poincare);
+                const [sx2, sy2] = this.poincareToScreen(cell_j.poincare);
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(sx1, sy1);
+                
+                // Draw geodesic (approximated as line for now)
+                // TODO: Implement proper hyperbolic geodesic arc
+                this.ctx.lineTo(sx2, sy2);
+                
+                this.ctx.strokeStyle = `rgba(100, 100, 120, ${alpha})`;
+                this.ctx.lineWidth = 0.5;
+                this.ctx.stroke();
+            }
+            
+            render(cells, clusters) {
+                this.clear();
+                
+                const mode = params.vizMode;
+                
+                // Draw edges first
+                const drawnEdges = new Set();
+                for (const cell of cells) {
+                    for (const j of cell.neighbors) {
+                        const edgeKey = cell.id < j ? `${cell.id}-${j}` : `${j}-${cell.id}`;
+                        if (!drawnEdges.has(edgeKey)) {
+                            this.drawEdge(cell, cells[j], 0.1);
+                            drawnEdges.add(edgeKey);
+                        }
+                    }
+                }
+                
+                // Draw cells
+                for (const cell of cells) {
+                    this.drawCell(cell, clusters, mode);
+                }
+            }
+        }
+        
+        // ============================================
+        // Mini Chart for Order Parameter
+        // ============================================
+        
+        function initOrderChart() {
+            const canvas = document.getElementById('orderChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 60;
+            
+            return { canvas, ctx };
+        }
+        
+        function updateOrderChart(chartCtx, history) {
+            const { canvas, ctx } = chartCtx;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+            
+            if (history.length < 2) return;
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.strokeStyle = '#00fff7';
+            ctx.lineWidth = 1.5;
+            
+            const step = width / Math.max(100, history.length);
+            const startIdx = Math.max(0, history.length - 100);
+            
+            for (let i = startIdx; i < history.length; i++) {
+                const x = (i - startIdx) * step;
+                const y = height - history[i] * height;
+                
+                if (i === startIdx) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
+            
+            // Draw threshold line (K_c)
+            const threshold = 0.5; // Typical synchronization threshold
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255, 0, 170, 0.5)';
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(0, height - threshold * height);
+            ctx.lineTo(width, height - threshold * height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // ============================================
+        // Phase Histogram
+        // ============================================
+        
+        function updatePhaseHistogram(cells) {
+            const container = document.getElementById('phaseHistogram');
+            const bins = 8;
+            const counts = new Array(bins).fill(0);
+            
+            for (const cell of cells) {
+                const binIdx = Math.floor((cell.phase / (2 * Math.PI)) * bins) % bins;
+                counts[binIdx]++;
+            }
+            
+            const maxCount = Math.max(...counts);
+            
+            let html = '';
+            for (let i = 0; i < bins; i++) {
+                const angle = (i / bins) * 360;
+                const pct = (counts[i] / maxCount) * 100;
+                const hue = angle;
+                
+                html += `
+                    <div class="histogram-bar">
+                        <span class="histogram-label">${Math.round(angle)}°</span>
+                        <div class="histogram-track">
+                            <div class="histogram-fill" style="width: ${pct}%; background: hsl(${hue}, 70%, 55%);"></div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // ============================================
+        // UI Updates
+        // ============================================
+        
+        function updateMetrics(cells, clusters) {
+            const R = HAKORNDynamics.computeKuramotoOrder(cells);
+            const variance = HAKORNDynamics.computePhaseVariance(cells);
+            const betti = HAKORNDynamics.estimateBettiNumbers(cells, clusters);
+            
+            // Update displays
+            document.getElementById('orderParam').textContent = R.toFixed(3);
+            document.getElementById('orderParamBar').style.width = `${R * 100}%`;
+            
+            // Synchronization status
+            let status = 'Incoherent';
+            if (R > 0.7) status = 'Synchronized';
+            else if (R > 0.4) status = 'Partially Synchronized';
+            document.getElementById('syncStatus').textContent = status;
+            
+            document.getElementById('phaseVariance').textContent = variance.toFixed(3);
+            
+            // Φ_proxy = R × effective volume
+            const phiProxy = R * Math.log(cells.length + 1);
+            document.getElementById('phiProxy').textContent = phiProxy.toFixed(3);
+            
+            document.getElementById('clusterCount').textContent = clusters.length;
+            
+            // Cluster legend
+            let legendHtml = '';
+            for (let i = 0; i < Math.min(clusters.length, 6); i++) {
+                const hue = (i * 137.5) % 360;
+                legendHtml += `
+                    <div class="cluster-item">
+                        <div class="cluster-dot" style="background: hsl(${hue}, 70%, 55%);"></div>
+                        <span>${clusters[i].length}</span>
+                    </div>
+                `;
+            }
+            if (clusters.length > 6) {
+                legendHtml += `<div class="cluster-item"><span>+${clusters.length - 6} more</span></div>`;
+            }
+            document.getElementById('clusterLegend').innerHTML = legendHtml;
+            
+            // Betti numbers
+            document.getElementById('betti0').textContent = betti.beta0;
+            document.getElementById('betti1').textContent = betti.beta1;
+            document.getElementById('betti2').textContent = betti.beta2;
+            
+            // System info
+            document.getElementById('cellCount').textContent = cells.length;
+            document.getElementById('stepCount').textContent = stepCount;
+            document.getElementById('simTime').textContent = (stepCount * params.epsilon).toFixed(2);
+            
+            // Track order parameter history
+            orderHistory.push(R);
+            if (orderHistory.length > 500) orderHistory.shift();
+        }
+        
+        // ============================================
+        // Main Simulation Loop
+        // ============================================
+        
+        let renderer = null;
+        let chartCtx = null;
+        
+        function init() {
+            // Check WebGPU support
+            if (!navigator.gpu) {
+                console.log('WebGPU not supported, using Canvas 2D fallback');
+                useWebGPU = false;
+                document.getElementById('webgpu-fallback').style.display = 'flex';
+            } else {
+                setupWebGPU().then(success => {
+                    if (!success) {
+                        useWebGPU = false;
+                        document.getElementById('webgpu-fallback').style.display = 'flex';
+                    } else {
+                        startSimulation();
+                    }
+                });
+            }
+            
+            // Setup UI
+            setupUI();
+        }
+        
+        async function setupWebGPU() {
+            try {
+                const adapter = await navigator.gpu.requestAdapter();
+                if (!adapter) return false;
+                
+                device = await adapter.requestDevice();
+                
+                const canvas = document.getElementById('mainCanvas');
+                context = canvas.getContext('webgpu');
+                
+                const format = navigator.gpu.getPreferredCanvasFormat();
+                context.configure({
+                    device,
+                    format,
+                    alphaMode: 'premultiplied'
+                });
+                
+                // For now, we'll use Canvas 2D for rendering
+                // WebGPU compute shaders can be added for dynamics acceleration
+                
+                return true;
+            } catch (e) {
+                console.error('WebGPU setup failed:', e);
+                return false;
+            }
+        }
+        
+        function startFallback() {
+            document.getElementById('webgpu-fallback').style.display = 'none';
+            useWebGPU = false;
+            startSimulation();
+        }
+        
+        function startSimulation() {
+            // Generate initial tessellation
+            const tessellation = TessellationGenerator.generatePentagrid(params.layers);
+            cells = tessellation.cells;
+            adjacency = tessellation.adjacency;
+            
+            // Setup renderer
+            const canvas = document.getElementById('mainCanvas');
+            renderer = new Renderer(canvas);
+            
+            // Setup chart
+            chartCtx = initOrderChart();
+            
+            // Update status
+            document.getElementById('statusDot').classList.remove('error');
+            document.getElementById('statusText').textContent = useWebGPU ? 'WebGPU Active' : 'Canvas 2D';
+            
+            // Initial render
+            const clusters = HAKORNDynamics.detectClusters(cells);
+            renderer.render(cells, clusters);
+            updateMetrics(cells, clusters);
+            updatePhaseHistogram(cells);
+        }
+        
+        function simulationStep() {
+            // Run H-AKORN dynamics
+            HAKORNDynamics.step(cells, params.epsilon);
+            stepCount++;
+            
+            // Detect clusters
+            const clusters = HAKORNDynamics.detectClusters(cells);
+            
+            // Render
+            renderer.render(cells, clusters);
+            
+            // Update metrics
+            updateMetrics(cells, clusters);
+            updateOrderChart(chartCtx, orderHistory);
+            
+            // Update histogram less frequently
+            if (stepCount % 10 === 0) {
+                updatePhaseHistogram(cells);
+            }
+        }
+        
+        function animate(timestamp) {
+            if (!isPlaying) return;
+            
+            // FPS calculation
+            frameCount++;
+            if (timestamp - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = timestamp;
+                document.getElementById('fpsValue').textContent = fps;
+            }
+            
+            simulationStep();
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function setupUI() {
+            // Play/Pause button
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            playPauseBtn.addEventListener('click', () => {
+                isPlaying = !isPlaying;
+                playPauseBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+                
+                if (isPlaying) {
+                    lastTime = performance.now();
+                    frameCount = 0;
+                    animationId = requestAnimationFrame(animate);
+                } else if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+            });
+            
+            // Reset button
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                isPlaying = false;
+                playPauseBtn.textContent = '▶ Play';
+                if (animationId) cancelAnimationFrame(animationId);
+                
+                stepCount = 0;
+                orderHistory.length = 0;
+                
+                startSimulation();
+            });
+            
+            // Parameter sliders
+            document.getElementById('couplingK').addEventListener('input', (e) => {
+                params.K = parseFloat(e.target.value);
+                document.getElementById('kValue').textContent = params.K.toFixed(1);
+            });
+            
+            document.getElementById('epsilon').addEventListener('input', (e) => {
+                params.epsilon = parseFloat(e.target.value);
+                document.getElementById('epsilonValue').textContent = params.epsilon.toFixed(3);
+            });
+            
+            document.getElementById('layers').addEventListener('input', (e) => {
+                params.layers = parseInt(e.target.value);
+                document.getElementById('layersValue').textContent = params.layers;
+                
+                // Regenerate tessellation
+                if (!isPlaying) {
+                    stepCount = 0;
+                    orderHistory.length = 0;
+                    startSimulation();
+                }
+            });
+            
+            document.getElementById('sigma').addEventListener('input', (e) => {
+                params.sigma = parseFloat(e.target.value);
+                document.getElementById('sigmaValue').textContent = params.sigma.toFixed(1);
+            });
+            
+            document.getElementById('curvature').addEventListener('input', (e) => {
+                params.curvature = parseFloat(e.target.value);
+                document.getElementById('curvatureValue').textContent = params.curvature.toFixed(1);
+            });
+            
+            // Visualization mode buttons
+            document.querySelectorAll('.viz-mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.viz-mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    params.vizMode = btn.dataset.mode;
+                    
+                    // Re-render with new mode
+                    if (cells.length > 0) {
+                        const clusters = HAKORNDynamics.detectClusters(cells);
+                        renderer.render(cells, clusters);
+                    }
+                });
+            });
+            
+            // Geometry select
+            document.getElementById('geometrySelect').addEventListener('change', (e) => {
+                // For now, all use pentagrid
+                // Future: implement different tessellations
+                if (!isPlaying) {
+                    stepCount = 0;
+                    orderHistory.length = 0;
+                    startSimulation();
+                }
+            });
+        }
+        
+        // Start when DOM is ready
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H-NCA Simulator | WebGPU Compute | Geometric Intelligence</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --void: #050508;
+            --abyss: #0a0a10;
+            --depth: #101018;
+            --surface: #18181f;
+            --edge: rgba(255,255,255,0.06);
+            --neon-cyan: #00f5ff;
+            --neon-pink: #ff0080;
+            --neon-violet: #8b5cf6;
+            --neon-amber: #f59e0b;
+            --text-bright: #f0f0f5;
+            --text-dim: #707080;
+            --text-muted: #404050;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--void);
+            color: var(--text-bright);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Animated gradient background */
+        .bg-gradient {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(0,245,255,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(255,0,128,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(139,92,246,0.02) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* Grid pattern overlay */
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(180deg, var(--abyss) 0%, transparent 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 100;
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            color: var(--void);
+        }
+        
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .brand-name {
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: -0.02em;
+        }
+        
+        .brand-sub {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 400;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--depth);
+            border: 1px solid var(--edge);
+            border-radius: 20px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 8px var(--neon-cyan);
+            animation: blink 2s ease-in-out infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .status-indicator.offline {
+            background: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+            animation: none;
+        }
+        
+        .status-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        
+        /* Main Layout */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr 320px;
+            height: 100vh;
+            padding-top: 60px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: rgba(10, 10, 16, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--edge);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .sidebar:last-child {
+            border-right: none;
+            border-left: 1px solid var(--edge);
+        }
+        
+        /* Section */
+        .section {
+            background: var(--depth);
+            border: 1px solid var(--edge);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        
+        .section-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            background: var(--neon-cyan);
+            border-radius: 1px;
+        }
+        
+        /* Controls */
+        .control {
+            margin-bottom: 16px;
+        }
+        
+        .control:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .control-name {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        
+        .control-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--neon-cyan);
+        }
+        
+        /* Range Slider */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--abyss);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 12px var(--neon-cyan);
+            transition: transform 0.15s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        
+        /* Buttons */
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 10px 16px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border: 1px solid var(--edge);
+            background: var(--surface);
+            color: var(--text-bright);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
+            border: none;
+            color: var(--void);
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(0,245,255,0.4);
+            transform: translateY(-1px);
+        }
+        
+        /* Mode Selector */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+        
+        .mode-btn {
+            padding: 8px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: var(--abyss);
+            border: 1px solid var(--edge);
+            color: var(--text-muted);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .mode-btn:hover {
+            border-color: var(--neon-cyan);
+            color: var(--text-dim);
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(135deg, rgba(0,245,255,0.1), rgba(139,92,246,0.1));
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+        
+        /* Canvas Container */
+        .canvas-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #mainCanvas {
+            border-radius: 50%;
+            box-shadow: 
+                0 0 80px rgba(0,245,255,0.1),
+                0 0 160px rgba(255,0,128,0.05),
+                inset 0 0 100px rgba(0,0,0,0.8);
+        }
+        
+        /* Orbital rings */
+        .orbital-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(0,245,255,0.1);
+            pointer-events: none;
+        }
+        
+        .orbital-ring:nth-child(1) { width: 110%; height: 110%; animation: spin 60s linear infinite; }
+        .orbital-ring:nth-child(2) { width: 120%; height: 120%; animation: spin 80s linear infinite reverse; border-color: rgba(255,0,128,0.08); }
+        .orbital-ring:nth-child(3) { width: 130%; height: 130%; animation: spin 100s linear infinite; border-color: rgba(139,92,246,0.06); }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Metrics */
+        .metric {
+            margin-bottom: 16px;
+        }
+        
+        .metric:last-child {
+            margin-bottom: 0;
+        }
+        
+        .metric-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        
+        .metric-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        
+        .metric-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            line-height: 1;
+        }
+        
+        .metric-value.pink { color: var(--neon-pink); }
+        .metric-value.violet { color: var(--neon-violet); }
+        .metric-value.amber { color: var(--neon-amber); }
+        
+        .metric-unit {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        /* Progress */
+        .progress-track {
+            height: 4px;
+            background: var(--abyss);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        
+        /* Chart */
+        .mini-chart {
+            width: 100%;
+            height: 50px;
+            margin-top: 10px;
+            background: var(--abyss);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        /* Betti Display */
+        .betti-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .betti-item {
+            text-align: center;
+            padding: 8px;
+            background: var(--abyss);
+            border-radius: 4px;
+        }
+        
+        .betti-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--neon-amber);
+        }
+        
+        .betti-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        
+        /* Histogram */
+        .histogram {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-top: 8px;
+        }
+        
+        .histogram-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .histogram-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 8px;
+            color: var(--text-muted);
+            width: 28px;
+            text-align: right;
+        }
+        
+        .histogram-track {
+            flex: 1;
+            height: 6px;
+            background: var(--abyss);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .histogram-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        /* Equation Box */
+        .equation-box {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            padding: 10px;
+            background: var(--abyss);
+            border-radius: 4px;
+            color: var(--neon-cyan);
+            overflow-x: auto;
+            white-space: nowrap;
+            margin-top: 8px;
+        }
+        
+        /* Info Card */
+        .info-card {
+            background: linear-gradient(135deg, rgba(139,92,246,0.1), transparent);
+            border: 1px solid rgba(139,92,246,0.2);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .info-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--neon-violet);
+            margin-bottom: 6px;
+        }
+        
+        .info-text {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+        
+        /* WebGPU Fallback */
+        .fallback-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--void);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .fallback-icon {
+            font-size: 48px;
+            margin-bottom: 24px;
+        }
+        
+        .fallback-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .fallback-text {
+            color: var(--text-dim);
+            max-width: 500px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        
+        /* Cluster Legend */
+        .cluster-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .cluster-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: var(--abyss);
+            border-radius: 10px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            color: var(--text-dim);
+        }
+        
+        .cluster-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+        
+        /* System Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .stat-item {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        .stat-item span {
+            color: var(--text-dim);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--surface); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="grid-overlay"></div>
+    
+    <div id="fallbackScreen" class="fallback-screen" style="display: none;">
+        <div class="fallback-icon">⚡</div>
+        <h1 class="fallback-title">WebGPU Required</h1>
+        <p class="fallback-text">
+            This simulator uses WebGPU for parallel computation. Please use Chrome 113+, Edge 113+, 
+            or Firefox Nightly with WebGPU enabled.
+        </p>
+        <p class="fallback-text" style="color: var(--text-muted); font-size: 13px;">
+            Falling back to Canvas 2D with CPU computation...
+        </p>
+        <button class="btn btn-primary" onclick="initFallback()">Continue Anyway</button>
+    </div>
+    
+    <header class="header">
+        <div class="brand">
+            <div class="brand-icon">H</div>
+            <div class="brand-text">
+                <div class="brand-name">H-NCA Simulator</div>
+                <div class="brand-sub">WebGPU Compute • Geometric Intelligence</div>
+            </div>
+        </div>
+        <div class="status-pill">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <span class="status-label" id="statusLabel">Initializing...</span>
+        </div>
+    </header>
+    
+    <div class="app-layout">
+        <!-- Left Sidebar: Controls -->
+        <aside class="sidebar">
+            <div class="info-card">
+                <div class="info-title">Hyperbolic Neural Cellular Automata</div>
+                <div class="info-text">
+                    Simulating H-AKORN dynamics on {5,4} pentagrid tessellation in the Poincaré disk.
+                    Phase synchronization emerges via Kuramoto coupling in hyperbolic space.
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Dynamics Parameters</div>
+                
+                <div class="control">
+                    <div class="control-header">
+                        <span class="control-name">Coupling K</span>
+                        <span class="control-value" id="kDisplay">2.5</span>
+                    </div>
+                    <input type="range" id="sliderK" min="0" max="10" step="0.1" value="2.5">
+                    <div class="equation-box">K_c ≈ 2/(πg(0)) ≈ 1.27</div>
+                </div>
+                
+                <div class="control">
+                    <div class="control-header">
+                        <span class="control-name">Time Step ε</span>
+                        <span class="control-value" id="epsDisplay">0.05</span>
+                    </div>
+                    <input type="range" id="sliderEps" min="0.005" max="0.2" step="0.005" value="0.05">
+                </div>
+                
+                <div class="control">
+                    <div class="control-header">
+                        <span class="control-name">Frequency Spread σ</span>
+                        <span class="control-value" id="sigmaDisplay">1.0</span>
+                    </div>
+                    <input type="range" id="sliderSigma" min="0.1" max="3" step="0.1" value="1.0">
+                </div>
+                
+                <div class="control">
+                    <div class="control-header">
+                        <span class="control-name">Curvature κ</span>
+                        <span class="control-value" id="kappaDisplay">-1.0</span>
+                    </div>
+                    <input type="range" id="sliderKappa" min="-2" max="-0.1" step="0.1" value="-1">
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Geometry</div>
+                
+                <div class="control">
+                    <div class="control-header">
+                        <span class="control-name">Hyperbolic Layers</span>
+                        <span class="control-value" id="layersDisplay">5</span>
+                    </div>
+                    <input type="range" id="sliderLayers" min="2" max="8" step="1" value="5">
+                </div>
+                
+                <div class="btn-row" style="margin-top: 16px;">
+                    <button class="btn" id="btnReset">Reset</button>
+                    <button class="btn btn-primary" id="btnPlayPause">▶ Play</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Visualization</div>
+                <div class="mode-grid">
+                    <button class="mode-btn active" data-mode="phase">Phase θᵢ</button>
+                    <button class="mode-btn" data-mode="magnitude">|hᵢ| Mag</button>
+                    <button class="mode-btn" data-mode="cluster">Clusters</button>
+                    <button class="mode-btn" data-mode="coupling">Aᵢⱼ Links</button>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Center: Visualization -->
+        <main class="canvas-container">
+            <div class="orbital-ring"></div>
+            <div class="orbital-ring"></div>
+            <div class="orbital-ring"></div>
+            <canvas id="mainCanvas"></canvas>
+        </main>
+        
+        <!-- Right Sidebar: Metrics -->
+        <aside class="sidebar">
+            <div class="section">
+                <div class="section-title">Order Parameter R(t)</div>
+                <div class="metric">
+                    <div class="metric-row">
+                        <span class="metric-value" id="metricR">0.000</span>
+                        <span class="metric-unit">Kuramoto</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progressR" style="width: 0%"></div>
+                    </div>
+                    <canvas class="mini-chart" id="chartR"></canvas>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Synchronization</div>
+                <div class="metric">
+                    <div class="metric-label">Phase Variance σ²</div>
+                    <div class="metric-value pink" id="metricVar">0.000</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Φ_proxy (Integration)</div>
+                    <div class="metric-value violet" id="metricPhi">0.000</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Topology</div>
+                <div class="metric">
+                    <div class="metric-label">Clusters Detected</div>
+                    <div class="metric-value amber" id="metricClusters">1</div>
+                    <div class="cluster-list" id="clusterList"></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Betti Numbers</div>
+                    <div class="betti-row">
+                        <div class="betti-item">
+                            <div class="betti-value" id="betti0">1</div>
+                            <div class="betti-label">β₀</div>
+                        </div>
+                        <div class="betti-item">
+                            <div class="betti-value" id="betti1">0</div>
+                            <div class="betti-label">β₁</div>
+                        </div>
+                        <div class="betti-item">
+                            <div class="betti-value" id="betti2">0</div>
+                            <div class="betti-label">β₂</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Phase Distribution</div>
+                <div class="histogram" id="histogram"></div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">System</div>
+                <div class="stats-grid">
+                    <div class="stat-item">Cells: <span id="statCells">0</span></div>
+                    <div class="stat-item">FPS: <span id="statFPS">0</span></div>
+                    <div class="stat-item">Step: <span id="statStep">0</span></div>
+                    <div class="stat-item">Time: <span id="statTime">0.00</span>s</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // ============================================================
+        // H-NCA WebGPU Simulator
+        // Hyperbolic Neural Cellular Automata with H-AKORN Dynamics
+        // ============================================================
+        
+        // WGSL Compute Shaders
+        const COMPUTE_SHADER = `
+            struct Cell {
+                position: vec3<f32>,    // Hyperboloid position (t, x, y)
+                poincare: vec2<f32>,    // Poincaré disk coordinates
+                phase: f32,             // Phase θ
+                omega: f32,             // Natural frequency
+                magnitude: f32,         // State magnitude
+                layer: u32,             // Tessellation layer
+                neighborStart: u32,     // Start index in adjacency buffer
+                neighborCount: u32,     // Number of neighbors
+            };
+            
+            struct Params {
+                K: f32,                 // Coupling strength
+                dt: f32,                // Time step
+                kappa: f32,             // Curvature
+                N: u32,                 // Number of cells
+            };
+            
+            @group(0) @binding(0) var<storage, read> cellsIn: array<Cell>;
+            @group(0) @binding(1) var<storage, read_write> cellsOut: array<Cell>;
+            @group(0) @binding(2) var<storage, read> adjacency: array<u32>;
+            @group(0) @binding(3) var<uniform> params: Params;
+            
+            // Lorentz inner product
+            fn lorentzInner(u: vec3<f32>, v: vec3<f32>) -> f32 {
+                return -u.x * v.x + u.y * v.y + u.z * v.z;
+            }
+            
+            // Geodesic distance on hyperboloid
+            fn geodesicDist(p: vec3<f32>, q: vec3<f32>) -> f32 {
+                let inner = lorentzInner(p, q);
+                return acosh(max(1.0, -inner));
+            }
+            
+            // Hyperbolic attention weight
+            fn attention(p: vec3<f32>, q: vec3<f32>, kappa: f32) -> f32 {
+                let d = geodesicDist(p, q);
+                return exp(-d * abs(kappa));
+            }
+            
+            @compute @workgroup_size(64)
+            fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+                let i = gid.x;
+                if (i >= params.N) { return; }
+                
+                let cell = cellsIn[i];
+                var coupling: f32 = 0.0;
+                
+                // Sum over neighbors
+                for (var j: u32 = 0u; j < cell.neighborCount; j++) {
+                    let neighborIdx = adjacency[cell.neighborStart + j];
+                    let neighbor = cellsIn[neighborIdx];
+                    
+                    let A_ij = attention(cell.position, neighbor.position, params.kappa);
+                    coupling += A_ij * sin(neighbor.phase - cell.phase);
+                }
+                
+                // Kuramoto dynamics
+                let dtheta = cell.omega + (params.K / f32(max(1u, cell.neighborCount))) * coupling;
+                var newPhase = cell.phase + params.dt * dtheta;
+                
+                // Wrap to [0, 2π)
+                let TAU: f32 = 6.283185307179586;
+                newPhase = newPhase - TAU * floor(newPhase / TAU);
+                
+                // Write output
+                cellsOut[i] = Cell(
+                    cell.position,
+                    cell.poincare,
+                    newPhase,
+                    cell.omega,
+                    cell.magnitude,
+                    cell.layer,
+                    cell.neighborStart,
+                    cell.neighborCount
+                );
+            }
+        `;
+        
+        // Global state
+        let gpuDevice = null;
+        let computePipeline = null;
+        let bindGroup = null;
+        let cellBufferA = null;
+        let cellBufferB = null;
+        let adjacencyBuffer = null;
+        let paramsBuffer = null;
+        let readbackBuffer = null;
+        let useABuffer = true;
+        
+        let cells = [];
+        let adjacencyData = [];
+        let isRunning = false;
+        let frameId = null;
+        let stepCount = 0;
+        let lastFrameTime = 0;
+        let fps = 0;
+        let fpsAccum = 0;
+        let fpsCount = 0;
+        
+        const orderHistory = [];
+        let chartCtx = null;
+        
+        // Simulation parameters
+        const config = {
+            K: 2.5,
+            dt: 0.05,
+            sigma: 1.0,
+            kappa: -1.0,
+            layers: 5,
+            vizMode: 'phase'
+        };
+        
+        // ============================================================
+        // Hyperbolic Geometry
+        // ============================================================
+        
+        const Hyperbolic = {
+            lorentzInner(u, v) {
+                return -u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
+            },
+            
+            toHyperboloid(p) {
+                const r2 = p[0]*p[0] + p[1]*p[1];
+                if (r2 >= 1) return [1, 0, 0];
+                const s = 2 / (1 - r2);
+                return [(1 + r2) / (1 - r2), s * p[0], s * p[1]];
+            },
+            
+            toPoincare(h) {
+                const d = 1 + h[0];
+                return [h[1] / d, h[2] / d];
+            },
+            
+            poincareDistance(p, q) {
+                const dx = q[0] - p[0];
+                const dy = q[1] - p[1];
+                const r1 = p[0]*p[0] + p[1]*p[1];
+                const r2 = q[0]*q[0] + q[1]*q[1];
+                const num = dx*dx + dy*dy;
+                const denom = (1 - r1) * (1 - r2);
+                if (denom <= 0) return 10;
+                return Math.acosh(Math.max(1, 1 + 2 * num / denom));
+            },
+            
+            geodesicDistance(p, q) {
+                const inner = this.lorentzInner(p, q);
+                return Math.acosh(Math.max(1, -inner));
+            }
+        };
+        
+        // ============================================================
+        // Tessellation
+        // ============================================================
+        
+        function generateTessellation(layers) {
+            const cellList = [];
+            const adjList = [];
+            
+            // Center cell
+            cellList.push({
+                id: 0,
+                position: [1, 0, 0],
+                poincare: [0, 0],
+                phase: Math.random() * Math.PI * 2,
+                omega: (Math.random() - 0.5) * 2 * config.sigma,
+                magnitude: 0.5 + Math.random() * 0.5,
+                layer: 0,
+                neighbors: []
+            });
+            
+            let nextId = 1;
+            
+            // Generate layers
+            for (let layer = 1; layer <= layers; layer++) {
+                const count = Math.floor(5 * Math.pow(2, layer - 1));
+                const offset = (layer % 2) * Math.PI / count;
+                
+                for (let i = 0; i < count; i++) {
+                    const angle = (2 * Math.PI * i) / count + offset;
+                    const r = Math.tanh(layer * 0.4);
+                    const px = r * Math.cos(angle);
+                    const py = r * Math.sin(angle);
+                    const hyp = Hyperbolic.toHyperboloid([px, py]);
+                    
+                    cellList.push({
+                        id: nextId,
+                        position: hyp,
+                        poincare: [px, py],
+                        phase: Math.random() * Math.PI * 2,
+                        omega: (Math.random() - 0.5) * 2 * config.sigma,
+                        magnitude: 0.5 + Math.random() * 0.5,
+                        layer: layer,
+                        neighbors: []
+                    });
+                    nextId++;
+                }
+            }
+            
+            // Build adjacency
+            const threshold = 1.2;
+            for (let i = 0; i < cellList.length; i++) {
+                for (let j = i + 1; j < cellList.length; j++) {
+                    const d = Hyperbolic.poincareDistance(cellList[i].poincare, cellList[j].poincare);
+                    if (d < threshold) {
+                        cellList[i].neighbors.push(j);
+                        cellList[j].neighbors.push(i);
+                    }
+                }
+            }
+            
+            // Flatten adjacency for GPU
+            let adjOffset = 0;
+            for (const cell of cellList) {
+                cell.neighborStart = adjOffset;
+                cell.neighborCount = cell.neighbors.length;
+                for (const n of cell.neighbors) {
+                    adjList.push(n);
+                }
+                adjOffset += cell.neighbors.length;
+            }
+            
+            return { cells: cellList, adjacency: adjList };
+        }
+        
+        // ============================================================
+        // WebGPU Setup
+        // ============================================================
+        
+        async function initWebGPU() {
+            if (!navigator.gpu) {
+                document.getElementById('fallbackScreen').style.display = 'flex';
+                return false;
+            }
+            
+            try {
+                const adapter = await navigator.gpu.requestAdapter();
+                if (!adapter) throw new Error('No adapter');
+                
+                gpuDevice = await adapter.requestDevice();
+                
+                // Create compute pipeline
+                const shaderModule = gpuDevice.createShaderModule({ code: COMPUTE_SHADER });
+                
+                computePipeline = gpuDevice.createComputePipeline({
+                    layout: 'auto',
+                    compute: {
+                        module: shaderModule,
+                        entryPoint: 'main'
+                    }
+                });
+                
+                return true;
+            } catch (e) {
+                console.error('WebGPU init failed:', e);
+                document.getElementById('fallbackScreen').style.display = 'flex';
+                return false;
+            }
+        }
+        
+        function createGPUBuffers() {
+            const N = cells.length;
+            const cellSize = 48; // bytes per cell (aligned)
+            
+            // Cell structure: vec3 position, vec2 poincare, f32 phase, f32 omega, f32 magnitude, u32 layer, u32 neighborStart, u32 neighborCount
+            // = 3*4 + 2*4 + 4 + 4 + 4 + 4 + 4 + 4 = 40 bytes, padded to 48
+            
+            const cellData = new ArrayBuffer(N * cellSize);
+            const cellView = new DataView(cellData);
+            
+            for (let i = 0; i < N; i++) {
+                const c = cells[i];
+                const offset = i * cellSize;
+                
+                cellView.setFloat32(offset + 0, c.position[0], true);
+                cellView.setFloat32(offset + 4, c.position[1], true);
+                cellView.setFloat32(offset + 8, c.position[2], true);
+                cellView.setFloat32(offset + 12, c.poincare[0], true);
+                cellView.setFloat32(offset + 16, c.poincare[1], true);
+                cellView.setFloat32(offset + 20, c.phase, true);
+                cellView.setFloat32(offset + 24, c.omega, true);
+                cellView.setFloat32(offset + 28, c.magnitude, true);
+                cellView.setUint32(offset + 32, c.layer, true);
+                cellView.setUint32(offset + 36, c.neighborStart, true);
+                cellView.setUint32(offset + 40, c.neighborCount, true);
+            }
+            
+            cellBufferA = gpuDevice.createBuffer({
+                size: cellData.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC,
+                mappedAtCreation: true
+            });
+            new Uint8Array(cellBufferA.getMappedRange()).set(new Uint8Array(cellData));
+            cellBufferA.unmap();
+            
+            cellBufferB = gpuDevice.createBuffer({
+                size: cellData.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
+            });
+            
+            // Adjacency buffer
+            const adjData = new Uint32Array(adjacencyData);
+            adjacencyBuffer = gpuDevice.createBuffer({
+                size: Math.max(4, adjData.byteLength),
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                mappedAtCreation: true
+            });
+            new Uint32Array(adjacencyBuffer.getMappedRange()).set(adjData);
+            adjacencyBuffer.unmap();
+            
+            // Params buffer
+            paramsBuffer = gpuDevice.createBuffer({
+                size: 16, // 3 floats + 1 uint = 16 bytes
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+            });
+            
+            // Readback buffer
+            readbackBuffer = gpuDevice.createBuffer({
+                size: cellData.byteLength,
+                usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+            });
+            
+            useABuffer = true;
+        }
+        
+        function createBindGroup(inputBuffer, outputBuffer) {
+            return gpuDevice.createBindGroup({
+                layout: computePipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: inputBuffer } },
+                    { binding: 1, resource: { buffer: outputBuffer } },
+                    { binding: 2, resource: { buffer: adjacencyBuffer } },
+                    { binding: 3, resource: { buffer: paramsBuffer } }
+                ]
+            });
+        }
+        
+        async function runGPUStep() {
+            // Update params
+            const paramsData = new ArrayBuffer(16);
+            const paramsView = new DataView(paramsData);
+            paramsView.setFloat32(0, config.K, true);
+            paramsView.setFloat32(4, config.dt, true);
+            paramsView.setFloat32(8, config.kappa, true);
+            paramsView.setUint32(12, cells.length, true);
+            gpuDevice.queue.writeBuffer(paramsBuffer, 0, paramsData);
+            
+            const [inBuf, outBuf] = useABuffer ? [cellBufferA, cellBufferB] : [cellBufferB, cellBufferA];
+            const bg = createBindGroup(inBuf, outBuf);
+            
+            const commandEncoder = gpuDevice.createCommandEncoder();
+            const passEncoder = commandEncoder.beginComputePass();
+            passEncoder.setPipeline(computePipeline);
+            passEncoder.setBindGroup(0, bg);
+            passEncoder.dispatchWorkgroups(Math.ceil(cells.length / 64));
+            passEncoder.end();
+            
+            // Copy for readback
+            commandEncoder.copyBufferToBuffer(outBuf, 0, readbackBuffer, 0, cells.length * 48);
+            
+            gpuDevice.queue.submit([commandEncoder.finish()]);
+            
+            // Read back results
+            await readbackBuffer.mapAsync(GPUMapMode.READ);
+            const data = new DataView(readbackBuffer.getMappedRange().slice(0));
+            
+            for (let i = 0; i < cells.length; i++) {
+                cells[i].phase = data.getFloat32(i * 48 + 20, true);
+            }
+            
+            readbackBuffer.unmap();
+            useABuffer = !useABuffer;
+        }
+        
+        // ============================================================
+        // CPU Fallback
+        // ============================================================
+        
+        function runCPUStep() {
+            const K = config.K;
+            const dt = config.dt;
+            const kappa = config.kappa;
+            const newPhases = [];
+            
+            for (let i = 0; i < cells.length; i++) {
+                const cell = cells[i];
+                let coupling = 0;
+                
+                for (const j of cell.neighbors) {
+                    const neighbor = cells[j];
+                    const d = Hyperbolic.geodesicDistance(cell.position, neighbor.position);
+                    const A = Math.exp(-d * Math.abs(kappa));
+                    coupling += A * Math.sin(neighbor.phase - cell.phase);
+                }
+                
+                const dtheta = cell.omega + (K / Math.max(1, cell.neighbors.length)) * coupling;
+                let newPhase = (cell.phase + dt * dtheta) % (Math.PI * 2);
+                if (newPhase < 0) newPhase += Math.PI * 2;
+                newPhases.push(newPhase);
+            }
+            
+            for (let i = 0; i < cells.length; i++) {
+                cells[i].phase = newPhases[i];
+            }
+        }
+        
+        // ============================================================
+        // Metrics
+        // ============================================================
+        
+        function computeOrderParameter() {
+            let sumCos = 0, sumSin = 0;
+            for (const c of cells) {
+                sumCos += Math.cos(c.phase);
+                sumSin += Math.sin(c.phase);
+            }
+            return Math.sqrt(sumCos * sumCos + sumSin * sumSin) / cells.length;
+        }
+        
+        function computeVariance() {
+            return 1 - computeOrderParameter();
+        }
+        
+        function detectClusters(threshold = 0.3) {
+            const clusters = [];
+            const visited = new Set();
+            
+            for (let i = 0; i < cells.length; i++) {
+                if (visited.has(i)) continue;
+                
+                const cluster = [i];
+                visited.add(i);
+                const queue = [i];
+                
+                while (queue.length > 0) {
+                    const curr = queue.shift();
+                    for (const n of cells[curr].neighbors) {
+                        if (visited.has(n)) continue;
+                        const diff = Math.abs(cells[curr].phase - cells[n].phase);
+                        const minDiff = Math.min(diff, Math.PI * 2 - diff);
+                        if (minDiff < threshold) {
+                            visited.add(n);
+                            cluster.push(n);
+                            queue.push(n);
+                        }
+                    }
+                }
+                clusters.push(cluster);
+            }
+            return clusters;
+        }
+        
+        function computeBetti(clusters) {
+            const beta0 = clusters.length;
+            let edges = 0;
+            for (const c of cells) edges += c.neighbors.length;
+            edges /= 2;
+            const beta1 = Math.max(0, edges - cells.length + beta0);
+            return { beta0, beta1, beta2: 0 };
+        }
+        
+        // ============================================================
+        // Rendering
+        // ============================================================
+        
+        class Renderer {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            }
+            
+            resize() {
+                const size = Math.min(window.innerHeight * 0.65, window.innerWidth * 0.35);
+                this.canvas.width = size;
+                this.canvas.height = size;
+                this.cx = size / 2;
+                this.cy = size / 2;
+                this.r = size / 2 - 15;
+            }
+            
+            toScreen(p) {
+                return [this.cx + p[0] * this.r, this.cy - p[1] * this.r];
+            }
+            
+            phaseColor(phase) {
+                const hue = (phase / (Math.PI * 2)) * 360;
+                return `hsl(${hue}, 85%, 60%)`;
+            }
+            
+            render(cells, clusters, mode) {
+                const ctx = this.ctx;
+                const { cx, cy, r } = this;
+                
+                // Clear
+                ctx.fillStyle = '#050508';
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Disk glow
+                const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+                grad.addColorStop(0, 'rgba(0,245,255,0.03)');
+                grad.addColorStop(0.6, 'rgba(139,92,246,0.02)');
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Boundary
+                ctx.strokeStyle = 'rgba(0,245,255,0.25)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                
+                // Draw edges
+                ctx.strokeStyle = 'rgba(80,80,100,0.12)';
+                ctx.lineWidth = 0.5;
+                const drawn = new Set();
+                for (const c of cells) {
+                    const [x1, y1] = this.toScreen(c.poincare);
+                    for (const n of c.neighbors) {
+                        const key = c.id < n ? `${c.id}-${n}` : `${n}-${c.id}`;
+                        if (drawn.has(key)) continue;
+                        drawn.add(key);
+                        const [x2, y2] = this.toScreen(cells[n].poincare);
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Draw cells
+                for (const c of cells) {
+                    const [x, y] = this.toScreen(c.poincare);
+                    const size = Math.max(3, 7 - c.layer * 0.7);
+                    
+                    let color;
+                    if (mode === 'phase') {
+                        color = this.phaseColor(c.phase);
+                    } else if (mode === 'magnitude') {
+                        const m = c.magnitude;
+                        color = `rgb(${Math.floor(255*m)},${Math.floor(100*m)},${Math.floor(200*m)})`;
+                    } else if (mode === 'cluster') {
+                        let idx = 0;
+                        for (let i = 0; i < clusters.length; i++) {
+                            if (clusters[i].includes(c.id)) { idx = i; break; }
+                        }
+                        color = `hsl(${(idx * 137.5) % 360}, 70%, 55%)`;
+                    } else {
+                        const avgA = c.neighbors.reduce((s, n) => {
+                            const d = Hyperbolic.geodesicDistance(c.position, cells[n].position);
+                            return s + Math.exp(-d * Math.abs(config.kappa));
+                        }, 0) / Math.max(1, c.neighbors.length);
+                        const v = Math.floor(255 * avgA);
+                        color = `rgb(${v},${Math.floor(v*0.5)},${255-v})`;
+                    }
+                    
+                    // Glow
+                    ctx.beginPath();
+                    ctx.arc(x, y, size + 3, 0, Math.PI * 2);
+                    ctx.fillStyle = color.replace(')', ',0.2)').replace('rgb', 'rgba').replace('hsl', 'hsla');
+                    ctx.fill();
+                    
+                    // Cell
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                }
+            }
+        }
+        
+        let renderer = null;
+        
+        // ============================================================
+        // Charts
+        // ============================================================
+        
+        function initChart() {
+            const canvas = document.getElementById('chartR');
+            canvas.width = canvas.clientWidth;
+            canvas.height = 50;
+            chartCtx = canvas.getContext('2d');
+        }
+        
+        function updateChart() {
+            if (!chartCtx) return;
+            const { width, height } = chartCtx.canvas;
+            chartCtx.fillStyle = '#0a0a10';
+            chartCtx.fillRect(0, 0, width, height);
+            
+            if (orderHistory.length < 2) return;
+            
+            chartCtx.strokeStyle = '#00f5ff';
+            chartCtx.lineWidth = 1.5;
+            chartCtx.beginPath();
+            
+            const maxPts = 120;
+            const start = Math.max(0, orderHistory.length - maxPts);
+            const step = width / maxPts;
+            
+            for (let i = start; i < orderHistory.length; i++) {
+                const x = (i - start) * step;
+                const y = height - orderHistory[i] * height;
+                if (i === start) chartCtx.moveTo(x, y);
+                else chartCtx.lineTo(x, y);
+            }
+            chartCtx.stroke();
+            
+            // Threshold
+            chartCtx.strokeStyle = 'rgba(255,0,128,0.4)';
+            chartCtx.setLineDash([3, 3]);
+            chartCtx.beginPath();
+            chartCtx.moveTo(0, height * 0.5);
+            chartCtx.lineTo(width, height * 0.5);
+            chartCtx.stroke();
+            chartCtx.setLineDash([]);
+        }
+        
+        function updateHistogram() {
+            const bins = 8;
+            const counts = new Array(bins).fill(0);
+            for (const c of cells) {
+                const idx = Math.floor((c.phase / (Math.PI * 2)) * bins) % bins;
+                counts[idx]++;
+            }
+            const max = Math.max(...counts);
+            
+            let html = '';
+            for (let i = 0; i < bins; i++) {
+                const angle = Math.round((i / bins) * 360);
+                const pct = (counts[i] / max) * 100;
+                html += `
+                    <div class="histogram-row">
+                        <span class="histogram-label">${angle}°</span>
+                        <div class="histogram-track">
+                            <div class="histogram-fill" style="width:${pct}%; background:hsl(${angle},70%,55%);"></div>
+                        </div>
+                    </div>`;
+            }
+            document.getElementById('histogram').innerHTML = html;
+        }
+        
+        // ============================================================
+        // UI Updates
+        // ============================================================
+        
+        function updateMetrics() {
+            const R = computeOrderParameter();
+            const variance = computeVariance();
+            const clusters = detectClusters();
+            const betti = computeBetti(clusters);
+            const phi = R * Math.log(cells.length + 1);
+            
+            document.getElementById('metricR').textContent = R.toFixed(3);
+            document.getElementById('progressR').style.width = `${R * 100}%`;
+            document.getElementById('metricVar').textContent = variance.toFixed(3);
+            document.getElementById('metricPhi').textContent = phi.toFixed(3);
+            document.getElementById('metricClusters').textContent = clusters.length;
+            
+            // Cluster legend
+            let legendHtml = '';
+            for (let i = 0; i < Math.min(clusters.length, 5); i++) {
+                const hue = (i * 137.5) % 360;
+                legendHtml += `<div class="cluster-badge"><div class="cluster-dot" style="background:hsl(${hue},70%,55%)"></div>${clusters[i].length}</div>`;
+            }
+            if (clusters.length > 5) legendHtml += `<div class="cluster-badge">+${clusters.length - 5}</div>`;
+            document.getElementById('clusterList').innerHTML = legendHtml;
+            
+            document.getElementById('betti0').textContent = betti.beta0;
+            document.getElementById('betti1').textContent = betti.beta1;
+            document.getElementById('betti2').textContent = betti.beta2;
+            
+            document.getElementById('statCells').textContent = cells.length;
+            document.getElementById('statStep').textContent = stepCount;
+            document.getElementById('statTime').textContent = (stepCount * config.dt).toFixed(2);
+            
+            orderHistory.push(R);
+            if (orderHistory.length > 500) orderHistory.shift();
+            
+            return clusters;
+        }
+        
+        // ============================================================
+        // Main Loop
+        // ============================================================
+        
+        async function simulationStep() {
+            if (gpuDevice && computePipeline) {
+                await runGPUStep();
+            } else {
+                runCPUStep();
+            }
+            stepCount++;
+        }
+        
+        async function animate(timestamp) {
+            if (!isRunning) return;
+            
+            // FPS
+            if (lastFrameTime) {
+                fpsAccum += 1000 / (timestamp - lastFrameTime);
+                fpsCount++;
+                if (fpsCount >= 30) {
+                    fps = Math.round(fpsAccum / fpsCount);
+                    document.getElementById('statFPS').textContent = fps;
+                    fpsAccum = 0;
+                    fpsCount = 0;
+                }
+            }
+            lastFrameTime = timestamp;
+            
+            await simulationStep();
+            const clusters = updateMetrics();
+            renderer.render(cells, clusters, config.vizMode);
+            updateChart();
+            
+            if (stepCount % 10 === 0) updateHistogram();
+            
+            frameId = requestAnimationFrame(animate);
+        }
+        
+        // ============================================================
+        // Initialization
+        // ============================================================
+        
+        async function init() {
+            const webgpuOK = await initWebGPU();
+            startSimulation(webgpuOK);
+            setupControls();
+        }
+        
+        function initFallback() {
+            document.getElementById('fallbackScreen').style.display = 'none';
+            startSimulation(false);
+            setupControls();
+        }
+        
+        function startSimulation(withGPU) {
+            // Generate tessellation
+            const tess = generateTessellation(config.layers);
+            cells = tess.cells;
+            adjacencyData = tess.adjacency;
+            
+            // Setup GPU buffers if available
+            if (withGPU && gpuDevice) {
+                createGPUBuffers();
+                document.getElementById('statusLabel').textContent = 'WebGPU Active';
+            } else {
+                document.getElementById('statusIndicator').classList.add('offline');
+                document.getElementById('statusLabel').textContent = 'CPU Mode';
+            }
+            
+            // Setup renderer
+            renderer = new Renderer(document.getElementById('mainCanvas'));
+            initChart();
+            
+            // Initial render
+            const clusters = updateMetrics();
+            renderer.render(cells, clusters, config.vizMode);
+            updateHistogram();
+            
+            stepCount = 0;
+            orderHistory.length = 0;
+        }
+        
+        function setupControls() {
+            // Play/Pause
+            document.getElementById('btnPlayPause').addEventListener('click', () => {
+                isRunning = !isRunning;
+                document.getElementById('btnPlayPause').textContent = isRunning ? '⏸ Pause' : '▶ Play';
+                if (isRunning) {
+                    lastFrameTime = 0;
+                    frameId = requestAnimationFrame(animate);
+                } else if (frameId) {
+                    cancelAnimationFrame(frameId);
+                }
+            });
+            
+            // Reset
+            document.getElementById('btnReset').addEventListener('click', () => {
+                isRunning = false;
+                document.getElementById('btnPlayPause').textContent = '▶ Play';
+                if (frameId) cancelAnimationFrame(frameId);
+                stepCount = 0;
+                orderHistory.length = 0;
+                
+                const tess = generateTessellation(config.layers);
+                cells = tess.cells;
+                adjacencyData = tess.adjacency;
+                
+                if (gpuDevice && computePipeline) createGPUBuffers();
+                
+                const clusters = updateMetrics();
+                renderer.render(cells, clusters, config.vizMode);
+                updateHistogram();
+                updateChart();
+            });
+            
+            // Sliders
+            const sliders = [
+                { id: 'sliderK', key: 'K', display: 'kDisplay', fmt: v => v.toFixed(1) },
+                { id: 'sliderEps', key: 'dt', display: 'epsDisplay', fmt: v => v.toFixed(3) },
+                { id: 'sliderSigma', key: 'sigma', display: 'sigmaDisplay', fmt: v => v.toFixed(1) },
+                { id: 'sliderKappa', key: 'kappa', display: 'kappaDisplay', fmt: v => v.toFixed(1) },
+                { id: 'sliderLayers', key: 'layers', display: 'layersDisplay', fmt: v => v, rebuild: true }
+            ];
+            
+            for (const s of sliders) {
+                document.getElementById(s.id).addEventListener('input', e => {
+                    const v = s.key === 'layers' ? parseInt(e.target.value) : parseFloat(e.target.value);
+                    config[s.key] = v;
+                    document.getElementById(s.display).textContent = s.fmt(v);
+                    
+                    if (s.rebuild && !isRunning) {
+                        const tess = generateTessellation(config.layers);
+                        cells = tess.cells;
+                        adjacencyData = tess.adjacency;
+                        if (gpuDevice && computePipeline) createGPUBuffers();
+                        stepCount = 0;
+                        orderHistory.length = 0;
+                        const clusters = updateMetrics();
+                        renderer.render(cells, clusters, config.vizMode);
+                        updateHistogram();
+                    }
+                });
+            }
+            
+            // Mode buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    config.vizMode = btn.dataset.mode;
+                    const clusters = detectClusters();
+                    renderer.render(cells, clusters, config.vizMode);
+                });
+            });
+        }
+        
+        // Start
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

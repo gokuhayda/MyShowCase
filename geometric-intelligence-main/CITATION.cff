@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+title: "UGFT Simulator: Unified Geometric Field Theory Implementation"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: "Reis"
+    given-names: "Eric"
+    email: "eireikreisena@gmail.com"
+    orcid: ""
+repository-code: "https://github.com/erickreis/ugft-simulator"
+url: "https://erickreis.github.io/ugft-simulator/"
+abstract: >-
+  An interactive scientific simulator demonstrating Geometric Intelligence
+  through Hyperbolic Neural Cellular Automata (H-NCA) with H-AKORN phase
+  dynamics. Implements the Unified Geometric Field Theory (UGFT) for
+  self-organizing intelligence with falsifiable predictions and
+  counterfactual analysis capabilities.
+keywords:
+  - hyperbolic geometry
+  - neural cellular automata
+  - kuramoto oscillators
+  - geometric deep learning
+  - topological data analysis
+  - consciousness modeling
+  - WebGPU
+license: MIT
+version: "1.0.0"
+date-released: "2026-01-09"
+references:
+  - type: article
+    authors:
+      - family-names: "Reis"
+        given-names: "Eric"
+    title: "The Phenomenal Manifold Hypothesis"
+    year: 2025
+  - type: article
+    authors:
+      - family-names: "Reis"
+        given-names: "Eric"
+    title: "A Unified Geometric Field Theory of Self-Organizing Intelligence"
+    year: 2026

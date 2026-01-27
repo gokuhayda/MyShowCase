@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UGFT Simulator | Unified Geometric Field Theory | WebGPU</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --void: #030306;
+            --abyss: #080810;
+            --depth: #0f0f18;
+            --surface: #16161f;
+            --edge: rgba(255,255,255,0.05);
+            --neon-cyan: #00f5ff;
+            --neon-pink: #ff0080;
+            --neon-violet: #8b5cf6;
+            --neon-amber: #f59e0b;
+            --neon-green: #10b981;
+            --neon-red: #ef4444;
+            --text-bright: #f0f0f5;
+            --text-dim: #909098;
+            --text-muted: #505058;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--void);
+            color: var(--text-bright);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .bg-field {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at 15% 25%, rgba(0,245,255,0.04) 0%, transparent 45%),
+                radial-gradient(ellipse at 85% 75%, rgba(255,0,128,0.03) 0%, transparent 45%),
+                radial-gradient(ellipse at 50% 50%, rgba(139,92,246,0.02) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: linear-gradient(180deg, rgba(8,8,16,0.95) 0%, rgba(8,8,16,0.8) 100%);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+            border-bottom: 1px solid var(--edge);
+        }
+        
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 12px;
+            color: var(--void);
+        }
+        
+        .brand-text h1 {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        
+        .brand-text span {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .license-link {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            padding: 6px 12px;
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 6px;
+            color: var(--neon-amber);
+            text-decoration: none;
+            background: rgba(245,158,11,0.05);
+            transition: all 0.2s;
+        }
+        
+        .license-link:hover {
+            background: rgba(245,158,11,0.1);
+            border-color: var(--neon-amber);
+            box-shadow: 0 0 12px rgba(245,158,11,0.2);
+        }
+        
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            background: var(--depth);
+            border: 1px solid var(--edge);
+            border-radius: 16px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 6px var(--neon-green);
+        }
+        
+        .status-dot.computing { background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); animation: pulse 1s infinite; }
+        .status-dot.error { background: var(--neon-red); box-shadow: 0 0 6px var(--neon-red); }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        /* Layout */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            height: 100vh;
+            padding-top: 56px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Sidebars */
+        .sidebar {
+            background: rgba(8, 8, 16, 0.85);
+            backdrop-filter: blur(16px);
+            border-right: 1px solid var(--edge);
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .sidebar:last-child {
+            border-right: none;
+            border-left: 1px solid var(--edge);
+        }
+        
+        /* Sections */
+        .section {
+            background: var(--depth);
+            border: 1px solid var(--edge);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .section.highlight-cyan { border-color: rgba(0,245,255,0.3); background: linear-gradient(135deg, rgba(0,245,255,0.05), transparent); }
+        .section.highlight-pink { border-color: rgba(255,0,128,0.3); background: linear-gradient(135deg, rgba(255,0,128,0.05), transparent); }
+        .section.highlight-violet { border-color: rgba(139,92,246,0.3); background: linear-gradient(135deg, rgba(139,92,246,0.05), transparent); }
+        .section.highlight-amber { border-color: rgba(245,158,11,0.3); background: linear-gradient(135deg, rgba(245,158,11,0.05), transparent); }
+        
+        .section-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 3px;
+            height: 3px;
+            background: var(--neon-cyan);
+            border-radius: 1px;
+        }
+        
+        /* UGFT Action Panel */
+        .ugft-panel {
+            background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(0,245,255,0.05));
+            border: 1px solid rgba(139,92,246,0.3);
+        }
+        
+        .action-equation {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--neon-violet);
+            text-align: center;
+            padding: 8px;
+            background: var(--abyss);
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .action-terms {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .action-term {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .term-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            color: var(--text-muted);
+            width: 70px;
+        }
+        
+        .term-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--abyss);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .term-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        .term-fill.task { background: var(--neon-cyan); }
+        .term-fill.geometry { background: var(--neon-pink); }
+        .term-fill.topology { background: var(--neon-violet); }
+        
+        .term-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+            width: 50px;
+            text-align: right;
+        }
+        
+        .action-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--edge);
+        }
+        
+        .total-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        
+        .total-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--neon-violet);
+        }
+        
+        .system-state {
+            display: flex;
+            justify-content: center;
+            margin-top: 8px;
+        }
+        
+        .state-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .state-badge.subcritical { background: rgba(239,68,68,0.2); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.3); }
+        .state-badge.transition { background: rgba(245,158,11,0.2); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.3); }
+        .state-badge.stable { background: rgba(16,185,129,0.2); color: var(--neon-green); border: 1px solid rgba(16,185,129,0.3); }
+        
+        /* Controls */
+        .control {
+            margin-bottom: 12px;
+        }
+        
+        .control:last-child { margin-bottom: 0; }
+        
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .control-name {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
+        
+        .control-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--neon-cyan);
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--abyss);
+            border-radius: 2px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--neon-cyan);
+        }
+        
+        /* Buttons */
+        .btn-row {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            border: 1px solid var(--edge);
+            background: var(--surface);
+            color: var(--text-bright);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
+            border: none;
+            color: var(--void);
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 0 16px rgba(0,245,255,0.4);
+        }
+        
+        .btn-counterfactual {
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-amber));
+            border: none;
+            color: var(--void);
+            font-weight: 600;
+        }
+        
+        .btn-counterfactual:hover {
+            box-shadow: 0 0 16px rgba(255,0,128,0.4);
+        }
+        
+        /* Mode Toggle */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+        }
+        
+        .mode-btn {
+            padding: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            background: var(--abyss);
+            border: 1px solid var(--edge);
+            color: var(--text-muted);
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .mode-btn:hover { border-color: var(--neon-cyan); color: var(--text-dim); }
+        .mode-btn.active { background: rgba(0,245,255,0.1); border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        
+        /* Canvas Container */
+        .canvas-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .canvas-wrapper {
+            position: relative;
+        }
+        
+        #mainCanvas {
+            border-radius: 50%;
+            box-shadow: 
+                0 0 60px rgba(0,245,255,0.08),
+                0 0 120px rgba(139,92,246,0.04),
+                inset 0 0 80px rgba(0,0,0,0.9);
+        }
+        
+        /* Geodesics Canvas (overlay) */
+        #geodesicsCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        
+        /* Counterfactual Split View */
+        .split-view {
+            display: none;
+            position: absolute;
+            inset: 0;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            background: var(--void);
+        }
+        
+        .split-view.active {
+            display: grid;
+        }
+        
+        .split-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .split-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+        
+        .split-label.with-feedback {
+            background: rgba(0,245,255,0.2);
+            color: var(--neon-cyan);
+        }
+        
+        .split-label.no-feedback {
+            background: rgba(255,0,128,0.2);
+            color: var(--neon-pink);
+        }
+        
+        .split-canvas {
+            border-radius: 50%;
+            box-shadow: 0 0 40px rgba(0,245,255,0.05);
+        }
+        
+        /* Metrics */
+        .metric {
+            margin-bottom: 10px;
+        }
+        
+        .metric:last-child { margin-bottom: 0; }
+        
+        .metric-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 8px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+        
+        .metric-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+        
+        .metric-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .metric-value.cyan { color: var(--neon-cyan); }
+        .metric-value.pink { color: var(--neon-pink); }
+        .metric-value.violet { color: var(--neon-violet); }
+        .metric-value.amber { color: var(--neon-amber); }
+        .metric-value.green { color: var(--neon-green); }
+        
+        .metric-unit {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            color: var(--text-muted);
+        }
+        
+        /* Progress */
+        .progress-track {
+            height: 3px;
+            background: var(--abyss);
+            border-radius: 1.5px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-violet));
+            border-radius: 1.5px;
+            transition: width 0.3s;
+        }
+        
+        /* Chart */
+        .mini-chart {
+            width: 100%;
+            height: 40px;
+            margin-top: 8px;
+            background: var(--abyss);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        /* Betti */
+        .betti-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 6px;
+        }
+        
+        .betti-item {
+            text-align: center;
+            padding: 6px;
+            background: var(--abyss);
+            border-radius: 3px;
+        }
+        
+        .betti-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--neon-amber);
+        }
+        
+        .betti-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 8px;
+            color: var(--text-muted);
+        }
+        
+        /* Histogram */
+        .histogram {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 6px;
+        }
+        
+        .histogram-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .histogram-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 7px;
+            color: var(--text-muted);
+            width: 24px;
+            text-align: right;
+        }
+        
+        .histogram-track {
+            flex: 1;
+            height: 5px;
+            background: var(--abyss);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .histogram-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 6px;
+        }
+        
+        .stat-item {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            color: var(--text-muted);
+        }
+        
+        .stat-item span { color: var(--text-dim); }
+        
+        /* Epistemology Box */
+        .epistemology-box {
+            background: var(--abyss);
+            border: 1px solid var(--edge);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 10px;
+            line-height: 1.5;
+        }
+        
+        .epistemology-box h4 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--neon-violet);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .epistemology-list {
+            list-style: none;
+        }
+        
+        .epistemology-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            margin-bottom: 4px;
+            color: var(--text-dim);
+        }
+        
+        .epistemology-list li::before {
+            content: '✓';
+            color: var(--neon-green);
+            font-size: 10px;
+        }
+        
+        .epistemology-list li.does-not::before {
+            content: '✗';
+            color: var(--neon-red);
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: var(--depth);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 6px;
+            padding: 10px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            max-width: 200px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        .tooltip.visible { display: block; }
+        
+        .tooltip-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--neon-cyan);
+            margin-bottom: 6px;
+        }
+        
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            color: var(--text-dim);
+            margin-bottom: 3px;
+        }
+        
+        .tooltip-row span:last-child {
+            color: var(--text-bright);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--surface); border-radius: 2px; }
+        
+        /* Counterfactual Results */
+        .counterfactual-results {
+            display: none;
+            background: rgba(255,0,128,0.1);
+            border: 1px solid rgba(255,0,128,0.3);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        
+        .counterfactual-results.visible { display: block; }
+        
+        .cf-title {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--neon-pink);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        
+        .cf-row {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            margin-bottom: 4px;
+        }
+        
+        .cf-label { color: var(--text-muted); }
+        .cf-value { color: var(--text-bright); }
+        .cf-value.positive { color: var(--neon-green); }
+        .cf-value.negative { color: var(--neon-red); }
+        
+        /* Feedback Indicator */
+        .feedback-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px;
+            background: var(--abyss);
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        
+        .feedback-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+        
+        .feedback-icon.active {
+            background: var(--neon-green);
+            color: var(--void);
+        }
+        
+        .feedback-icon.inactive {
+            background: var(--neon-red);
+            color: var(--void);
+        }
+        
+        .feedback-text {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            color: var(--text-dim);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-field"></div>
+    
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-title">Cell #<span id="tooltipId">0</span></div>
+        <div class="tooltip-row"><span>Phase θ</span><span id="tooltipPhase">0.00</span></div>
+        <div class="tooltip-row"><span>Layer</span><span id="tooltipLayer">0</span></div>
+        <div class="tooltip-row"><span>Neighbors</span><span id="tooltipNeighbors">0</span></div>
+        <div class="tooltip-row"><span>Local R</span><span id="tooltipLocalR">0.00</span></div>
+        <div class="tooltip-row"><span>Attention Σ</span><span id="tooltipAttention">0.00</span></div>
+    </div>
+    
+    <header class="header">
+        <div class="brand">
+            <div class="brand-icon">Ψ</div>
+            <div class="brand-text">
+                <h1>UGFT Simulator</h1>
+                <span>Unified Geometric Field Theory • H-NCA Architecture</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="license/" class="license-link">Advanced Research Mode</a>
+            <div class="status-pill">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Initializing...</span>
+            </div>
+        </div>
+    </header>
+    
+    <div class="app-layout">
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <!-- UGFT Action Panel -->
+            <div class="section ugft-panel">
+                <div class="section-title">Geometric Action S</div>
+                <div class="action-equation">S = L<sub>task</sub> + L<sub>geom</sub> + L<sub>topo</sub></div>
+                
+                <div class="action-terms">
+                    <div class="action-term">
+                        <span class="term-label">L_task</span>
+                        <div class="term-bar">
+                            <div class="term-fill task" id="termTask" style="width: 30%"></div>
+                        </div>
+                        <span class="term-value" id="termTaskVal">0.30</span>
+                    </div>
+                    <div class="action-term">
+                        <span class="term-label">L_geometry</span>
+                        <div class="term-bar">
+                            <div class="term-fill geometry" id="termGeom" style="width: 25%"></div>
+                        </div>
+                        <span class="term-value" id="termGeomVal">0.25</span>
+                    </div>
+                    <div class="action-term">
+                        <span class="term-label">L_topology</span>
+                        <div class="term-bar">
+                            <div class="term-fill topology" id="termTopo" style="width: 20%"></div>
+                        </div>
+                        <span class="term-value" id="termTopoVal">0.20</span>
+                    </div>
+                </div>
+                
+                <div class="action-total">
+                    <span class="total-label">Total Action</span>
+                    <span class="total-value" id="totalAction">0.75</span>
+                </div>
+                
+                <div class="system-state">
+                    <span class="state-badge transition" id="systemState">Transition</span>
+                </div>
+                
+                <div class="feedback-indicator">
+                    <div class="feedback-icon active" id="feedbackIcon">↺</div>
+                    <span class="feedback-text" id="feedbackText">Topological Feedback Active</span>
+                </div>
+            </div>
+            
+            <!-- Dynamics -->
+            <div class="section">
+                <div class="section-title">H-AKORN Dynamics</div>
+                
+                <div class="control">
+                    <div class="control-header">
+                        <span class="control-name">Coupling K</span>
+                        <span class="control-value" id="kDisplay">2.5</span>
+                    </div>
+                    <input type="range" id="sliderK" min="0" max="10" step="0.1" value="2.5">
+                </div>
+                
+                <div class="control">
+                    <div class="control-header">
+                        <span class="control-name">Time Step ε</span>
+                        <span class="control-value" id="epsDisplay">0.05</span>
+                    </div>
+                    <input type="range" id="sliderEps" min="0.01" max="0.2" step="0.01" value="0.05">
+                </div>
+                
+                <div class="control">
+                    <div class="control-header">
+                        <span class="control-name">Curvature κ</span>
+                        <span class="control-value" id="kappaDisplay">-1.0</span>
+                    </div>
+                    <input type="range" id="sliderKappa" min="-2" max="-0.1" step="0.1" value="-1">
+                </div>
+                
+                <div class="control">
+                    <div class="control-header">
+                        <span class="control-name">Layers</span>
+                        <span class="control-value" id="layersDisplay">5</span>
+                    </div>
+                    <input type="range" id="sliderLayers" min="2" max="7" step="1" value="5">
+                </div>
+            </div>
+            
+            <!-- Controls -->
+            <div class="section">
+                <div class="section-title">Simulation</div>
+                <div class="btn-row">
+                    <button class="btn" id="btnReset">Reset</button>
+                    <button class="btn btn-primary" id="btnPlayPause">▶ Play</button>
+                </div>
+                <div class="btn-row" style="margin-top: 8px;">
+                    <button class="btn btn-counterfactual" id="btnCounterfactual">⚡ Run Counterfactual</button>
+                </div>
+                
+                <div class="counterfactual-results" id="cfResults">
+                    <div class="cf-title">Counterfactual Analysis</div>
+                    <div class="cf-row">
+                        <span class="cf-label">ΔR(t)</span>
+                        <span class="cf-value" id="cfDeltaR">+0.00</span>
+                    </div>
+                    <div class="cf-row">
+                        <span class="cf-label">ΔΦ_proxy</span>
+                        <span class="cf-value" id="cfDeltaPhi">+0.00</span>
+                    </div>
+                    <div class="cf-row">
+                        <span class="cf-label">ΔClusters</span>
+                        <span class="cf-value" id="cfDeltaClusters">0</span>
+                    </div>
+                    <div class="cf-row">
+                        <span class="cf-label">Instability at</span>
+                        <span class="cf-value" id="cfInstability">N/A</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Visualization -->
+            <div class="section">
+                <div class="section-title">Visualization</div>
+                <div class="mode-grid">
+                    <button class="mode-btn active" data-mode="phase">Phase θᵢ</button>
+                    <button class="mode-btn" data-mode="cluster">Clusters</button>
+                    <button class="mode-btn" data-mode="attention">Attention</button>
+                    <button class="mode-btn" data-mode="geodesic">Geodesics</button>
+                </div>
+            </div>
+            
+            <!-- Epistemology -->
+            <div class="epistemology-box">
+                <h4>What This Simulator Does</h4>
+                <ul class="epistemology-list">
+                    <li>Simulate geometric field dynamics</li>
+                    <li>Test stability conditions</li>
+                    <li>Expose topological feedback</li>
+                    <li class="does-not">Simulate quantum hardware</li>
+                    <li class="does-not">Model physical particles</li>
+                    <li class="does-not">Claim empirical consciousness</li>
+                </ul>
+            </div>
+        </aside>
+        
+        <!-- Center: Visualization -->
+        <main class="canvas-container" id="canvasContainer">
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <canvas id="mainCanvas"></canvas>
+                <canvas id="geodesicsCanvas"></canvas>
+            </div>
+            
+            <div class="split-view" id="splitView">
+                <div class="split-panel">
+                    <span class="split-label with-feedback">With Topological Feedback</span>
+                    <canvas class="split-canvas" id="canvasA"></canvas>
+                    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim);">
+                        R = <span id="splitRA">0.000</span> | Φ = <span id="splitPhiA">0.00</span>
+                    </div>
+                </div>
+                <div class="split-panel">
+                    <span class="split-label no-feedback">Without Feedback (Zombie)</span>
+                    <canvas class="split-canvas" id="canvasB"></canvas>
+                    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim);">
+                        R = <span id="splitRB">0.000</span> | Φ = <span id="splitPhiB">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Right Sidebar -->
+        <aside class="sidebar">
+            <div class="section highlight-cyan">
+                <div class="section-title">Order Parameter R(t)</div>
+                <div class="metric">
+                    <div class="metric-row">
+                        <span class="metric-value cyan" id="metricR">0.000</span>
+                        <span class="metric-unit">Kuramoto</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progressR" style="width: 0%"></div>
+                    </div>
+                    <canvas class="mini-chart" id="chartR"></canvas>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Synchronization</div>
+                <div class="metric">
+                    <div class="metric-label">Phase Variance σ²</div>
+                    <div class="metric-value pink" id="metricVar">0.000</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Φ_proxy (Integration)</div>
+                    <div class="metric-value violet" id="metricPhi">0.000</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Mean Phase Ψ</div>
+                    <div class="metric-value amber" id="metricMeanPhase">0.000</div>
+                </div>
+            </div>
+            
+            <div class="section highlight-amber">
+                <div class="section-title">Topology (Global Sensor)</div>
+                <div class="metric">
+                    <div class="metric-label">Clusters Detected</div>
+                    <div class="metric-row">
+                        <span class="metric-value amber" id="metricClusters">1</span>
+                        <span class="metric-unit">coherent groups</span>
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Betti Numbers</div>
+                    <div class="betti-row">
+                        <div class="betti-item">
+                            <div class="betti-value" id="betti0">1</div>
+                            <div class="betti-label">β₀</div>
+                        </div>
+                        <div class="betti-item">
+                            <div class="betti-value" id="betti1">0</div>
+                            <div class="betti-label">β₁</div>
+                        </div>
+                        <div class="betti-item">
+                            <div class="betti-value" id="betti2">0</div>
+                            <div class="betti-label">β₂</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-family: 'IBM Plex Mono', monospace; font-size: 8px; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                    Topology update: t = <span id="topoUpdateTime">0.00</span>s
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Phase Distribution</div>
+                <div class="histogram" id="histogram"></div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">System</div>
+                <div class="stats-grid">
+                    <div class="stat-item">Cells: <span id="statCells">0</span></div>
+                    <div class="stat-item">FPS: <span id="statFPS">0</span></div>
+                    <div class="stat-item">Step: <span id="statStep">0</span></div>
+                    <div class="stat-item">Time: <span id="statTime">0.00</span>s</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // ============================================================
+        // UGFT Simulator - State of the Art Implementation
+        // H-NCA with Geodesics, Counterfactual Analysis, UGFT Panel
+        // ============================================================
+        
+        // Configuration
+        const config = {
+            K: 2.5,
+            dt: 0.05,
+            kappa: -1.0,
+            layers: 5,
+            vizMode: 'phase',
+            topologicalFeedback: true,
+            feedbackStrength: 0.1
+        };
+        
+        // State
+        let cells = [];
+        let isRunning = false;
+        let stepCount = 0;
+        let frameId = null;
+        let lastFrameTime = 0;
+        let fps = 0;
+        let fpsAccum = 0;
+        let fpsCount = 0;
+        let hoveredCell = null;
+        let lastTopoUpdate = 0;
+        
+        const orderHistory = [];
+        let chartCtx = null;
+        
+        // Counterfactual state
+        let cfCells = [];
+        let cfRunning = false;
+        let cfSteps = 0;
+        let cfResults = { deltaR: 0, deltaPhi: 0, deltaClusters: 0, instabilityStep: null };
+        
+        // ============================================================
+        // Hyperbolic Geometry
+        // ============================================================
+        
+        const Hyperbolic = {
+            lorentzInner(u, v) {
+                return -u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
+            },
+            
+            toHyperboloid(p) {
+                const r2 = p[0]*p[0] + p[1]*p[1];
+                if (r2 >= 0.999) return [1, 0, 0];
+                const s = 2 / (1 - r2);
+                return [(1 + r2) / (1 - r2), s * p[0], s * p[1]];
+            },
+            
+            toPoincare(h) {
+                const d = 1 + h[0];
+                return [h[1] / d, h[2] / d];
+            },
+            
+            poincareDistance(p, q) {
+                const dx = q[0] - p[0];
+                const dy = q[1] - p[1];
+                const r1 = p[0]*p[0] + p[1]*p[1];
+                const r2 = q[0]*q[0] + q[1]*q[1];
+                const num = dx*dx + dy*dy;
+                const denom = (1 - r1) * (1 - r2);
+                if (denom <= 0) return 10;
+                return Math.acosh(Math.max(1, 1 + 2 * num / denom));
+            },
+            
+            geodesicDistance(p, q) {
+                const inner = this.lorentzInner(p, q);
+                return Math.acosh(Math.max(1, -inner));
+            },
+            
+            // Calculate geodesic arc in Poincaré disk
+            // Returns center and radius of the Euclidean circle representing the geodesic
+            geodesicArc(p, q) {
+                // If points are nearly collinear with origin, return null (draw straight line)
+                const cross = p[0] * q[1] - p[1] * q[0];
+                if (Math.abs(cross) < 0.001) {
+                    return null;
+                }
+                
+                // Calculate the Euclidean circle orthogonal to unit circle passing through p and q
+                const px = p[0], py = p[1];
+                const qx = q[0], qy = q[1];
+                
+                // Using the formula for the orthogonal circle
+                const d = 2 * (px * qy - qx * py);
+                if (Math.abs(d) < 0.0001) return null;
+                
+                const p2 = px*px + py*py;
+                const q2 = qx*qx + qy*qy;
+                
+                const cx = ((p2 + 1) * qy - (q2 + 1) * py) / d;
+                const cy = ((q2 + 1) * px - (p2 + 1) * qx) / d;
+                const r = Math.sqrt((cx - px)*(cx - px) + (cy - py)*(cy - py));
+                
+                // Calculate angles for arc
+                const angle1 = Math.atan2(py - cy, px - cx);
+                const angle2 = Math.atan2(qy - cy, qx - cx);
+                
+                return { cx, cy, r, angle1, angle2 };
+            }
+        };
+        
+        // ============================================================
+        // Tessellation with Spatial Hashing
+        // ============================================================
+        
+        function generateTessellation(layers) {
+            const cellList = [];
+            
+            // Center cell
+            cellList.push({
+                id: 0,
+                position: [1, 0, 0],
+                poincare: [0, 0],
+                phase: Math.random() * Math.PI * 2,
+                omega: (Math.random() - 0.5) * 2,
+                layer: 0,
+                neighbors: [],
+                localR: 0
+            });
+            
+            let nextId = 1;
+            
+            // Generate layers
+            for (let layer = 1; layer <= layers; layer++) {
+                const count = Math.floor(5 * Math.pow(2, layer - 1));
+                const offset = (layer % 2) * Math.PI / count;
+                
+                for (let i = 0; i < count; i++) {
+                    const angle = (2 * Math.PI * i) / count + offset;
+                    const r = Math.tanh(layer * 0.4);
+                    const px = r * Math.cos(angle);
+                    const py = r * Math.sin(angle);
+                    const hyp = Hyperbolic.toHyperboloid([px, py]);
+                    
+                    cellList.push({
+                        id: nextId,
+                        position: hyp,
+                        poincare: [px, py],
+                        phase: Math.random() * Math.PI * 2,
+                        omega: (Math.random() - 0.5) * 2,
+                        layer: layer,
+                        neighbors: [],
+                        localR: 0
+                    });
+                    nextId++;
+                }
+            }
+            
+            // Spatial hashing for efficient adjacency
+            const gridSize = 0.3;
+            const grid = new Map();
+            
+            for (const cell of cellList) {
+                const gx = Math.floor(cell.poincare[0] / gridSize);
+                const gy = Math.floor(cell.poincare[1] / gridSize);
+                const key = `${gx},${gy}`;
+                if (!grid.has(key)) grid.set(key, []);
+                grid.get(key).push(cell);
+            }
+            
+            // Build adjacency using spatial hash
+            const threshold = 1.2;
+            for (const cell of cellList) {
+                const gx = Math.floor(cell.poincare[0] / gridSize);
+                const gy = Math.floor(cell.poincare[1] / gridSize);
+                
+                // Check neighboring grid cells
+                for (let dx = -1; dx <= 1; dx++) {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const key = `${gx + dx},${gy + dy}`;
+                        const bucket = grid.get(key);
+                        if (!bucket) continue;
+                        
+                        for (const other of bucket) {
+                            if (other.id <= cell.id) continue;
+                            const d = Hyperbolic.poincareDistance(cell.poincare, other.poincare);
+                            if (d < threshold) {
+                                cell.neighbors.push(other.id);
+                                other.neighbors.push(cell.id);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return cellList;
+        }
+        
+        // ============================================================
+        // H-AKORN Dynamics
+        // ============================================================
+        
+        function computeOrderParameter(cellArray) {
+            let sumCos = 0, sumSin = 0;
+            for (const c of cellArray) {
+                sumCos += Math.cos(c.phase);
+                sumSin += Math.sin(c.phase);
+            }
+            return Math.sqrt(sumCos*sumCos + sumSin*sumSin) / cellArray.length;
+        }
+        
+        function computeMeanPhase(cellArray) {
+            let sumCos = 0, sumSin = 0;
+            for (const c of cellArray) {
+                sumCos += Math.cos(c.phase);
+                sumSin += Math.sin(c.phase);
+            }
+            return Math.atan2(sumSin, sumCos);
+        }
+        
+        function detectClusters(cellArray, threshold = 0.3) {
+            const clusters = [];
+            const visited = new Set();
+            
+            for (let i = 0; i < cellArray.length; i++) {
+                if (visited.has(i)) continue;
+                
+                const cluster = [i];
+                visited.add(i);
+                const queue = [i];
+                
+                while (queue.length > 0) {
+                    const curr = queue.shift();
+                    for (const n of cellArray[curr].neighbors) {
+                        if (visited.has(n)) continue;
+                        const diff = Math.abs(cellArray[curr].phase - cellArray[n].phase);
+                        const minDiff = Math.min(diff, Math.PI * 2 - diff);
+                        if (minDiff < threshold) {
+                            visited.add(n);
+                            cluster.push(n);
+                            queue.push(n);
+                        }
+                    }
+                }
+                clusters.push(cluster);
+            }
+            return clusters;
+        }
+        
+        function computeBetti(cellArray, clusters) {
+            const beta0 = clusters.length;
+            let edges = 0;
+            for (const c of cellArray) edges += c.neighbors.length;
+            edges /= 2;
+            const beta1 = Math.max(0, edges - cellArray.length + beta0);
+            return { beta0, beta1, beta2: 0 };
+        }
+        
+        function runStep(cellArray, withFeedback = true) {
+            const K = config.K;
+            const dt = config.dt;
+            const kappa = config.kappa;
+            const newPhases = [];
+            
+            // Global order parameter (for potential feedback)
+            const R = computeOrderParameter(cellArray);
+            
+            for (let i = 0; i < cellArray.length; i++) {
+                const cell = cellArray[i];
+                let coupling = 0;
+                let localSumCos = 0, localSumSin = 0;
+                
+                for (const j of cell.neighbors) {
+                    const neighbor = cellArray[j];
+                    const d = Hyperbolic.geodesicDistance(cell.position, neighbor.position);
+                    const A = Math.exp(-d * Math.abs(kappa));
+                    coupling += A * Math.sin(neighbor.phase - cell.phase);
+                    
+                    localSumCos += Math.cos(neighbor.phase);
+                    localSumSin += Math.sin(neighbor.phase);
+                }
+                
+                // Local order parameter
+                if (cell.neighbors.length > 0) {
+                    cell.localR = Math.sqrt(localSumCos*localSumCos + localSumSin*localSumSin) / cell.neighbors.length;
+                }
+                
+                // Kuramoto dynamics with optional topological feedback
+                let dtheta = cell.omega + (K / Math.max(1, cell.neighbors.length)) * coupling;
+                
+                // Topological feedback: global order influences local dynamics
+                if (withFeedback && config.topologicalFeedback) {
+                    // Subtle regularization based on global coherence
+                    dtheta *= (1 + config.feedbackStrength * (R - 0.5));
+                }
+                
+                let newPhase = (cell.phase + dt * dtheta) % (Math.PI * 2);
+                if (newPhase < 0) newPhase += Math.PI * 2;
+                newPhases.push(newPhase);
+            }
+            
+            for (let i = 0; i < cellArray.length; i++) {
+                cellArray[i].phase = newPhases[i];
+            }
+        }
+        
+        // ============================================================
+        // UGFT Action Computation
+        // ============================================================
+        
+        function computeUGFTAction(cellArray) {
+            const R = computeOrderParameter(cellArray);
+            const clusters = detectClusters(cellArray);
+            const betti = computeBetti(cellArray, clusters);
+            
+            // L_task: Synchronization loss (want R → 1)
+            const L_task = 1 - R;
+            
+            // L_geometry: Curvature penalty (frustration)
+            let frustration = 0;
+            for (const c of cellArray) {
+                for (const n of c.neighbors) {
+                    const d = Hyperbolic.geodesicDistance(c.position, cellArray[n].position);
+                    const phaseDiff = Math.abs(c.phase - cellArray[n].phase);
+                    const minDiff = Math.min(phaseDiff, Math.PI * 2 - phaseDiff);
+                    frustration += d * minDiff;
+                }
+            }
+            const L_geometry = frustration / (cellArray.length * 10);
+            
+            // L_topology: Topological complexity penalty
+            const L_topology = (betti.beta0 - 1) * 0.1 + betti.beta1 * 0.05;
+            
+            const S_total = L_task + L_geometry + L_topology;
+            
+            // Determine system state
+            let state = 'transition';
+            if (R > 0.8 && betti.beta0 <= 2) state = 'stable';
+            else if (R < 0.3 || betti.beta0 > 5) state = 'subcritical';
+            
+            return {
+                L_task: Math.min(1, L_task),
+                L_geometry: Math.min(1, L_geometry),
+                L_topology: Math.min(1, L_topology),
+                S_total,
+                state
+            };
+        }
+        
+        // ============================================================
+        // Rendering
+        // ============================================================
+        
+        class Renderer {
+            constructor(canvas, geodesicsCanvas = null) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.geodesicsCanvas = geodesicsCanvas;
+                this.geoCtx = geodesicsCanvas ? geodesicsCanvas.getContext('2d') : null;
+                this.resize();
+            }
+            
+            resize(size = null) {
+                const s = size || Math.min(window.innerHeight * 0.6, window.innerWidth * 0.32);
+                this.canvas.width = s;
+                this.canvas.height = s;
+                if (this.geodesicsCanvas) {
+                    this.geodesicsCanvas.width = s;
+                    this.geodesicsCanvas.height = s;
+                }
+                this.cx = s / 2;
+                this.cy = s / 2;
+                this.r = s / 2 - 10;
+            }
+            
+            toScreen(p) {
+                return [this.cx + p[0] * this.r, this.cy - p[1] * this.r];
+            }
+            
+            fromScreen(sx, sy) {
+                return [(sx - this.cx) / this.r, -(sy - this.cy) / this.r];
+            }
+            
+            phaseColor(phase) {
+                const hue = (phase / (Math.PI * 2)) * 360;
+                return `hsl(${hue}, 85%, 58%)`;
+            }
+            
+            drawGeodesic(ctx, p, q, alpha = 0.15) {
+                const [x1, y1] = this.toScreen(p);
+                const [x2, y2] = this.toScreen(q);
+                
+                const arc = Hyperbolic.geodesicArc(p, q);
+                
+                ctx.strokeStyle = `rgba(100, 100, 120, ${alpha})`;
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                
+                if (arc && arc.r < 1000) {
+                    // Draw arc
+                    const [cx, cy] = this.toScreen([arc.cx, arc.cy]);
+                    const screenR = arc.r * this.r;
+                    
+                    // Determine arc direction
+                    let start = arc.angle1;
+                    let end = arc.angle2;
+                    
+                    // Ensure we draw the shorter arc
+                    let diff = end - start;
+                    if (diff > Math.PI) diff -= 2 * Math.PI;
+                    if (diff < -Math.PI) diff += 2 * Math.PI;
+                    
+                    const counterclockwise = diff < 0;
+                    
+                    ctx.arc(cx, cy, screenR, -arc.angle1, -arc.angle2, counterclockwise);
+                } else {
+                    // Draw straight line
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                }
+                
+                ctx.stroke();
+            }
+            
+            render(cellArray, clusters, mode, highlightId = null) {
+                const ctx = this.ctx;
+                const { cx, cy, r } = this;
+                
+                // Clear
+                ctx.fillStyle = '#030306';
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Disk glow
+                const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+                grad.addColorStop(0, 'rgba(0,245,255,0.02)');
+                grad.addColorStop(0.5, 'rgba(139,92,246,0.015)');
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Boundary
+                ctx.strokeStyle = 'rgba(0,245,255,0.2)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // Draw geodesics
+                if (this.geoCtx) {
+                    const gctx = this.geoCtx;
+                    gctx.clearRect(0, 0, this.geodesicsCanvas.width, this.geodesicsCanvas.height);
+                    
+                    if (mode === 'geodesic' || highlightId !== null) {
+                        const drawn = new Set();
+                        for (const c of cellArray) {
+                            // If highlighting, only draw connections to highlighted cell
+                            if (highlightId !== null && c.id !== highlightId && !c.neighbors.includes(highlightId)) {
+                                continue;
+                            }
+                            
+                            for (const n of c.neighbors) {
+                                const key = c.id < n ? `${c.id}-${n}` : `${n}-${c.id}`;
+                                if (drawn.has(key)) continue;
+                                drawn.add(key);
+                                
+                                const alpha = highlightId !== null ? 
+                                    ((c.id === highlightId || n === highlightId) ? 0.6 : 0.05) : 
+                                    0.15;
+                                
+                                this.drawGeodesic(gctx, c.poincare, cellArray[n].poincare, alpha);
+                            }
+                        }
+                    }
+                } else {
+                    // Fallback: draw edges on main canvas
+                    const drawn = new Set();
+                    for (const c of cellArray) {
+                        const [x1, y1] = this.toScreen(c.poincare);
+                        for (const n of c.neighbors) {
+                            const key = c.id < n ? `${c.id}-${n}` : `${n}-${c.id}`;
+                            if (drawn.has(key)) continue;
+                            drawn.add(key);
+                            const [x2, y2] = this.toScreen(cellArray[n].poincare);
+                            ctx.strokeStyle = 'rgba(80,80,100,0.1)';
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(x1, y1);
+                            ctx.lineTo(x2, y2);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                // Draw cells
+                for (const c of cellArray) {
+                    const [x, y] = this.toScreen(c.poincare);
+                    const size = Math.max(3, 6 - c.layer * 0.5);
+                    const isHighlighted = highlightId === c.id;
+                    
+                    let color;
+                    if (mode === 'phase' || mode === 'geodesic') {
+                        color = this.phaseColor(c.phase);
+                    } else if (mode === 'cluster') {
+                        let idx = 0;
+                        for (let i = 0; i < clusters.length; i++) {
+                            if (clusters[i].includes(c.id)) { idx = i; break; }
+                        }
+                        color = `hsl(${(idx * 137.5) % 360}, 70%, 55%)`;
+                    } else if (mode === 'attention') {
+                        const v = Math.floor(255 * c.localR);
+                        color = `rgb(${v}, ${Math.floor(v*0.4)}, ${255-v})`;
+                    }
+                    
+                    // Glow
+                    ctx.beginPath();
+                    ctx.arc(x, y, size + (isHighlighted ? 6 : 3), 0, Math.PI * 2);
+                    const glowColor = isHighlighted ? 
+                        'rgba(0,245,255,0.5)' : 
+                        color.replace(')', ',0.2)').replace('rgb', 'rgba').replace('hsl', 'hsla');
+                    ctx.fillStyle = glowColor;
+                    ctx.fill();
+                    
+                    // Cell
+                    ctx.beginPath();
+                    ctx.arc(x, y, isHighlighted ? size + 2 : size, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    
+                    if (isHighlighted) {
+                        ctx.strokeStyle = '#00f5ff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        let renderer = null;
+        let splitRendererA = null;
+        let splitRendererB = null;
+        
+        // ============================================================
+        // UI Updates
+        // ============================================================
+        
+        function updateMetrics() {
+            const R = computeOrderParameter(cells);
+            const variance = 1 - R;
+            const meanPhase = computeMeanPhase(cells);
+            const phi = R * Math.log(cells.length + 1);
+            
+            document.getElementById('metricR').textContent = R.toFixed(3);
+            document.getElementById('progressR').style.width = `${R * 100}%`;
+            document.getElementById('metricVar').textContent = variance.toFixed(3);
+            document.getElementById('metricPhi').textContent = phi.toFixed(2);
+            document.getElementById('metricMeanPhase').textContent = ((meanPhase / Math.PI) * 180).toFixed(1) + '°';
+            
+            // Update UGFT panel
+            const action = computeUGFTAction(cells);
+            document.getElementById('termTask').style.width = `${action.L_task * 100}%`;
+            document.getElementById('termTaskVal').textContent = action.L_task.toFixed(2);
+            document.getElementById('termGeom').style.width = `${action.L_geometry * 100}%`;
+            document.getElementById('termGeomVal').textContent = action.L_geometry.toFixed(2);
+            document.getElementById('termTopo').style.width = `${action.L_topology * 100}%`;
+            document.getElementById('termTopoVal').textContent = action.L_topology.toFixed(2);
+            document.getElementById('totalAction').textContent = action.S_total.toFixed(2);
+            
+            const stateEl = document.getElementById('systemState');
+            stateEl.className = `state-badge ${action.state}`;
+            stateEl.textContent = action.state.charAt(0).toUpperCase() + action.state.slice(1);
+            
+            // System stats
+            document.getElementById('statCells').textContent = cells.length;
+            document.getElementById('statStep').textContent = stepCount;
+            document.getElementById('statTime').textContent = (stepCount * config.dt).toFixed(2);
+            
+            orderHistory.push(R);
+            if (orderHistory.length > 300) orderHistory.shift();
+            
+            return action;
+        }
+        
+        function updateTopology() {
+            const clusters = detectClusters(cells);
+            const betti = computeBetti(cells, clusters);
+            
+            document.getElementById('metricClusters').textContent = clusters.length;
+            document.getElementById('betti0').textContent = betti.beta0;
+            document.getElementById('betti1').textContent = betti.beta1;
+            document.getElementById('betti2').textContent = betti.beta2;
+            document.getElementById('topoUpdateTime').textContent = (stepCount * config.dt).toFixed(2);
+            
+            return clusters;
+        }
+        
+        function updateChart() {
+            if (!chartCtx) return;
+            const { width, height } = chartCtx.canvas;
+            chartCtx.fillStyle = '#080810';
+            chartCtx.fillRect(0, 0, width, height);
+            
+            if (orderHistory.length < 2) return;
+            
+            chartCtx.strokeStyle = '#00f5ff';
+            chartCtx.lineWidth = 1.5;
+            chartCtx.beginPath();
+            
+            const maxPts = 100;
+            const start = Math.max(0, orderHistory.length - maxPts);
+            const step = width / maxPts;
+            
+            for (let i = start; i < orderHistory.length; i++) {
+                const x = (i - start) * step;
+                const y = height - orderHistory[i] * height;
+                if (i === start) chartCtx.moveTo(x, y);
+                else chartCtx.lineTo(x, y);
+            }
+            chartCtx.stroke();
+            
+            // Threshold line
+            chartCtx.strokeStyle = 'rgba(255,0,128,0.3)';
+            chartCtx.setLineDash([2, 2]);
+            chartCtx.beginPath();
+            chartCtx.moveTo(0, height * 0.2);
+            chartCtx.lineTo(width, height * 0.2);
+            chartCtx.stroke();
+            chartCtx.setLineDash([]);
+        }
+        
+        function updateHistogram() {
+            const bins = 8;
+            const counts = new Array(bins).fill(0);
+            for (const c of cells) {
+                const idx = Math.floor((c.phase / (Math.PI * 2)) * bins) % bins;
+                counts[idx]++;
+            }
+            const max = Math.max(...counts);
+            
+            let html = '';
+            for (let i = 0; i < bins; i++) {
+                const angle = Math.round((i / bins) * 360);
+                const pct = (counts[i] / max) * 100;
+                html += `
+                    <div class="histogram-row">
+                        <span class="histogram-label">${angle}°</span>
+                        <div class="histogram-track">
+                            <div class="histogram-fill" style="width:${pct}%; background:hsl(${angle},70%,55%);"></div>
+                        </div>
+                    </div>`;
+            }
+            document.getElementById('histogram').innerHTML = html;
+        }
+        
+        // ============================================================
+        // Counterfactual Analysis
+        // ============================================================
+        
+        function runCounterfactual() {
+            // Clone initial state
+            const seed = Math.random();
+            
+            // Reset both systems with same seed
+            const initPhases = cells.map(c => c.phase);
+            cfCells = JSON.parse(JSON.stringify(cells));
+            
+            // Reset main cells to initial state
+            cells.forEach((c, i) => c.phase = initPhases[i]);
+            cfCells.forEach((c, i) => c.phase = initPhases[i]);
+            
+            // Show split view
+            document.getElementById('splitView').classList.add('active');
+            document.querySelector('.canvas-wrapper').style.display = 'none';
+            
+            // Initialize split renderers
+            const canvasA = document.getElementById('canvasA');
+            const canvasB = document.getElementById('canvasB');
+            splitRendererA = new Renderer(canvasA);
+            splitRendererB = new Renderer(canvasB);
+            
+            const size = Math.min(window.innerHeight * 0.5, window.innerWidth * 0.2);
+            splitRendererA.resize(size);
+            splitRendererB.resize(size);
+            
+            // Run simulation
+            cfRunning = true;
+            cfSteps = 0;
+            cfResults = { deltaR: 0, deltaPhi: 0, deltaClusters: 0, instabilityStep: null };
+            
+            function cfStep() {
+                if (!cfRunning || cfSteps >= 500) {
+                    cfRunning = false;
+                    document.getElementById('cfResults').classList.add('visible');
+                    return;
+                }
+                
+                // Run with feedback
+                runStep(cells, true);
+                
+                // Run without feedback
+                runStep(cfCells, false);
+                
+                cfSteps++;
+                
+                // Calculate metrics
+                const R_with = computeOrderParameter(cells);
+                const R_without = computeOrderParameter(cfCells);
+                const phi_with = R_with * Math.log(cells.length + 1);
+                const phi_without = R_without * Math.log(cfCells.length + 1);
+                const clusters_with = detectClusters(cells).length;
+                const clusters_without = detectClusters(cfCells).length;
+                
+                cfResults.deltaR = R_with - R_without;
+                cfResults.deltaPhi = phi_with - phi_without;
+                cfResults.deltaClusters = clusters_with - clusters_without;
+                
+                // Detect instability
+                if (cfResults.instabilityStep === null && R_without < 0.2 && R_with > 0.4) {
+                    cfResults.instabilityStep = cfSteps;
+                }
+                
+                // Update UI
+                document.getElementById('splitRA').textContent = R_with.toFixed(3);
+                document.getElementById('splitPhiA').textContent = phi_with.toFixed(2);
+                document.getElementById('splitRB').textContent = R_without.toFixed(3);
+                document.getElementById('splitPhiB').textContent = phi_without.toFixed(2);
+                
+                const formatDelta = (v, invert = false) => {
+                    const sign = v >= 0 ? '+' : '';
+                    const cls = (invert ? v <= 0 : v >= 0) ? 'positive' : 'negative';
+                    return `<span class="cf-value ${cls}">${sign}${v.toFixed(2)}</span>`;
+                };
+                
+                document.getElementById('cfDeltaR').innerHTML = formatDelta(cfResults.deltaR);
+                document.getElementById('cfDeltaPhi').innerHTML = formatDelta(cfResults.deltaPhi);
+                document.getElementById('cfDeltaClusters').innerHTML = formatDelta(cfResults.deltaClusters, true);
+                document.getElementById('cfInstability').textContent = cfResults.instabilityStep ? 
+                    `Step ${cfResults.instabilityStep}` : 'N/A';
+                
+                // Render
+                const clustersA = detectClusters(cells);
+                const clustersB = detectClusters(cfCells);
+                splitRendererA.render(cells, clustersA, 'phase');
+                splitRendererB.render(cfCells, clustersB, 'phase');
+                
+                requestAnimationFrame(cfStep);
+            }
+            
+            cfStep();
+        }
+        
+        function stopCounterfactual() {
+            cfRunning = false;
+            document.getElementById('splitView').classList.remove('active');
+            document.querySelector('.canvas-wrapper').style.display = 'block';
+        }
+        
+        // ============================================================
+        // Mouse Interaction
+        // ============================================================
+        
+        function setupMouseInteraction() {
+            const canvas = document.getElementById('mainCanvas');
+            const tooltip = document.getElementById('tooltip');
+            
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const sx = e.clientX - rect.left;
+                const sy = e.clientY - rect.top;
+                
+                const p = renderer.fromScreen(sx, sy);
+                
+                // Find nearest cell
+                let nearest = null;
+                let minDist = Infinity;
+                
+                for (const c of cells) {
+                    const dx = c.poincare[0] - p[0];
+                    const dy = c.poincare[1] - p[1];
+                    const d = dx*dx + dy*dy;
+                    if (d < minDist) {
+                        minDist = d;
+                        nearest = c;
+                    }
+                }
+                
+                if (nearest && minDist < 0.01) {
+                    hoveredCell = nearest.id;
+                    
+                    // Update tooltip
+                    document.getElementById('tooltipId').textContent = nearest.id;
+                    document.getElementById('tooltipPhase').textContent = ((nearest.phase / Math.PI) * 180).toFixed(1) + '°';
+                    document.getElementById('tooltipLayer').textContent = nearest.layer;
+                    document.getElementById('tooltipNeighbors').textContent = nearest.neighbors.length;
+                    document.getElementById('tooltipLocalR').textContent = nearest.localR.toFixed(3);
+                    
+                    // Calculate attention sum
+                    let attentionSum = 0;
+                    for (const n of nearest.neighbors) {
+                        const d = Hyperbolic.geodesicDistance(nearest.position, cells[n].position);
+                        attentionSum += Math.exp(-d * Math.abs(config.kappa));
+                    }
+                    document.getElementById('tooltipAttention').textContent = attentionSum.toFixed(2);
+                    
+                    tooltip.style.left = (e.clientX + 15) + 'px';
+                    tooltip.style.top = (e.clientY + 15) + 'px';
+                    tooltip.classList.add('visible');
+                    
+                    // Re-render with highlight
+                    const clusters = detectClusters(cells);
+                    renderer.render(cells, clusters, config.vizMode, hoveredCell);
+                } else {
+                    if (hoveredCell !== null) {
+                        hoveredCell = null;
+                        tooltip.classList.remove('visible');
+                        const clusters = detectClusters(cells);
+                        renderer.render(cells, clusters, config.vizMode);
+                    }
+                }
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                hoveredCell = null;
+                tooltip.classList.remove('visible');
+                const clusters = detectClusters(cells);
+                renderer.render(cells, clusters, config.vizMode);
+            });
+        }
+        
+        // ============================================================
+        // Main Loop
+        // ============================================================
+        
+        async function animate(timestamp) {
+            if (!isRunning) return;
+            
+            // FPS
+            if (lastFrameTime) {
+                fpsAccum += 1000 / (timestamp - lastFrameTime);
+                fpsCount++;
+                if (fpsCount >= 30) {
+                    fps = Math.round(fpsAccum / fpsCount);
+                    document.getElementById('statFPS').textContent = fps;
+                    fpsAccum = 0;
+                    fpsCount = 0;
+                }
+            }
+            lastFrameTime = timestamp;
+            
+            runStep(cells, config.topologicalFeedback);
+            stepCount++;
+            
+            updateMetrics();
+            
+            // Update topology less frequently
+            let clusters;
+            if (stepCount % 8 === 0) {
+                clusters = updateTopology();
+            } else {
+                clusters = detectClusters(cells);
+            }
+            
+            renderer.render(cells, clusters, config.vizMode, hoveredCell);
+            updateChart();
+            
+            if (stepCount % 15 === 0) {
+                updateHistogram();
+            }
+            
+            frameId = requestAnimationFrame(animate);
+        }
+        
+        // ============================================================
+        // Initialization
+        // ============================================================
+        
+        function init() {
+            // Generate tessellation
+            cells = generateTessellation(config.layers);
+            
+            // Setup renderer
+            const canvas = document.getElementById('mainCanvas');
+            const geodesicsCanvas = document.getElementById('geodesicsCanvas');
+            renderer = new Renderer(canvas, geodesicsCanvas);
+            
+            // Resize handler
+            window.addEventListener('resize', () => {
+                renderer.resize();
+                const clusters = detectClusters(cells);
+                renderer.render(cells, clusters, config.vizMode);
+            });
+            
+            // Init chart
+            const chartCanvas = document.getElementById('chartR');
+            chartCanvas.width = chartCanvas.clientWidth;
+            chartCanvas.height = 40;
+            chartCtx = chartCanvas.getContext('2d');
+            
+            // Initial render
+            const clusters = updateTopology();
+            updateMetrics();
+            renderer.render(cells, clusters, config.vizMode);
+            updateHistogram();
+            
+            // Status
+            document.getElementById('statusDot').classList.remove('computing');
+            document.getElementById('statusText').textContent = 'Ready';
+            
+            // Setup controls
+            setupControls();
+            setupMouseInteraction();
+        }
+        
+        function setupControls() {
+            // Play/Pause
+            document.getElementById('btnPlayPause').addEventListener('click', () => {
+                isRunning = !isRunning;
+                document.getElementById('btnPlayPause').textContent = isRunning ? '⏸ Pause' : '▶ Play';
+                document.getElementById('statusDot').classList.toggle('computing', isRunning);
+                document.getElementById('statusText').textContent = isRunning ? 'Computing...' : 'Paused';
+                
+                if (isRunning) {
+                    lastFrameTime = 0;
+                    frameId = requestAnimationFrame(animate);
+                } else if (frameId) {
+                    cancelAnimationFrame(frameId);
+                }
+            });
+            
+            // Reset
+            document.getElementById('btnReset').addEventListener('click', () => {
+                isRunning = false;
+                document.getElementById('btnPlayPause').textContent = '▶ Play';
+                document.getElementById('statusDot').classList.remove('computing');
+                document.getElementById('statusText').textContent = 'Ready';
+                if (frameId) cancelAnimationFrame(frameId);
+                
+                stepCount = 0;
+                orderHistory.length = 0;
+                cells = generateTessellation(config.layers);
+                
+                const clusters = updateTopology();
+                updateMetrics();
+                renderer.render(cells, clusters, config.vizMode);
+                updateHistogram();
+                updateChart();
+                
+                // Hide counterfactual
+                stopCounterfactual();
+                document.getElementById('cfResults').classList.remove('visible');
+            });
+            
+            // Counterfactual
+            document.getElementById('btnCounterfactual').addEventListener('click', () => {
+                if (cfRunning) {
+                    stopCounterfactual();
+                } else {
+                    isRunning = false;
+                    document.getElementById('btnPlayPause').textContent = '▶ Play';
+                    if (frameId) cancelAnimationFrame(frameId);
+                    runCounterfactual();
+                }
+            });
+            
+            // Sliders
+            const sliders = [
+                { id: 'sliderK', key: 'K', display: 'kDisplay', fmt: v => v.toFixed(1) },
+                { id: 'sliderEps', key: 'dt', display: 'epsDisplay', fmt: v => v.toFixed(2) },
+                { id: 'sliderKappa', key: 'kappa', display: 'kappaDisplay', fmt: v => v.toFixed(1) },
+                { id: 'sliderLayers', key: 'layers', display: 'layersDisplay', fmt: v => v, rebuild: true }
+            ];
+            
+            for (const s of sliders) {
+                document.getElementById(s.id).addEventListener('input', e => {
+                    const v = s.key === 'layers' ? parseInt(e.target.value) : parseFloat(e.target.value);
+                    config[s.key] = v;
+                    document.getElementById(s.display).textContent = s.fmt(v);
+                    
+                    if (s.rebuild && !isRunning) {
+                        cells = generateTessellation(config.layers);
+                        stepCount = 0;
+                        orderHistory.length = 0;
+                        const clusters = updateTopology();
+                        updateMetrics();
+                        renderer.render(cells, clusters, config.vizMode);
+                        updateHistogram();
+                    }
+                });
+            }
+            
+            // Mode buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    config.vizMode = btn.dataset.mode;
+                    const clusters = detectClusters(cells);
+                    renderer.render(cells, clusters, config.vizMode);
+                });
+            });
+        }
+        
+        // Start
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
