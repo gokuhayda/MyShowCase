@@ -2,7 +2,7 @@
 
 **Unified Geometric Field Theory • Hyperbolic Neural Cellular Automata**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 [![WebGPU](https://img.shields.io/badge/WebGPU-Enabled-cyan.svg)](https://www.w3.org/TR/webgpu/)
 [![Demo](https://img.shields.io/badge/Live-Demo-green.svg)](https://erickreis.github.io/ugft-simulator/)
 
