@@ -220,22 +220,6 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
-
-### Research License
-
-The core simulator is **free and open source**. For advanced research features including:
-- Extended parameter ranges
-- Data export capabilities
-- Batch experiments
-- Publication rights
-
-Visit [Advanced Research Mode](license/) or click the button in the simulator header.
-
----
-
 ## 📖 Citation
 
 If you use this simulator in your research, please cite:
