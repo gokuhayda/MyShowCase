@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
+# Copyright © 2026 Éric Gustavo Reis de Sena. All Rights Reserved.
+# Patent Pending. For commercial licensing: eirikreisena@gmail.com
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cgt"
+version = "1.0.0"
+description = "Contrastive Geometric Transfer: Efficient Sentence Embeddings via Hyperbolic Distillation"
+readme = "README.md"
+license = {text = "CC BY-NC-SA 4.0"}
+authors = [
+    {name = "Éric Gustavo Reis de Sena", email = "eirikreisena@gmail.com"}
+]
+maintainers = [
+    {name = "Éric Gustavo Reis de Sena", email = "eirikreisena@gmail.com"}
+]
+keywords = [
+    "hyperbolic",
+    "embeddings",
+    "sentence-transformers",
+    "knowledge-distillation",
+    "geometric-deep-learning",
+    "lorentz-model",
+    "contrastive-learning"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.10"
+
+dependencies = [
+    "torch>=2.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "pandas>=2.0.0",
+    "matplotlib>=3.7.0",
+    "scikit-learn>=1.3.0",
+    "sentence-transformers>=2.2.0",
+    "datasets>=2.14.0",
+    "tqdm>=4.65.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.7.0",
+    "isort>=5.12.0",
+    "mypy>=1.4.0",
+    "ruff>=0.0.280",
+]
+benchmark = [
+    "mteb>=1.1.0",
+]
+all = [
+    "cgt[dev,benchmark]",
+]
+
+[project.urls]
+Documentation = "https://github.com/eric-araya/cgt"
+Repository = "https://github.com/eric-araya/cgt"
+Issues = "https://github.com/eric-araya/cgt/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310", "py311", "py312"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["cgt"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=cgt --cov-report=term-missing"

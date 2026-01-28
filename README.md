@@ -88,10 +88,15 @@ MyShowCase/
 │   ├── sales-taxes-kata/
 │   └── shipping-system-kata/
 │
-├── cgt-hyperbolic-embeddings/    → ⭐ Original Research: Geometric Deep Learning
+├── hyperbolic-intelligence/      → ⭐ Research: Hyperbolic Neural Architectures
 │   ├── src/cgt/                  →    Core library (geometry, models, losses)
 │   ├── experiments/              →    Ablations, benchmarks, unified executor
-│   ├── notebooks/                →    Training notebooks (CGT, H-LLM)
+│   ├── notebooks/                →    Training notebooks (CGT, H-LLM, H-AKORN)
+│   └── README.md                 →    Full technical documentation
+│
+├── geometric-intelligence/       → ⭐ Research: UGFT Simulator & H-NCA Dynamics
+│   ├── index.html                →    Interactive simulator (WebGPU)
+│   ├── docs/                     →    Theory, architecture, API reference
 │   └── README.md                 →    Full technical documentation
 │
 └── README.md                     → This document
@@ -101,36 +106,53 @@ MyShowCase/
 
 ---
 
-## ⭐ Featured Research Project
+## ⭐ Featured Research Projects
 
-### CGT-Hyperbolic-Embeddings
+*"Scaling has been remarkably effective—but effectiveness does not imply exhaustiveness."*
 
-**Contrastive Geometric Transfer: 24× Sentence Embedding Compression via Hyperbolic Geometry**
+### Hyperbolic-Intelligence
 
-| Metric | Value |
-|--------|-------|
-| Compression | 384d → 16d (24×) |
-| Performance Retention | 97.1% Spearman on STS-B |
-| Storage Reduction | 96% |
-| Geometry | Lorentz (Hyperboloid) Model |
+**Exploratory Research in Non-Euclidean Neural Architectures**
+
+Research framework investigating whether hyperbolic geometry can provide a more natural substrate for hierarchical information than flat Euclidean space.
 
 **What it implements:**
 - Complete Lorentz manifold operations (exp/log maps, geodesics, Fréchet mean)
-- CGT student-teacher framework with multi-objective loss
+- **CGT**: Contrastive Geometric Transfer for sentence embedding compression
 - **H-LLM**: Full Hyperbolic Transformer with geodesic attention
-- Ψ-SLM extensions: H-NCA, H-AKOrN, topological field
-- Gromov-Wasserstein structural alignment
+- **H-AKORN**: Kuramoto oscillatory dynamics for temporal binding
+- Ψ-SLM extensions: H-NCA, topological field, Gromov-Wasserstein alignment
 - Falsification protocols (F1-F3) for scientific rigor
 
-**Key Differentiators:**
+**Publications:** [Zenodo Collection](https://doi.org/10.5281/zenodo.18379741)
+
+---
+
+### Geometric-Intelligence
+
+**UGFT Simulator: Unified Geometric Field Theory Implementation**
+
+Interactive scientific simulator demonstrating Geometric Intelligence through Hyperbolic Neural Cellular Automata (H-NCA) with H-AKORN phase dynamics.
+
+**What it implements:**
+- Real-time H-AKORN dynamics on hyperbolic tessellation
+- Kuramoto order parameter with temporal evolution
+- Topological analysis (Betti numbers β₀, β₁, β₂)
+- Counterfactual causation testing (topological downward causation)
+- WebGPU-accelerated visualization with Canvas 2D fallback
+
+**Live Demo:** [UGFT Simulator](https://gokuhayda.github.io/geometric-intelligence/)
+
+---
+
+**Key Differentiators (both projects):**
 - 🔬 **Original research** with 15+ peer-documented papers on Zenodo
 - 📐 **Mathematically rigorous** — all operations have closed-form derivations
 - 🧪 **Falsifiable** — explicit protocols to disprove claims
 - 🚫 **No hype** — clear separation between implemented vs. theoretical
+- 🌐 **Open exploration** — invites collaboration, not claims of superiority
 
-**Publications:** [Zenodo Collection](https://doi.org/10.5281/zenodo.18379741)
-
-> *"This project demonstrates the intersection of geometric deep learning, representation theory, and production ML engineering."*
+> *"What if the bottleneck isn't size, but shape?"*
 
 ---
 
@@ -169,7 +191,7 @@ Currently focused on **Senior Data Scientist/ML Engineer** roles where engineeri
 This repository is distributed under the **MIT License**.  
 Feel free to use the code while maintaining proper attribution.
 
-**Exception:** The `cgt-hyperbolic-embeddings/` project is licensed under **CC BY-NC-SA 4.0** with additional restrictions on AI training use. See its README for details.
+**Exception:** The `hyperbolic-intelligence/` and `geometric-intelligence/` projects are licensed under **CC BY-NC-SA 4.0** with additional restrictions on AI training use. See their respective READMEs for details.
 
 ---
 

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CGT Experiment Pipeline - Flowchart v7</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        .subtitle {
+            text-align: center;
+            color: #a0aec0;
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+        .mermaid {
+            background: #fff;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow-x: auto;
+        }
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+        .info-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            color: #e2e8f0;
+        }
+        .info-box h3 {
+            color: #63b3ed;
+            margin-bottom: 15px;
+        }
+        .info-box ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 10px;
+        }
+        .info-box li {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        .info-box li strong {
+            color: #68d391;
+        }
+        .cgtgw-note {
+            margin-top: 20px;
+            padding: 15px 20px;
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            border-radius: 0 8px 8px 0;
+            color: #fff;
+        }
+        .cgtgw-note h4 {
+            color: #ffc107;
+            margin-bottom: 8px;
+        }
+        .cgtgw-note code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 CGT Experiment Pipeline</h1>
+        <p class="subtitle">Contrastive Geometric Transfer - Final Experiment Launcher v7</p>
+        
+        <div class="mermaid">
+flowchart TD
+    subgraph SETUP["🔧 PHASE 1: SETUP (Cells 1-4)"]
+        A1["1. Setup Environment<br/>pip install + CUDA check"]
+        A2["2. Upload ZIP<br/>cgt_project_FINAL.zip"]
+        A3["3. Import Modules<br/>CGT + Unified + Benchmarks"]
+        A4["4. Configuration<br/>OUTPUT_BASE + Flags"]
+    end
+
+    subgraph CGTGW_BLOCK["⚙️ CGT-GW INTERMEDIATE (Cell 5) — OPTIONAL"]
+        direction TB
+        SW["🔀 CGT-GW Switch<br/>USE_CGTGW_INTERMEDIATE"]
+        SW_OFF["OFF (default)<br/>Teacher → Student"]
+        SW_ON["ON<br/>Teacher → CGT-GW → Student"]
+        CGTGW["CGT-GW Preprocessing<br/>(OFFLINE, pre-training)<br/>Generates structured targets"]
+    end
+
+    subgraph TRAINING["🏋️ PHASE 2: TRAINING (Cells 6-7)"]
+        B1["6. Train HYBRID<br/>mpnet-768d, seed=42"]
+        B2["6b. Train PSI_SLM_FULL<br/>mpnet-768d, seed=42"]
+    end
+
+    subgraph RETENTION["📊 PHASE 3: RETENTION (Cells 8-10)"]
+        C1["7b. Compute Retention<br/>ρ_student / ρ_teacher"]
+        C2["7c. Save Checkpoints"]
+        C3["7d. Download ZIP"]
+    end
+
+    subgraph EVAL["✅ PHASE 4: EVALUATION (Cells 11-20)"]
+        D1["7. Final Evaluation<br/>STS-B Metrics"]
+        D2["7a. Falsification Tests"]
+        D2a["F1: Projection<br/>Minkowski ⟨x,x⟩=-1/c"]
+        D2b["F2: Distance<br/>Lorentz vs Cosine ρ>0.7"]
+        D2c["F3: Topology<br/>k-NN overlap >0.5"]
+        D3["8. Display Results"]
+    end
+
+    subgraph CARTESIAN["🗺️ PHASE 5: CARTESIAN (Cells 21-27)"]
+        E1["Dataset Generation<br/>STS12/13/Benchmark"]
+        E2["Cartesian Execution<br/>Student×Teacher×Dataset"]
+        E3["Results + Download"]
+    end
+
+    subgraph ABL["🔬 PHASE 6: ABLATIONS (Cells 28-33)"]
+        G1["9. Cascade Compression"]
+        G2["10. Euclidean Ablation"]
+        G3["11. Dimensional (8→128d)"]
+        G4["12. Geometric Capacity"]
+        G5["13. MRL Comparison"]
+        G6["14. BQ-768 Comparison"]
+    end
+
+    subgraph BENCH["⏱️ PHASE 7: BENCHMARKS (Cells 34-38)"]
+        H1["15. Latency Benchmark"]
+        H2["16. Statistical Robustness"]
+        H3["17. Storage Efficiency"]
+        H4["18-19. Delivery + Download"]
+    end
+
+    subgraph MULTI["🎲 PHASE 8: MULTI-SEED (Cells 39-53)"]
+        I1["20. Config seeds=[42,123,456]"]
+        I2["21-26. Train ×3 seeds<br/>(6 models × 3 seeds)"]
+        I3["27-28. Aggregate μ ± σ"]
+        I4["29-34. Statistics + Tables"]
+    end
+
+    subgraph TEACHER["👨‍🏫 PHASE 9: TEACHER SWEEP (Cells 54-58)"]
+        J1["35. Config 6 Teachers"]
+        J2["36. Evaluation Loop"]
+        J3["37-39. Rankings + ZIP"]
+    end
+
+    subgraph EXTENDED["📋 PHASE 10: EXTENDED EVAL (Cells 59-92)"]
+        K1["40-49. Final Eval Multi-Model"]
+        K2["50-59. Cascade Multi-Model"]
+        K3["60-72. Ablations Multi-Model"]
+        K4["73. Consolidated Summary"]
+    end
+
+    subgraph FINAL["📦 PHASE 11: FINAL DELIVERY (Cells 93-101)"]
+        L1["Benchmark Suite"]
+        L2["MANIFEST.json"]
+        L3["Complete ZIP Download"]
+    end
+
+    %% Main flow
+    A1 --> A2 --> A3 --> A4
+    A4 --> SW
+    
+    %% CGT-GW decision
+    SW -->|"False"| SW_OFF
+    SW -->|"True"| SW_ON
+    SW_ON --> CGTGW
+    CGTGW --> B1
+    SW_OFF --> B1
+    
+    %% Training flow
+    B1 --> B2
+    B2 --> C1 --> C2 --> C3
+    
+    %% Evaluation flow
+    C3 --> D1 --> D2
+    D2 --> D2a & D2b & D2c
+    D2a & D2b & D2c --> D3
+    
+    %% Cartesian
+    D3 --> E1 --> E2 --> E3
+    
+    %% Ablations
+    E3 --> G1 --> G2 --> G3 --> G4 --> G5 --> G6
+    
+    %% Benchmarks
+    G6 --> H1 --> H2 --> H3 --> H4
+    
+    %% Multi-seed
+    H4 --> I1 --> I2 --> I3 --> I4
+    
+    %% Teacher sweep
+    I4 --> J1 --> J2 --> J3
+    
+    %% Extended evaluation
+    J3 --> K1 --> K2 --> K3 --> K4
+    
+    %% Final
+    K4 --> L1 --> L2 --> L3
+
+    %% Styling
+    classDef setup fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef cgtgw fill:#fff3e0,stroke:#ff9800,stroke-width:3px,stroke-dasharray: 5 5
+    classDef training fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef retention fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef eval fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef cartesian fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef ablation fill:#e0f7fa,stroke:#00838f,stroke-width:2px
+    classDef bench fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+    classDef multi fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
+    classDef teacher fill:#fbe9e7,stroke:#ff5722,stroke-width:2px
+    classDef extended fill:#f1f8e9,stroke:#689f38,stroke-width:2px
+    classDef final fill:#efebe9,stroke:#5d4037,stroke-width:2px
+
+    class A1,A2,A3,A4 setup
+    class SW,SW_OFF,SW_ON,CGTGW cgtgw
+    class B1,B2 training
+    class C1,C2,C3 retention
+    class D1,D2,D2a,D2b,D2c,D3 eval
+    class E1,E2,E3 cartesian
+    class G1,G2,G3,G4,G5,G6 ablation
+    class H1,H2,H3,H4 bench
+    class I1,I2,I3,I4 multi
+    class J1,J2,J3 teacher
+    class K1,K2,K3,K4 extended
+    class L1,L2,L3 final
+        </div>
+
+        <div class="cgtgw-note">
+            <h4>⚠️ CGT-GW Structural Intermediate</h4>
+            <p>
+                The CGT-GW block is <strong>optional</strong> and runs <strong>offline</strong> as a preprocessing step.
+                It is <strong>NOT</strong> part of the training loop, cascade compression, or ablations.
+                Control via: <code>USE_CGTGW_INTERMEDIATE = True/False</code> (default: False)
+            </p>
+            <p style="margin-top: 8px;">
+                <strong>OFF:</strong> Teacher embeddings → Student (baseline)<br/>
+                <strong>ON:</strong> Teacher embeddings → CGT-GW (structural organization) → Structured targets → Student
+            </p>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background:#e3f2fd;border:2px solid #1565c0"></div>
+                <span>Setup & Configuration</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#fff3e0;border:2px dashed #ff9800"></div>
+                <span>CGT-GW Intermediate (Optional)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#fff3e0;border:2px solid #ef6c00"></div>
+                <span>Model Training</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#e8f5e9;border:2px solid #2e7d32"></div>
+                <span>Retention Calculation</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#fce4ec;border:2px solid #c2185b"></div>
+                <span>Evaluation & Falsification</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#f3e5f5;border:2px solid #7b1fa2"></div>
+                <span>Cartesian Execution</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#e0f7fa;border:2px solid #00838f"></div>
+                <span>Ablation Studies</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#fff8e1;border:2px solid #f9a825"></div>
+                <span>Benchmarks</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#e8eaf6;border:2px solid #3f51b5"></div>
+                <span>Multi-Seed Validation</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#fbe9e7;border:2px solid #ff5722"></div>
+                <span>Teacher Sweep</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#f1f8e9;border:2px solid #689f38"></div>
+                <span>Extended Evaluation</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#efebe9;border:2px solid #5d4037"></div>
+                <span>Final Delivery</span>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>📋 Phase Summary (103 Cells Total)</h3>
+            <ul>
+                <li><strong>PHASE 1 (1-4):</strong> Install dependencies, upload project, configure environment</li>
+                <li><strong>CGT-GW (5):</strong> Optional offline preprocessing — generates structured targets from teacher (OFF by default)</li>
+                <li><strong>PHASE 2 (6-7):</strong> Train HYBRID and PSI_SLM_FULL models with seed isolation</li>
+                <li><strong>PHASE 3 (8-10):</strong> Compute retention ρ_student/ρ_teacher, save checkpoints</li>
+                <li><strong>PHASE 4 (11-20):</strong> STS-B evaluation + Falsification tests F1/F2/F3 (Lorentz geodesic)</li>
+                <li><strong>PHASE 5 (21-27):</strong> Cartesian execution Student × Teacher × Dataset</li>
+                <li><strong>PHASE 6 (28-33):</strong> Ablations: Cascade, Euclidean, Dimensional (8-128d), Capacity, MRL, BQ-768</li>
+                <li><strong>PHASE 7 (34-38):</strong> Benchmarks: Latency, Robustness, Storage Efficiency</li>
+                <li><strong>PHASE 8 (39-53):</strong> Multi-seed validation (3 seeds × 6 models) + Statistics</li>
+                <li><strong>PHASE 9 (54-58):</strong> Teacher Sweep (6 teachers) + Generalization rankings</li>
+                <li><strong>PHASE 10 (59-92):</strong> Extended multi-model evaluations: Final Eval, Cascade, Ablations</li>
+                <li><strong>PHASE 11 (93-101):</strong> MANIFEST.json generation + Complete ZIP for NeurIPS/ICLR compliance</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
+# Copyright © 2026 Éric Gustavo Reis de Sena. All Rights Reserved.
+# Patent Pending. For commercial licensing: eirikreisena@gmail.com
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    CGT DEFAULT CONFIGURATION
+#                    SINGLE SOURCE OF TRUTH
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# This configuration file defines the canonical hyperparameters for CGT experiments.
+# All experiments MUST use this configuration or explicitly document deviations.
+#
+# Usage:
+#   python scripts/train.py --config configs/default.yaml
+#
+# Override specific parameters:
+#   python scripts/train.py --config configs/default.yaml --epochs 50 --lr 1e-4
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    MODEL ARCHITECTURE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Teacher model from sentence-transformers
+teacher_model: "all-MiniLM-L6-v2"
+
+# Student architecture
+hyperbolic_dim: 32       # Output dimension on Lorentz manifold (ambient: 33)
+hidden_dim: 256          # Hidden layer dimension in projector MLP
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    TRAINING PARAMETERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+batch_size: 64
+learning_rate: 0.0001    # 1e-4 (matches _EXPECTED_PARAMS)
+num_epochs: 50           # Updated to match _EXPECTED_PARAMS
+patience: 10             # Updated to match _EXPECTED_PARAMS
+weight_decay: 0.01
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    LOSS WEIGHTS (HGST Multi-Objective)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Primary losses (Updated to match _EXPECTED_PARAMS)
+lambda_contrastive: 1.0      # HyperbolicInfoNCE (metric-consistent)
+lambda_distill: 0.5          # Power-law distillation (empirical, NOT OT-optimal)
+lambda_spectral: 0.1         # Spectral manifold alignment
+
+# Regularization losses (Updated to match _EXPECTED_PARAMS)
+lambda_topo: 0.05            # TopoLoss (Betti-0 PROXY, not global invariant)
+lambda_lipschitz: 0.01       # Lipschitz regularization (first-order approximation)
+radius_weight: 0.05          # Lorentz radius penalty
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    CONTRASTIVE LEARNING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+temperature: 0.07            # InfoNCE temperature
+target_beta_0: 1.0           # Target Betti-0 for TopoLoss
+power_law_alpha: 0.5         # Power-law exponent for distillation
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    SPECTRAL NORMALIZATION & LIPSCHITZ
+# ═══════════════════════════════════════════════════════════════════════════════
+
+use_spectral_norm: true      # Apply spectral normalization to projector
+lipschitz_noise_scale: 0.05  # Noise scale for Lipschitz estimation
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    HOMEOSTATIC FIELD (Density Preservation)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+enable_homeostatic: true
+n_anchors: 16                # Number of anchor points
+homeostatic_alpha: 0.1       # Homeostatic field strength
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    LORENTZ SUBSTRATE (Hyperbolic Geometry)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+initial_curvature: 1.0       # Initial manifold curvature
+learnable_curvature: true    # Allow curvature to be learned
+curvature_min: 0.5           # Minimum curvature bound
+curvature_max: 2.0           # Maximum curvature bound
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    RADIUS REGULARIZATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+lambda_radius: 0.05          # Radius regularization weight
+target_radius: 2.0           # Target embedding radius
+radius_bound: 10.0           # Maximum allowed radius
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    FALSIFICATION PROTOCOLS (F1-F3)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# F1: Homotopy stability test
+enable_f1_homotopy: true
+
+# F2: Encoder stability test (Lipschitz estimation)
+enable_f2_stability: true
+perturbation_sigma: 0.1      # Perturbation noise for F2
+f2_max_amplification: 5.0    # Maximum acceptable amplification
+
+# F3: Forman-Ricci curvature test
+enable_f3_forman_ricci: true
+knn_neighbors: 10            # KNN neighbors for graph construction
+f3_margin: 10                # Margin for F3 test
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    VALIDATION METRICS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+compute_gromov_delta: true   # Compute Gromov δ-hyperbolicity
+compute_distortion: true     # Compute embedding distortion
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    REPRODUCIBILITY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+seed: 42
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    HARDWARE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+device: "auto"               # auto, cuda, or cpu
+dtype: "float64"             # float32 or float64 (float64 recommended for stability)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#                    THEORETICAL NOTES
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# EXACT OPERATIONS:
+# - Lorentz inner product, distance, exp_map, log_map
+# - HyperbolicInfoNCE (metric-consistent with geodesic distance)
+#
+# FIRST-ORDER APPROXIMATIONS:
+# - Lipschitz regularization (local estimate only)
+# - Curvature learning (local gradient)
+#
+# HEURISTICS/PROXIES:
+# - TopoLoss (Betti-0 spectral proxy, NOT global topological invariant)
+# - Power-law distillation (empirical, NOT optimal transport)
+# - Homeostatic field (density heuristic)
+#
+# These limitations are documented in the codebase docstrings and README.
+# ═══════════════════════════════════════════════════════════════════════════════
