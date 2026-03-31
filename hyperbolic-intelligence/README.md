@@ -47,6 +47,11 @@ Hyperbolic space (specifically, the Lorentz/hyperboloid model) offers volume gro
 - Multi-objective training combining contrastive learning, distance distillation, and spectral alignment
 - Evaluation protocols with falsification tests for geometric property validation
 - Ablation studies comparing hyperbolic vs. Euclidean baselines under identical conditions
+- Hyperbolic embedding and retrieval pipeline (experimental):
+  - Euclidean teacher → hyperbolic student projection via `CGTStudentHardened`
+  - Batch text encoding and corpus indexing (FAISS + Lorentz buffer)
+  - Hybrid retrieval: Euclidean ANN (FAISS) candidate selection + Lorentz geodesic reranking
+  - End-to-end semantic retrieval pipeline (`HyperbolicPipeline`)
 
 ### What This Repository Does NOT Implement
 
@@ -178,8 +183,15 @@ src/cgt/
 │   ├── topology/topological_field.py  # Differentiable topology proxy
 │   └── transfer/gw_transfer.py # Gromov-Wasserstein alignment
 │
-└── utils/
-    └── helpers.py              # Utility functions
+├── utils/
+│   └── helpers.py              # Utility functions
+│
+└── embedding/                  # Hyperbolic embedding and retrieval pipeline (experimental)
+    ├── encoder.py              # Teacher → hyperbolic projection (HyperbolicEncoder)
+    ├── index.py                # Corpus indexing: FAISS (Euclidean) + Lorentz buffer
+    ├── retrieval.py            # Hybrid retrieval: FAISS + Lorentz geodesic rerank
+    ├── distance.py             # Lorentz batch distance utilities (inference-optimised)
+    └── pipeline.py             # End-to-end semantic pipeline (HyperbolicPipeline)
 
 experiments/
 ├── ablations/
@@ -217,6 +229,70 @@ notebooks/
 | `psi_extensions/dynamics/h_nca.py` | H-NCA | Discretized Riemannian flow (Euler) |
 | `psi_extensions/binding/h_akorn.py` | H-AKOrN | Kuramoto dynamics with geodesic coupling |
 | `psi_extensions/topology/topological_field.py` | Topological loss | Persistence landscape (differentiable proxy) |
+
+
+
+### 3.1 Hyperbolic Embedding and Retrieval Pipeline
+
+#### Overview
+
+The repository now includes a full inference pipeline bridging Euclidean
+embeddings, hyperbolic projection, and semantic retrieval.  The pipeline
+is implemented in `src/cgt/embedding/` and is intended for use after a
+`CGTStudentHardened` model has been trained.
+
+This module is **experimental** — it is not optimised for production
+latency and is provided as a proof-of-concept integration of the CGT
+geometric framework with standard retrieval infrastructure.
+
+#### Pipeline Description
+
+The pipeline proceeds in five stages:
+
+1. **Text → teacher embedding** — A multilingual `SentenceTransformer`
+   (e.g., `paraphrase-multilingual-MiniLM-L12-v2`) encodes input texts
+   into L2-normalised Euclidean vectors (`float32`, shape `[N, teacher_dim]`).
+
+2. **Euclidean → hyperbolic projection** — The teacher embeddings are
+   passed through `CGTStudentHardened`, which maps them onto the Lorentz
+   manifold (H^n), producing ambient coordinates of shape `[N, student_dim + 1]`
+   satisfying the hyperboloid constraint  −x₀² + ‖x_s‖² = −1/K.
+
+3. **Corpus indexing** — Two parallel structures are maintained:
+   - A **FAISS `IndexFlatIP`** index on the Euclidean teacher embeddings,
+     for fast approximate nearest neighbour candidate selection.
+   - A **`torch.Tensor` buffer** of the hyperbolic student embeddings,
+     for geodesic reranking.
+
+4. **Retrieval — FAISS candidate search** — At query time, the query is
+   encoded by the teacher and submitted to FAISS, which returns
+   `k_candidates` approximate neighbours in Euclidean space.
+
+5. **Retrieval — Lorentz geodesic reranking** — The query is projected to
+   H^n by the student.  Geodesic distances from the query to each FAISS
+   candidate are computed using the Lorentz inner product:
+
+       ⟨q, c⟩_L = −q₀ c₀ + q_s · c_s
+       d(q, c)  = (1/√K) · arccosh(−K · ⟨q, c⟩_L)
+
+   Candidates are reordered by ascending geodesic distance and the top-k
+   are returned.
+
+#### Key Design Insight
+
+Retrieval is decomposed into:
+
+- **fast approximate search in Euclidean space** — FAISS provides
+  high-recall candidates in sub-linear time using the teacher's L2-normalised
+  embeddings.
+- **precise semantic ranking in hyperbolic space** — Lorentz geodesic
+  distances reorder candidates according to the curved geometry learned by
+  the student, without requiring brute-force distance computation over the
+  entire corpus.
+
+This separation avoids the prohibitive cost of computing geodesic distances
+over the full corpus while preserving the geometric precision of the
+hyperbolic representation.
 
 ---
 
@@ -306,6 +382,12 @@ This is **not**:
 
 4. **Numerical precision**: The code uses float64 for geometric operations. Float32 may introduce manifold violations.
 
+5. **Embedding and retrieval pipeline**: The `cgt.embedding` pipeline is experimental and not optimised for production latency. It is provided as a proof-of-concept integration of the CGT framework with standard retrieval infrastructure.
+
+6. **FAISS scalability**: FAISS is used as a baseline ANN backend. Scalability beyond medium-scale datasets (tens of thousands of documents) is not validated, and no index-type tuning (IVF, HNSW) is applied.
+
+7. **Hybrid retrieval heuristic**: The Euclidean + hyperbolic retrieval strategy — FAISS recall followed by Lorentz geodesic reranking — is a heuristic decomposition and is not theoretically optimal. The relative contribution of each stage to final retrieval quality has not been rigorously ablated.
+
 ### Falsification Protocols
 
 The code includes three falsification tests (not proofs):
@@ -367,6 +449,31 @@ summary = run_cartesian_execution(
     seed=42,
 )
 ```
+
+### Hyperbolic Embedding and Retrieval (Experimental)
+
+```python
+from sentence_transformers import SentenceTransformer
+from cgt.models.cgt_hardened import CGTStudentHardened
+from cgt.embedding.pipeline import HyperbolicPipeline
+
+# Initialise teacher and (pretrained) student
+teacher = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+student = CGTStudentHardened(teacher_dim=384, student_dim=32, hidden_dim=256)
+# student.load_state_dict(torch.load("checkpoint.pt")["model_state_dict"])
+
+# Build pipeline and index a corpus
+pipeline = HyperbolicPipeline(teacher, student)
+pipeline.index_corpus(texts)
+
+# Query — returns List[RetrievedEvidence] ordered by Lorentz relevance
+results = pipeline.query("What is hyperbolic embedding?")
+for ev in results:
+    print(ev.rank, ev.score, ev.text[:80])
+```
+
+> **Note:** This pipeline is experimental. See Section 3.1 and the
+> Limitations section for scope and known constraints.
 
 ---
 
