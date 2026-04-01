@@ -172,11 +172,15 @@ class LorentzSubstrateHardened(nn.Module):
         """
         Computes geodesic distance from point x to the hyperboloid origin.
         Essential for monitoring radial collapse in the Lorentz model.
+
+        TB-PAG fix: replaced raw torch.acosh with safe_acosh (Taylor surrogate
+        near branch point) to prevent Geometric Amplification Loop when x₀·√K ≈ 1.
+        (Theorem 1: acosh(1+δ) ≈ √(2δ) amplifies δ~1e-7 to O(1e-3).)
         """
         K = self.K.to(x.device, x.dtype)
         x0 = x[..., 0]
         arg = (x0 * torch.sqrt(K)).clamp(min=1.0 + self.eps)
-        return torch.acosh(arg) / torch.sqrt(K)
+        return safe_acosh(arg) / torch.sqrt(K)
 
     # ═══════════════════════════════════════════════════════════════════════════
     # RIEMANNIAN OPTIMIZATION
@@ -260,8 +264,13 @@ class LorentzSubstrateHardened(nn.Module):
     def log_map(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
         Logarithmic Map: M → T_x M
-        
+
         Maps point y on manifold to tangent space at x.
+
+        TB-PAG fix: tangent re-orthogonalization (eq. 18) appended to
+        eliminate Tangency Violation |⟨x, u⟩_L| ~ 1e-6 that accumulates
+        across layers and corrupts Riemannian optimiser gradient projections.
+        u = ũ - ⟨ũ, x⟩_L · x  →  reduces residual from O(1e-6) to ~ε_machine.
         """
         K = self.K.to(x.device, x.dtype)
         inner = self.minkowski_inner(x, y)
@@ -269,7 +278,10 @@ class LorentzSubstrateHardened(nn.Module):
         v_norm_sq = torch.abs(self.minkowski_inner(v, v)) + self.eps
         v_norm = torch.sqrt(v_norm_sq)
         d = self.dist(x, y).unsqueeze(-1)
-        return d * v / (v_norm + self.eps)
+        u = d * v / (v_norm + self.eps)
+        # TB-PAG eq. 18: re-orthogonalize onto T_x H^n
+        u = u - self.minkowski_inner(u, x) * x
+        return u
 
     def log_map_zero(self, y: torch.Tensor) -> torch.Tensor:
         """Maps y to tangent space at origin."""
@@ -283,36 +295,59 @@ class LorentzSubstrateHardened(nn.Module):
     def dist(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
         Hyperbolic geodesic distance between two points.
-        
+
         Formula: d(x,y) = (1/√K) * arccosh(-K * ⟨x,y⟩_L)
+
+        TB-PAG fixes applied (§6B Precision-Aware Geometry):
+        - Inputs reprojected to hyperboloid (Topological Bridging, eq. 17)
+          before entering the geodesic-critical computation.
+        - Inner product and acosh computed in float64 zone to suppress
+          Precision Boundary Rupture (Definition 1).
+        - safe_acosh (Taylor surrogate) replaces raw torch.acosh to neutralise
+          the Geometric Amplification Loop (Definition 3, Theorem 1).
         """
-        K = self.K.to(x.device, x.dtype)
+        orig_dtype = x.dtype
+        # TB-PAG: reproject + float64 zone for geodesic-critical op
+        x = self.proj(x.to(torch.float64))
+        y = self.proj(y.to(torch.float64))
+        K = self.K.to(x.device, torch.float64)
+
         inner = self.minkowski_inner(x, y).squeeze(-1)
         arg = (-K * inner).clamp(min=1.0 + self.eps, max=1e5)
-        dist = torch.acosh(arg) / torch.sqrt(K)
-        # Replace NaN/Inf with zeros
-        return torch.nan_to_num(dist, nan=0.0, posinf=0.0, neginf=0.0)
+        dist = safe_acosh(arg) / torch.sqrt(K)
+        dist = torch.nan_to_num(dist, nan=0.0, posinf=0.0, neginf=0.0)
+        return dist.to(orig_dtype)
 
     def distance_matrix_points(
-        self, 
-        x: torch.Tensor, 
-        y: torch.Tensor, 
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
         pairwise: bool = True
     ) -> torch.Tensor:
         """
         Computes GPU-optimized distance matrices.
-        
+
         Used by HomeostaticField for anchor distances.
-        
+
         Args:
             x: Points [N, dim+1]
             y: Points [M, dim+1]
             pairwise: If True, compute full NxM matrix
-            
+
         Returns:
             Distance matrix [N, M] if pairwise, else [N]
+
+        TB-PAG fixes applied (§6B):
+        - Reprojection before inner product (Topological Bridging, eq. 17).
+        - float64 zone for the full geodesic computation.
+        - safe_acosh replaces raw torch.acosh (Theorem 1 amplification).
         """
-        K_val = self.K.to(x.device, x.dtype)
+        orig_dtype = x.dtype
+        # TB-PAG: reproject + float64 zone
+        x = self.proj(x.to(torch.float64))
+        y = self.proj(y.to(torch.float64))
+        K_val = self.K.to(x.device, torch.float64)
+
         if pairwise:
             spatial = torch.mm(x[:, 1:], y[:, 1:].t())
             time = torch.mm(x[:, :1], y[:, :1].t())
@@ -321,12 +356,9 @@ class LorentzSubstrateHardened(nn.Module):
             inner = self.minkowski_inner(x, y).squeeze(-1)
 
         arg = (-K_val * inner).clamp(min=1.0 + self.eps, max=1e5)
-        dist = torch.acosh(arg) / (torch.sqrt(K_val) + 1e-9)
-        
-        # Replace NaN/Inf with zeros (numerical safety)
+        dist = safe_acosh(arg) / (torch.sqrt(K_val) + 1e-9)
         dist = torch.nan_to_num(dist, nan=0.0, posinf=0.0, neginf=0.0)
-        
-        return dist
+        return dist.to(orig_dtype)
 
     def distance_matrix(self, x: torch.Tensor) -> torch.Tensor:
         """

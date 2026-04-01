@@ -620,10 +620,13 @@ class LorentzSubstrate(nn.Module):
         Notes:
             - Space: Distance to origin on H^n
             - Status: Exact closed-form
+            - TB-PAG fix: replaced raw torch.acosh with safe_acosh (Taylor
+              surrogate near branch point) — prevents Geometric Amplification
+              Loop when x₀·√K ≈ 1 (Theorem 1: δ~1e-7 → O(1e-3) geodesic error).
         """
         x0 = x[..., 0]
         arg = (x0 * torch.sqrt(self.K)).clamp(min=1.0 + self.eps)
-        return torch.acosh(arg) / torch.sqrt(self.K)
+        return safe_acosh(arg) / torch.sqrt(self.K)
 
     # =========================================================================
     # COMPATIBILITY ALIASES (for notebook/module interoperability)
