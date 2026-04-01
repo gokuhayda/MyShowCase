@@ -306,7 +306,7 @@ if HAS_TORCH:
                     log_v = self.substrate.log_map(
                         base_states[i:i+1],
                         neighbor_states[i, j:j+1],
-                    )
+                    ).to(base_states.dtype)
                     logs.append(log_v)
                 tangent_vecs.append(torch.cat(logs, dim=0))
             
@@ -372,7 +372,10 @@ if HAS_TORCH:
                 aggregated = self._aggregate_mean(states, indices, phases)
             
             # Step 3: Project to tangent space
-            log_vecs = self.substrate.log_map(states, aggregated)
+            # TB-PAG / Notebook alignment: log_map() returns float64 (PROBLEM 2 fix in
+            # log_map — casting to float32 there yields |⟨x_f32,δ⟩_L| ~ 2e-5 > tol).
+            # Callers must cast explicitly to states.dtype before further float32 ops.
+            log_vecs = self.substrate.log_map(states, aggregated).to(states.dtype)
             tangent_intrinsic = log_vecs[..., 1:]  # Intrinsic part
             
             # Step 4: Neural operator in tangent space
@@ -550,7 +553,9 @@ if HAS_TORCH:
             aggregated = self.substrate.proj(aggregated)
 
             # Log map to tangent space
-            log_vecs = self.substrate.log_map(states, aggregated)
+            # TB-PAG / Notebook alignment: log_map() returns float64; cast to states.dtype
+            # before further float32 ops (same fix as HyperbolicNCA.forward).
+            log_vecs = self.substrate.log_map(states, aggregated).to(states.dtype)
             log_vecs = torch.nan_to_num(log_vecs, nan=0.0, posinf=0.0, neginf=0.0)
             
             tangent_intrinsic = log_vecs[..., 1:]  # Spatial components
