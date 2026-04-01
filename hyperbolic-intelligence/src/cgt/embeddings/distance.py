@@ -44,6 +44,19 @@ from typing import Optional
 
 import torch
 
+# TB-PAG: safe_acosh with Taylor surrogate prevents Geometric Amplification Loop
+# even at inference time — deterministic numerical instability is independent of
+# gradient flow (Theorem 1: acosh(1+δ) ≈ √(2δ) amplifies δ~1e-7 → O(1e-3)).
+try:
+    from cgt.geometry.lorentz_hardened import safe_acosh
+except ImportError:
+    def safe_acosh(x, eps=1e-7):
+        delta = x - 1.0
+        mask = delta < eps
+        val_standard = torch.acosh(torch.clamp(x, min=1.0 + eps))
+        val_taylor = torch.sqrt(2.0 * torch.clamp(delta, min=0.0) + 1e-15)
+        return torch.where(mask, val_taylor, val_standard)
+
 
 @torch.no_grad()
 def lorentz_inner_product_batch(
@@ -135,7 +148,10 @@ def lorentz_dist_batch(
     arg: torch.Tensor = torch.clamp(-K * inner, min=1.0 + eps, max=1e8)
 
     # d(x, y) = (1/√K) · arccosh(−K · ⟨x, y⟩_L)
-    dists: torch.Tensor = torch.acosh(arg) / (K ** 0.5)  # [M, N]
+    # TB-PAG fix: safe_acosh (Taylor surrogate) replaces raw torch.acosh.
+    # Inference-time instability is deterministic (Theorem 1) — @no_grad does
+    # not protect against Geometric Amplification through the acosh singularity.
+    dists: torch.Tensor = safe_acosh(arg) / (K ** 0.5)  # [M, N]
 
     return dists
 
