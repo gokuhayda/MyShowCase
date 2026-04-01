@@ -68,7 +68,7 @@ class HyperbolicEncoder:
 
         from sentence_transformers import SentenceTransformer
         from cgt.models import CGTStudentHardened
-        from cgt.embedding.encoder import HyperbolicEncoder
+        from cgt.embeddings.encoder import HyperbolicEncoder
 
         teacher = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
         student = CGTStudentHardened(teacher_dim=384, student_dim=32, hidden_dim=256)

@@ -56,7 +56,7 @@ strategy is heuristic and not theoretically optimal.
 
 Example::
 
-    from cgt.embedding.pipeline import HyperbolicPipeline
+    from cgt.embeddings.pipeline import HyperbolicPipeline
 
     pipeline = HyperbolicPipeline(teacher_model, student_model)
     pipeline.index_corpus(texts)
@@ -70,9 +70,9 @@ from typing import List, Optional
 import numpy as np
 import torch
 
-from cgt.embedding.encoder import HyperbolicEncoder
-from cgt.embedding.index import HyperbolicIndex
-from cgt.embedding.retrieval import HyperbolicRetriever, RetrievedEvidence
+from cgt.embeddings.encoder import HyperbolicEncoder
+from cgt.embeddings.index import HyperbolicIndex
+from cgt.embeddings.retrieval import HyperbolicRetriever, RetrievedEvidence
 
 
 class HyperbolicPipeline:
@@ -108,7 +108,7 @@ class HyperbolicPipeline:
 
         from sentence_transformers import SentenceTransformer
         from cgt.models import CGTStudentHardened
-        from cgt.embedding.pipeline import HyperbolicPipeline
+        from cgt.embeddings.pipeline import HyperbolicPipeline
 
         teacher = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
         student = CGTStudentHardened(teacher_dim=384, student_dim=32, hidden_dim=256)

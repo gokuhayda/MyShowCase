@@ -45,9 +45,9 @@ from typing import Callable, List, Optional
 import numpy as np
 import torch
 
-from cgt.embedding.distance import lorentz_query_distances
-from cgt.embedding.encoder import HyperbolicEncoder
-from cgt.embedding.index import HyperbolicIndex
+from cgt.embeddings.distance import lorentz_query_distances
+from cgt.embeddings.encoder import HyperbolicEncoder
+from cgt.embeddings.index import HyperbolicIndex
 
 
 # ---------------------------------------------------------------------------

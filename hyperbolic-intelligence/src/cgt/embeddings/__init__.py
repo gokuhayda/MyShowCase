@@ -35,7 +35,7 @@ pipeline
 
 Quick start::
 
-    from cgt.embedding.pipeline import HyperbolicPipeline
+    from cgt.embeddings.pipeline import HyperbolicPipeline
 
     pipeline = HyperbolicPipeline(teacher_model, student_model)
     pipeline.index_corpus(texts)
@@ -49,20 +49,20 @@ validated.  The hybrid Euclidean + hyperbolic retrieval strategy is heuristic
 and not theoretically optimal.
 """
 
-from cgt.embedding.distance import (
+from cgt.embeddings.distance import (
     lorentz_dist_batch,
     lorentz_inner_product_batch,
     lorentz_query_distances,
 )
-from cgt.embedding.encoder import HyperbolicEncoder
-from cgt.embedding.index import HyperbolicIndex
-from cgt.embedding.retrieval import (
+from cgt.embeddings.encoder import HyperbolicEncoder
+from cgt.embeddings.index import HyperbolicIndex
+from cgt.embeddings.retrieval import (
     HyperbolicRetriever,
     RetrievalResult,
     RetrievedEvidence,
     hyperbolic_rerank,
 )
-from cgt.embedding.pipeline import HyperbolicPipeline
+from cgt.embeddings.pipeline import HyperbolicPipeline
 
 __all__ = [
     # Distance utilities
