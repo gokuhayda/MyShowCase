@@ -62,13 +62,19 @@ try:
 except ImportError:
     HAS_TORCH = False
 
-# F1 CORRECTION: Import safe_acosh for gradient-preserving arccosh
+# TB-PAG: Import safe_acosh with Taylor surrogate (prevents Geometric Amplification
+# Loop — Theorem 1: acosh(1+δ) ≈ √(2δ) amplifies δ~1e-7 to O(1e-3)).
 try:
     from cgt.geometry.lorentz_hardened import safe_acosh
 except ImportError:
-    # Fallback if not available (should not happen in production)
+    # Fallback: full Taylor surrogate (NOT just a clamp — clamp creates zero-gradient
+    # region [1, 1+eps] and does NOT suppress the acosh singularity amplification).
     def safe_acosh(x, eps=1e-7):
-        return torch.acosh(torch.clamp(x, min=1.0 + eps))
+        delta = x - 1.0
+        mask = delta < eps
+        val_standard = torch.acosh(torch.clamp(x, min=1.0 + eps))
+        val_taylor = torch.sqrt(2.0 * torch.clamp(delta, min=0.0) + 1e-15)
+        return torch.where(mask, val_taylor, val_standard)
 
 
 # =============================================================================
