@@ -80,6 +80,8 @@ All operations include numerical stability measures (safe acosh, tangent space p
 
 > **Reference:** The Lorentz model implementation and the geometric compression methodology are formally specified in *Lorentzian Hyperbolic Compression: A Family of Geometric Models for Euclidean-to-Hyperbolic Representation Transfer* (DOI: [10.5281/zenodo.18382872](https://doi.org/10.5281/zenodo.18382872)).
 
+> **Numerical Stability Reference:** The deterministic root causes of Lorentz manifold instabilities—catastrophic cancellation in the Minkowski inner product, Precision Boundary Rupture at dtype boundaries, and the `acosh` singularity—are rigorously analyzed in *Topological Bridges and Precision-Aware Geometry: Eradicating Deterministic Numerical Instability in Lorentz Manifold Deep Learning* (DOI: [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794)). That paper formally introduces the TB-PAG framework (Topological Bridging + Precision-Aware Geometry) and proves that a floating-point residual δ ∼ 10⁻⁷ is geometrically amplified to O(10⁻³) geodesic errors via `acosh(1+δ) ≈ √(2δ)`. The `lorentz_hardened.py` module in this repository implements the hyperboloid reprojection and `acosh`-safe surrogate strategies described therein.
+
 ### 2.2 Contrastive Geometric Transfer
 
 The core CGT method trains a student encoder to project Euclidean teacher embeddings onto the Lorentz manifold while preserving similarity structure. The loss function combines:
@@ -508,6 +510,9 @@ Papers cited in this documentation:
 9. **Dimensional Efficiency Bounds for Embedding Hierarchical Metric Structures: A Regime-Dependent Analysis**  
    Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18378938](https://doi.org/10.5281/zenodo.18378938)
 
+10. **Topological Bridges and Precision-Aware Geometry: Eradicating Deterministic Numerical Instability in Lorentz Manifold Deep Learning**  
+    Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794)
+
 Additional foundational references:
 - Lou et al. (2020). "Differentiating through the Fréchet Mean." ICML.
 - Nickel & Kiela (2017). "Poincaré Embeddings for Learning Hierarchical Representations."
@@ -518,6 +523,12 @@ Additional foundational references:
 ## 9. Related Publications by the Author
 
 The following papers by the same author provide broader theoretical context for this work. **These are NOT fully implemented in this repository** but may inform future extensions or provide additional background.
+
+### Numerical Foundations
+
+| Paper | DOI | Status |
+|-------|-----|--------|
+| Topological Bridges and Precision-Aware Geometry: Eradicating Deterministic Numerical Instability in Lorentz Manifold Deep Learning | [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794) | Implemented (see `lorentz_hardened.py`) |
 
 ### Architectural Extensions
 
