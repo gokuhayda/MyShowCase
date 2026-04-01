@@ -406,8 +406,6 @@ These tests can **disprove** claims but cannot **prove** geometric properties ho
 ### Installation
 
 ```bash
-git clone https://github.com/eric-araya/cgt.git
-cd cgt
 pip install -e .
 ```
 
