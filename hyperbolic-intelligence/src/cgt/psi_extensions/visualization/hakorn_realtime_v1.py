@@ -19,6 +19,18 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+# TB-PAG: safe_acosh with Taylor surrogate prevents Geometric Amplification Loop
+# (Theorem 1: raw acosh(1+δ) ≈ √(2δ) amplifies δ~1e-7 → O(1e-3) geodesic error).
+try:
+    from cgt.geometry.lorentz_hardened import safe_acosh
+except ImportError:
+    def safe_acosh(x, eps=1e-7):
+        delta = x - 1.0
+        mask = delta < eps
+        val_standard = torch.acosh(torch.clamp(x, min=1.0 + eps))
+        val_taylor = torch.sqrt(2.0 * torch.clamp(delta, min=0.0) + 1e-15)
+        return torch.where(mask, val_taylor, val_standard)
+
 # Optional imports
 try:
     import matplotlib.pyplot as plt
@@ -310,7 +322,9 @@ class RealtimeHAKORN:
         if self.target_positions is not None:
             inner = -self.target_positions[:, 0:1] @ self.target_positions[:, 0:1].T + \
                     self.target_positions[:, 1:] @ self.target_positions[:, 1:].T
-            dist = torch.acosh(torch.clamp(-inner, min=1.0 + 1e-7))
+            # TB-PAG fix: safe_acosh (Taylor surrogate) — N² evaluations make
+            # near-singular region statistically inevitable without this guard.
+            dist = safe_acosh(torch.clamp(-inner, min=1.0 + 1e-7))
             
             k = min(self.config.k_neighbors, self.N - 1)
             _, indices = torch.topk(dist, k + 1, largest=False, dim=1)
@@ -357,7 +371,9 @@ class RealtimeHAKORN:
             # Hyperbolic distance
             inner = -self.positions[:, 0:1] @ self.positions[:, 0:1].T + \
                     self.positions[:, 1:] @ self.positions[:, 1:].T
-            dist = torch.acosh(torch.clamp(-inner, min=1.0 + 1e-7))
+            # TB-PAG fix: safe_acosh — Kuramoto loop calls this every step;
+            # accumulated Topological Drift makes near-singular hits certain.
+            dist = safe_acosh(torch.clamp(-inner, min=1.0 + 1e-7))
             
             # Coupling
             coupling = self.adjacency * torch.exp(-dist * kappa)

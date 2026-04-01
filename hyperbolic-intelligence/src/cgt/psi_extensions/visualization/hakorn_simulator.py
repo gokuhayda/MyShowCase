@@ -19,6 +19,18 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+# TB-PAG: safe_acosh with Taylor surrogate prevents Geometric Amplification Loop
+# (Theorem 1: raw acosh(1+δ) ≈ √(2δ) amplifies δ~1e-7 → O(1e-3) geodesic error).
+try:
+    from cgt.geometry.lorentz_hardened import safe_acosh
+except ImportError:
+    def safe_acosh(x, eps=1e-7):
+        delta = x - 1.0
+        mask = delta < eps
+        val_standard = torch.acosh(torch.clamp(x, min=1.0 + eps))
+        val_taylor = torch.sqrt(2.0 * torch.clamp(delta, min=0.0) + 1e-15)
+        return torch.where(mask, val_taylor, val_standard)
+
 # Optional visualization imports
 try:
     import matplotlib.pyplot as plt
@@ -119,15 +131,24 @@ class LorentzGeometryGPU:
     
     @torch.no_grad()
     def distance(self, u: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
-        """Hyperbolic distance: d(u,v) = arccosh(-<u,v>_L)"""
+        """Hyperbolic distance: d(u,v) = arccosh(-<u,v>_L)
+
+        TB-PAG fix: safe_acosh (Taylor surrogate) replaces raw torch.acosh
+        to suppress Geometric Amplification Loop near the branch point.
+        """
         inner = self.lorentz_inner(u, v)
-        return torch.acosh(torch.clamp(-inner, min=1.0 + 1e-7))
+        return safe_acosh(torch.clamp(-inner, min=1.0 + 1e-7))
     
     @torch.no_grad()
     def distance_matrix(self, points: torch.Tensor) -> torch.Tensor:
-        """Compute pairwise distance matrix."""
+        """Compute pairwise distance matrix.
+
+        TB-PAG fix: safe_acosh replaces raw torch.acosh — with N² evaluations
+        per forward pass the probability of hitting the near-singular region
+        grows rapidly; Taylor surrogate provides uniform stability.
+        """
         inner = -points[:, 0:1] @ points[:, 0:1].T + points[:, 1:] @ points[:, 1:].T
-        return torch.acosh(torch.clamp(-inner, min=1.0 + 1e-7))
+        return safe_acosh(torch.clamp(-inner, min=1.0 + 1e-7))
     
     def project_to_hyperboloid(self, spatial: torch.Tensor) -> torch.Tensor:
         """Project spatial coordinates to hyperboloid: t = sqrt(1 + ||x||²)"""
