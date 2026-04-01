@@ -312,7 +312,7 @@ This project uses the **Lorentz (hyperboloid) model** exclusively:
 The implementation includes explicit stability measures:
 - `safe_acosh()`: Taylor expansion near $x=1$ to avoid gradient explosion
 - `safe_sqrt()`: Minimum clamp to prevent infinite gradients at zero
-- `proj()`: "Paranoid projection" to ensure points remain on manifold after numerical operations
+- `proj()`: Enforces the hyperboloid constraint ⟨x,x⟩ = -1/K using a clamp-based formulation (no additive epsilon), preventing systematic manifold drift and ensuring self-distance consistency (d(x,x) ≈ 0 up to numerical precision)
 - `proj_tangent()`: Ensures vectors satisfy $\langle x, v \rangle_L = 0$
 
 These are numerical corrections, not theoretical modifications. The code explicitly labels them as such.
