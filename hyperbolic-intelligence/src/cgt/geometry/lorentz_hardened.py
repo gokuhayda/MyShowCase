@@ -210,10 +210,24 @@ class LorentzSubstrateHardened(nn.Module):
     def minkowski_inner(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
         Lorentz inner product: ⟨x,y⟩_L = -x₀y₀ + x₁y₁ + ... + xₙyₙ
-        
-        Returns tensor with keepdim=True for broadcasting compatibility.
+
+        TB-PAG / Notebook alignment (HSTD_RD_final.ipynb §3c):
+        Computed in float64 to suppress catastrophic cancellation at high
+        dimension (n ~ 63): spatial terms sum to O(n) before subtracting
+        the timelike term, so float32 (23-bit mantissa) loses ~log₂(n) bits
+        (Eq. 8: δ_cancel ≈ ε_mach·√n·‖xₛ‖ ~ 9.4e-7 for n=63, float32).
+        This affects manifold_violation(), lorentz_similarity(), and
+        riemannian_grad() which call minkowski_inner with float32 inputs.
+
+        Returns tensor with keepdim=True in caller's original dtype.
         """
-        return -x[..., :1] * y[..., :1] + (x[..., 1:] * y[..., 1:]).sum(dim=-1, keepdim=True)
+        x64 = x.double()
+        y64 = y.double()
+        out64 = (
+            -x64[..., :1] * y64[..., :1]
+            + (x64[..., 1:] * y64[..., 1:]).sum(dim=-1, keepdim=True)
+        )
+        return out64.to(x.dtype)
 
     def proj(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -223,10 +237,18 @@ class LorentzSubstrateHardened(nn.Module):
         such that ⟨x,x⟩_L = -1/K.
         
         Formula: x₀ = √(1/K + ||x_s||²)
+        
+        TB-PAG / Notebook alignment (HSTD_RD_final.ipynb §3c):
+        Guard: clamp(min=1e-15) prevents sqrt(0) on degenerate zero-vectors ONLY.
+        Do NOT use self.eps here — adding eps unconditionally causes
+        ⟨x,x⟩_L = −1/K − eps ≠ −1/K, making d(x,x) = acosh(1 + K·eps) ≈ 1.4e-3,
+        three orders of magnitude above the 1e-8 target (Theorem 1).
         """
         K = self.K.to(x.device, x.dtype)
         xs = x[..., 1:]
-        x0 = torch.sqrt(1.0 / K + (xs ** 2).sum(dim=-1, keepdim=True) + self.eps)
+        x0 = torch.sqrt(
+            (1.0 / K + (xs ** 2).sum(dim=-1, keepdim=True)).clamp(min=1e-15)
+        )
         return torch.cat([x0, xs], dim=-1)
 
     def origin(self, batch_size: int = 1, device=None, dtype=None) -> torch.Tensor:
@@ -247,19 +269,32 @@ class LorentzSubstrateHardened(nn.Module):
     def exp_map(self, x: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
         """
         Exponential Map (Retraction): T_x M → M
-        
+
         Maps tangent vector v at point x to the manifold.
-        
+
         Formula:
             exp_x(v) = cosh(||v||_L * √K) * x + sinh(||v||_L * √K) * v/||v||_L
+
+        TB-PAG / Notebook alignment (HSTD_RD_final.ipynb §3c):
+        - All computation in float64 to avoid cosh/sinh cancellation for
+          small ||v|| (O(||v||^2) ~ 1e-2 terms lost in float32 mantissa).
+        - proj() applied in float64 BEFORE casting back to orig_dtype,
+          preventing Precision Boundary Rupture on the downcast.
         """
-        K = self.K.to(x.device, x.dtype)
-        v_norm_sq = torch.abs(self.minkowski_inner(v, v)) + self.eps
+        orig_dtype = x.dtype
+        K64 = self.K.double().to(x.device)
+        x64 = x.double()
+        v64 = v.double()
+        v_norm_sq = torch.abs(self.minkowski_inner(v64, v64)) + self.eps
         v_norm = torch.sqrt(v_norm_sq)
-        scale = (v_norm * torch.sqrt(K)).clamp(max=15.0)
+        scale = (v_norm * torch.sqrt(K64)).clamp(max=15.0)
         cosh_scale = torch.cosh(scale)
         sinh_scale = torch.sinh(scale) / (v_norm + self.eps)
-        return self.proj(cosh_scale * x + sinh_scale * v)
+        result64 = cosh_scale * x64 + sinh_scale * v64
+        # proj in float64 — constraint enforced at float64 precision (~1e-15)
+        result64 = self.proj(result64)
+        # cast AFTER projection to avoid Precision Boundary Rupture
+        return result64.to(orig_dtype)
 
     def log_map(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
@@ -267,21 +302,59 @@ class LorentzSubstrateHardened(nn.Module):
 
         Maps point y on manifold to tangent space at x.
 
-        TB-PAG fix: tangent re-orthogonalization (eq. 18) appended to
-        eliminate Tangency Violation |⟨x, u⟩_L| ~ 1e-6 that accumulates
-        across layers and corrupts Riemannian optimiser gradient projections.
-        u = ũ - ⟨ũ, x⟩_L · x  →  reduces residual from O(1e-6) to ~ε_machine.
+        TB-PAG / Notebook alignment (HSTD_RD_final.ipynb §3c — CORREÇÃO DEFINITIVA):
+        Solves two simultaneous problems identified in the notebook:
+
+        PROBLEM 1 — K nominal ≠ K implicit in x (error ~1e-6):
+          x arrives in float32. After x.double() the spatial components retain
+          float32 precision, so ⟨x,x⟩_L = -1/K + δ (δ ~ 1e-6).
+          With K nominal: ⟨x, u⟩_L = ⟨x,y⟩·K·δ ≠ 0.
+          Fix — K_eff = -1 / ⟨x64,x64⟩_L:
+            ⟨x64, u⟩_L = 0 exactly in float64. ✓
+
+        PROBLEM 2 — cast f64→f32 of result (error ~2e-5):
+          Rounding introduces δᵢ ~ 6e-8·|vᵢ| per component.
+          With x0 ~ 8, dim=64, d ~ 5: |⟨x_f32, δ⟩_L| ~ 2e-5 >> tol=1e-5.
+          Fix — return float64 without downcasting.
+            Callers needing float32 must do .to(orig_dtype) explicitly. ✓
+
+        y is reprojected to restore exact y₀ from spatial components.
+        x is NOT reprojected (would shift x away from caller's reference point).
+        Scaling: v = (d / ‖u‖_L) · u, with Taylor limit d/u_norm → 1 as d→0.
         """
-        K = self.K.to(x.device, x.dtype)
-        inner = self.minkowski_inner(x, y)
-        v = y + K * inner * x
-        v_norm_sq = torch.abs(self.minkowski_inner(v, v)) + self.eps
-        v_norm = torch.sqrt(v_norm_sq)
-        d = self.dist(x, y).unsqueeze(-1)
-        u = d * v / (v_norm + self.eps)
-        # TB-PAG eq. 18: re-orthogonalize onto T_x H^n
-        u = u - self.minkowski_inner(u, x) * x
-        return u
+        orig_dtype = x.dtype
+        K64 = self.K.double().to(x.device)
+
+        # Promote to float64 — keep x exact (no reprojection), reproject y
+        x64 = x.double()
+        y64 = self.proj(y.double())   # restores exact y₀ from spatial block
+
+        # K_eff: curvature implicit in the received x (float64 exact)
+        # Ensures 1 + K_eff·⟨x64,x64⟩_L = 0 exactly → zero tangency residual
+        inn_xx = self.minkowski_inner(x64, x64)          # (...,1) float64
+        K_eff  = -1.0 / inn_xx.clamp(max=-1e-8)         # x is timelike → <0
+
+        # Directional vector (tangent at x64)
+        inn64 = self.minkowski_inner(x64, y64)           # (...,1) float64
+        u64   = y64 + K_eff * inn64 * x64               # ⟨x64, u64⟩_L = 0 ✓
+
+        # Geodesic distance in float64
+        d64 = self.dist(x64.to(orig_dtype),
+                        y64.to(orig_dtype)).double().unsqueeze(-1)
+
+        # Lorentzian norm of u (spacelike → ≥ 0)
+        u_norm = torch.sqrt(
+            self.minkowski_inner(u64, u64).clamp(min=0.0) + 1e-30)
+
+        # Stable scaling: v = (d / ‖u‖_L) · u
+        # Taylor limit: lim_{d→0} d/u_norm = 1 (u_norm = sinh(d) geometrically)
+        scale = torch.where(d64 > 1e-7, d64 / u_norm, torch.ones_like(d64))
+        v64   = scale * u64
+
+        # CRITICAL: return float64 — do NOT cast to orig_dtype here.
+        # Casting to float32 yields |⟨x_f32, δ⟩_L| ~ 2e-5 > tol (PROBLEM 2).
+        # Callers needing float32 must cast explicitly.
+        return v64
 
     def log_map_zero(self, y: torch.Tensor) -> torch.Tensor:
         """Maps y to tangent space at origin."""
