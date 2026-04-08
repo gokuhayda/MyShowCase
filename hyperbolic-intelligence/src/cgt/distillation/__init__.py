@@ -40,11 +40,9 @@ __all__ = [
     'GPT2TeacherWrapperV2',
     'DistillationTrainerV2',
     'TeacherDistillationLossV2',
-    # HyDRA Projectors (v1→v3)
     'HiddenProjector',
     'HyperbolicProjectorV2',
     'HyperbolicProjectorV3',
-
 
     'WikiTextTokenDataset',
     'build_wikitext_loaders',

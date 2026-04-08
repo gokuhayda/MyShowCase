@@ -39,7 +39,10 @@ HyperbolicEmbedding, HyperbolicAttention, HyperbolicFFN
 """
 
 # CGTGW - Main model for Ψ-SLM experiments
-from cgt.models.cgt_gw import CGTGW, CGTGWConfig, stable_initialization
+try:
+    from cgt.models.cgt_gw import CGTGW, CGTGWConfig, stable_initialization
+except ImportError:
+    pass  # optional — requires POT package
 
 # HARDENED versions (production)
 from cgt.models.cgt_hardened import (
@@ -83,7 +86,6 @@ from cgt.models.hyperbolic_transformer_hardened import (
 
 from .lm_head_v2 import HyperbolicLMHeadV2
 from .geodesic_lm_head import GeodesicLMHeadV2
-
 from .layer_v2 import (
     RiemannianLayerNormV2,
     HyperbolicFFNV2,

@@ -1261,6 +1261,12 @@ class DistillationConfigV2:
     # See DegEqController docstring for full mechanism documentation.
     # Combine actions with '+': e.g. 'reweight_loss+adaptive_temp'
     deg_eq_action: str               = 'none'   # 'none'|'stop'|'freeze_vocab'|'progressive_freeze'|'reweight_loss'|'adaptive_temp'
+
+    # ── Riemannian natural gradient correction (Amari 1998) ──────────────
+    riemannian_correct_vocab:   bool = True
+    riemannian_correct_embed:   bool = True
+    riemannian_correct_encoder: bool = True
+
     deg_eq_consecutive_required: int = 3        # confirmations before action fires
     deg_eq_freeze_interval: int      = 2        # evals between progressive freeze steps
     deg_eq_reweight_step: float      = 0.05     # alpha reduction per confirmation
