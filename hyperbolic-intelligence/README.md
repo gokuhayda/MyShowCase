@@ -682,12 +682,8 @@ trainer.train(train_loader, val_loader)
 
 ### Reproduction Notebook
 
-`notebooks/pairreviewHyDRA_v2_VALIDATED_Kuramoto.ipynb` — Google Colab compatible, includes:
-- All 4 variant configurations (A, D, E, F)
-- Checkpoint resume with Drive persistence
-- RDC monitoring and DegEq detection
-- Cell 20: Kuramoto fine-tuning experiment
-- Publication figures generation
+`notebooks/HyDRA.ipynb` — Google Colab compatible, includes:
+
 
 ### Citation
 
