@@ -15,11 +15,6 @@ from .distillation_v2 import (
     TeacherDistillationLossV2,
 )
 
-from .hyperbolic_projector import (
-    HiddenProjector,
-    HyperbolicProjectorV2,
-    HyperbolicProjectorV3,
-)
 
 from .dataset_v2 import (
     WikiTextTokenDataset,
@@ -33,11 +28,23 @@ from .gpt2_distillation import (
     plot_distillation_analysis,
 )
 
+
+from .hyperbolic_projector import (
+    HiddenProjector,
+    HyperbolicProjectorV2,
+    HyperbolicProjectorV3,
+)
+
 __all__ = [
     'DistillationConfigV2',
     'GPT2TeacherWrapperV2',
     'DistillationTrainerV2',
     'TeacherDistillationLossV2',
+    # HyDRA Projectors (v1→v3)
+    'HiddenProjector',
+    'HyperbolicProjectorV2',
+    'HyperbolicProjectorV3',
+
 
     'WikiTextTokenDataset',
     'build_wikitext_loaders',

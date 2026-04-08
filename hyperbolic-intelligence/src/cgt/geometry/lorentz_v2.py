@@ -268,7 +268,7 @@ class LorentzSubstrateV2(nn.Module):
         result64 = self.proj(result64)          # constraint enforced at f64
         return result64.to(orig_dtype)
 
-    def exp_map_zero(self, v: torch.Tensor, max_tangent_norm: float = 1.5) -> torch.Tensor:
+    def exp_map_zero(self, v: torch.Tensor, max_tangent_norm: float = 4.0) -> torch.Tensor:
         """
         Exponential map from the origin (fast path for embedding lookup).
 
