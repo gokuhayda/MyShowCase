@@ -15,6 +15,11 @@ from .distillation_v2 import (
     TeacherDistillationLossV2,
 )
 
+from .hyperbolic_projector import (
+    HiddenProjector,
+    HyperbolicProjectorV2,
+    HyperbolicProjectorV3,
+)
 
 from .dataset_v2 import (
     WikiTextTokenDataset,
