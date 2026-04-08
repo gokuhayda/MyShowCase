@@ -1,0 +1,166 @@
+"""
+cgt/models/lm_head_v2.py  — PATCHED v4: Hyperbolic Vocab Embeddings
+=====================================================================
+PATCH HISTORY
+-------------
+v3 (previous): Intrinsic Minkowski inner product scoring.
+    Fixed: log_map_zero manifold folding (x0 discarded).
+    Remaining gap: self.weight was an unconstrained Euclidean nn.Parameter.
+    Effect: vocab embedding norms grew as log(t) under implicit margin
+    maximization (Soudry et al. 2018), decoupling from manifold geometry
+    and producing Degenerate Equilibrium (DegEq) in training dynamics.
+
+v4 (this patch): Hyperbolic Vocab Embeddings.
+    Fix: _get_weight() now applies substrate.proj() before returning weights.
+    Effect: vocab embeddings are always on the Lorentz hyperboloid H^n.
+
+ROOT CAUSE OF DegEq (confirmed in HyDRA v2 training analysis):
+---------------------------------------------------------------
+    self.weight = nn.Parameter(torch.randn(vocab_size, ambient_dim))
+    # Euclidean parameter, no manifold constraint, x0 not derived from x_spatial
+
+    def _get_weight(self):  # v3 -- broken
+        return self.weight  # raw unconstrained weights
+
+Consequence:
+    - ||w_i|| grows as log(t) (implicit margin maximization)
+    - sigma_logit grows monotonically, decoupled from angular learning
+    - DegEq: RDC_ema > 15 at step ~6200, 2.5x PPL slowdown
+
+FIX: _get_weight() applies substrate.proj() on every forward pass
+------------------------------------------------------------------
+    proj(w) recomputes x0 = sqrt(1/K + ||x_spatial||^2)
+    - self.weight[..., 1:] (spatial)  -- free, optimizable
+    - self.weight[..., 0]  (temporal) -- DERIVED, always manifold-consistent
+    - Gradient propagates through proj() to self.weight[..., 1:]
+    - sigma_logit growth now reflects geodesic radius, not Euclidean norm
+
+Prediction for Variant D:
+    - RDC_ema grows slower than Variant A
+    - If DegEq disappears: Euclidean drift was the cause (confirmed)
+    - If DegEq persists:   scale is intrinsic to KL objective
+"""
+
+from __future__ import annotations
+import math
+
+import torch
+import torch.nn as nn
+
+from cgt.geometry import LorentzSubstrateV2
+from cgt.dynamics.riemannian_update_v2 import ensure_lorentz_v2
+
+
+def _sanitize(x: torch.Tensor, name: str = "") -> torch.Tensor:
+    return torch.nan_to_num(x, nan=0.0, posinf=1e4, neginf=-1e4)
+
+
+class HyperbolicLMHeadV2(nn.Module):
+    """
+    LM head using intrinsic Lorentz geometry (Minkowski inner product).
+
+    v4 change: vocab embeddings are projected onto the Lorentz hyperboloid
+    via substrate.proj() on every forward pass, eliminating the Euclidean
+    drift channel responsible for Degenerate Equilibrium (DegEq).
+    """
+
+    def __init__(
+        self,
+        n_embd: int,
+        vocab_size: int,
+        substrate: LorentzSubstrateV2,
+        tie_weights: bool = True,
+        input_embeddings: nn.Embedding | None = None,
+        normalize: bool = False,
+        eps: float = 1e-8,
+        learnable_scale: bool = True,
+        init_logit_scale: float = 5.0,   # kept for API compat
+    ) -> None:
+        super().__init__()
+        self.n_embd      = n_embd
+        self.vocab_size  = vocab_size
+        self.substrate   = substrate
+        self.tie_weights = tie_weights
+        self.normalize   = normalize
+        self.eps         = eps
+        self.ambient_dim = substrate.n + 1
+
+        # Temperature -- init to 1/sqrt(n) so initial logit variance ~ 1
+        init_temp = 1.0 / math.sqrt(max(n_embd, 1))
+        if learnable_scale:
+            self.logit_scale = nn.Parameter(torch.tensor(init_temp))
+        else:
+            self.register_buffer("logit_scale", torch.tensor(init_temp))
+        self.learnable_scale = learnable_scale
+
+        if tie_weights:
+            if input_embeddings is None:
+                raise ValueError(
+                    "HyperbolicLMHeadV2: tie_weights=True requires input_embeddings."
+                )
+            self._tied_embeddings = input_embeddings
+            self.weight = None
+            emb_dim = input_embeddings.weight.shape[1]
+            if emb_dim != self.ambient_dim:
+                self._lift = nn.Linear(emb_dim, self.ambient_dim, bias=False)
+                nn.init.normal_(self._lift.weight, std=0.01)
+            else:
+                self._lift = None
+        else:
+            # v4: initialize with spatial components; x0 derived by proj()
+            w_init = torch.zeros(vocab_size, self.ambient_dim)
+            nn.init.normal_(w_init[:, 1:], std=0.01)
+            # Set x0 = sqrt(1/K + ||xs||^2) for proper manifold initialization
+            K = substrate.K.item()
+            xs_sq = (w_init[:, 1:] ** 2).sum(dim=-1, keepdim=True)
+            w_init[:, :1] = torch.sqrt(torch.tensor(1.0 / K) + xs_sq)
+            self.weight = nn.Parameter(w_init)
+            self._tied_embeddings = None
+            self._lift = None
+
+    def _get_weight(self) -> torch.Tensor:
+        """
+        Return vocab embeddings projected onto the Lorentz hyperboloid.
+
+        v4 FIX: substrate.proj() recomputes x0 = sqrt(1/K + ||x_spatial||^2)
+        on every call. Gradient flows through proj() to self.weight[..., 1:].
+        self.weight[..., 0] receives no effective gradient (proj overwrites it).
+        """
+        if self.tie_weights and self._tied_embeddings is not None:
+            w = self._tied_embeddings.weight
+            if self._lift is not None:
+                w = self._lift(w)
+            return self.substrate.proj(w)   # v4: project tied embeddings too
+        return self.substrate.proj(self.weight)   # v4: project free weights
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            hidden_states: [B, L, n+1] Lorentz points
+        Returns:
+            logits: [B, L, V]
+        """
+        hidden_states = _sanitize(hidden_states, "lm_input")
+
+        # 1. Enforce manifold constraint on hidden states
+        x = ensure_lorentz_v2(hidden_states, self.substrate, debug_tag="lm_head")
+
+        # 2. Get vocab embeddings -- on the hyperboloid (v4)
+        w = _sanitize(self._get_weight(), "lm_weight")   # [V, ambient]
+
+        # 3. Minkowski inner product in float64 for stability
+        # <h, w_k>_M = -h0*w0 + h1*w1 + ... + hn*wn
+        x64 = x.double()        # [B, L, n+1]
+        w64 = w.double()        # [V, n+1]
+
+        time_inner  = torch.einsum("blt,vt->blv", x64[..., :1], w64[:, :1])
+        space_inner = torch.einsum("bls,vs->blv", x64[..., 1:], w64[:, 1:])
+        inner = space_inner - time_inner   # [B, L, V]
+
+        # 4. Temperature scaling
+        tau = self.logit_scale.clamp(0.01, 5.0).double()
+        logits = inner * tau
+
+        # 5. Cast back, sanitize
+        logits = logits.to(hidden_states.dtype)
+        return _sanitize(logits, "lm_logits")

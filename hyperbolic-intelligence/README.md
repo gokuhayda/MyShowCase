@@ -558,6 +558,152 @@ The following papers by the same author provide broader theoretical context for 
 
 ---
 
+
+---
+
+## 10. HyDRA: Hyperbolic Distillation with Riemannian Adaptation
+
+> **New in this release.** The `distillation/` and related v2 modules implement the complete HyDRA training framework, documented in the companion paper:
+>
+> **HyDRA: Hyperbolic Distillation with Riemannian Adaptation — Characterizing Degenerate Equilibrium in Hyperbolic Knowledge Distillation and Structural Solutions via Natural Gradient Correction**
+> Reis, Éric Gustavo. (2026). SHA-256: `9c844919d58f29cb7bb19b90154131996b5e3b2d6458c57834605068d3e8685e`
+
+### Overview
+
+HyDRA extends the CGT framework to **language model distillation**, training a 7.26M-parameter hyperbolic student to approximate GPT-2-small (117M) via knowledge distillation on WikiText-2. The primary contribution is the identification, formal characterization, and mitigation of **Degenerate Equilibrium (DegEq)**: a stable fixed point in hyperbolic distillation where angular convergence completes but radial scale continues growing, wasting 38–48% of compute without perplexity improvement.
+
+### New Modules (v2)
+
+| Module | Description |
+|--------|-------------|
+| `geometry/lorentz_v2.py` | Isolated Lorentz substrate with TB-PAG precision policy, `safe_acosh_v2`, L2-norm clamped `exp_map_zero` |
+| `models/transformer_v2.py` | Compact hyperbolic transformer (4L × 128d × 4H) with geodesic residuals |
+| `models/lm_head_v2.py` | **Intrinsic Lorentz LM head** — Minkowski inner product scoring, replaces broken `log_map_zero` approach |
+| `models/layer_v2.py` | Riemannian Layer Normalization with `r_max = 1.5` tangent clamp |
+| `models/hakorn_attention_v2.py` | HaKOrN attention variant (experimental) |
+| `distillation/distillation_v2.py` | Full distillation trainer: loss, EarlyStoppingV3, LossBalancer, AdaptiveTuner, DegEqController |
+| `dynamics/kuramoto_v2.py` | Kuramoto oscillator system (`dθ/dt = ω + K/N Σ sin(θⱼ − θᵢ)`) |
+| `dynamics/riemannian_update_v2.py` | Riemannian phase dynamics with Lorentz manifold enforcement |
+| `integration/dynamic_slm_v2.py` | `DynamicSLMWrapperV2`: post-training Kuramoto attachment layer |
+| `config/dynamics_config_v2.py` | `DynamicsConfigV2` dataclass |
+| `api/entrypoint.py` | `SafeHyperbolicModel` + `SafeModelConfig` unified API |
+
+### Key Innovations
+
+**1. Degenerate Equilibrium (DegEq) Characterization**
+
+A stable fixed point where angular convergence is complete but radial scale grows monotonically. Formally defined by three simultaneous conditions:
+- `L_hidden < 0.25` (angular learning complete)
+- `rdc_ema > 15` (radial drift dominant)
+- `σ_logit > 2.0` (logit overconfidence)
+
+**2. Radial Drift Coefficient (RDC)**
+
+Real-time proxy for DegEq onset, computed in-training at every step:
+```
+RDC(t) = σ_logit(t) / (L_hidden(t) + 0.01)
+rdc_ema(t) = 0.95 · rdc_ema(t−1) + 0.05 · RDC(t)
+```
+Reliably predicts DegEq onset 500–1,000 steps in advance.
+
+**3. Intrinsic Lorentz LM Head**
+
+Replaces the manifold-folding `log_map_zero + spatial slice` scoring with Minkowski inner product computed in `float64`:
+```
+score(h, wₖ) = ⟨h, wₖ⟩_L = −h₀w₀ + Σᵢ hᵢwᵢ
+logit_k = clamp(τ, 0.01, 2.5) · ⟨h, wₖ⟩_L
+```
+
+**4. Riemannian Natural Gradient Correction**
+
+`r/sinh(r)` scaling of Euclidean Adam gradients on manifold parameters, derived from the Lorentz metric tensor pullback (Amari 1998). Applied before each optimizer step to all manifold-resident parameters:
+```python
+r = ‖θ_{1:n}‖₂.clamp(ε)
+grad *= r / sinh(r.clamp(max=10))
+```
+
+**5. Symmetric Hyperbolic Vocabulary (Variant E/F)**
+
+Stores vocabulary as tangent vectors `[V, n]` (not ambient `[V, n+1]`) and lifts to manifold via `exp_map_zero` with `vocab_r_max=3.0`. Prevents unlimited radial growth of vocabulary embeddings without constraining semantic expressiveness.
+
+**6. EarlyStoppingV3 — Dual-EMA**
+
+Dual-reference EMA (fast β=0.3, slow β=0.9) with sliding window local maximum and detrended noise estimation. Provably accumulates patience correctly on true plateaus where single-reference EMA perpetually fires false positives.
+
+**7. Adaptive Training Infrastructure**
+
+Two-layer control system:
+- `LossBalancer` (proactive): equalizes effective gradient contributions across all loss terms at every evaluation
+- `AdaptiveTuner` (reactive): fires on regime alerts, adjusts temperature and loss weights
+
+### Results
+
+| Variant | Description | Steps | Best PPL | DegEq onset |
+|---------|-------------|-------|----------|-------------|
+| A | Baseline — no intervention | 10k | 482.8 | step 5,400 |
+| D | Hyperbolic vocab via `proj()` | 10k | 401.0 | ~step 5,400 |
+| E | Symmetric vocab (`exp_map_zero`) | 13k | 377.6 | >13k |
+| **F** | **Full Riemannian (HyDRA)** | **28.8k** | **309.0** | **Not observed** |
+
+**Negative result — Kuramoto post-hoc refinement:** Attaching `DynamicSLMWrapperV2` post-convergence degrades PPL by +175% (309→850) across all tested coupling strengths. Hyperbolic representations converged by geodesic distillation are geometrically locked and resist oscillatory perturbation.
+
+### Usage
+
+```python
+from cgt.api.entrypoint import SafeHyperbolicModel, SafeModelConfig
+from cgt.distillation.distillation_v2 import (
+    DistillationTrainerV2, DistillationConfigV2
+)
+
+# Build student
+student_cfg = SafeModelConfig(
+    vocab_size=50257, n_embd=128, n_layer=4,
+    n_head=4, n_positions=128,
+    riemannian_correct_vocab=True,
+    riemannian_correct_embed=True,
+    riemannian_correct_encoder=True,
+)
+student = SafeHyperbolicModel(student_cfg)
+
+# Configure distillation
+dist_cfg = DistillationConfigV2(
+    alpha=0.25, temperature=1.2,
+    lambda_hidden=0.15, lambda_radius=0.05, lambda_contrast=0.10,
+    max_steps=100000, learning_rate=3e-4,
+    riemannian_correct_vocab=True,
+    riemannian_correct_embed=True,
+    riemannian_correct_encoder=True,
+)
+
+# Train
+trainer = DistillationTrainerV2(student, teacher, dist_cfg, ckpt_dir)
+trainer.train(train_loader, val_loader)
+```
+
+### Reproduction Notebook
+
+`notebooks/pairreviewHyDRA_v2_VALIDATED_Kuramoto.ipynb` — Google Colab compatible, includes:
+- All 4 variant configurations (A, D, E, F)
+- Checkpoint resume with Drive persistence
+- RDC monitoring and DegEq detection
+- Cell 20: Kuramoto fine-tuning experiment
+- Publication figures generation
+
+### Citation
+
+```bibtex
+@misc{sena2026hydra,
+  title={HyDRA: Hyperbolic Distillation with Riemannian Adaptation —
+         Characterizing Degenerate Equilibrium in Hyperbolic Knowledge
+         Distillation and Structural Solutions via Natural Gradient Correction},
+  author={Sena, \'Eric Gustavo Reis de},
+  year={2026},
+  note={SHA-256: 9c844919d58f29cb7bb19b90154131996b5e3b2d6458c57834605068d3e8685e}
+}
+```
+
+
+
 ## License
 
 This work is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).

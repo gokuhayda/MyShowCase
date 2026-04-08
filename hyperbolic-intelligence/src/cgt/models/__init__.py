@@ -39,7 +39,10 @@ HyperbolicEmbedding, HyperbolicAttention, HyperbolicFFN
 """
 
 # CGTGW - Main model for Ψ-SLM experiments
-from cgt.models.cgt_gw import CGTGW, CGTGWConfig, stable_initialization
+try:
+    from cgt.models.cgt_gw import CGTGW, CGTGWConfig, stable_initialization
+except ImportError:
+    pass  # optional — requires POT package
 
 # HARDENED versions (production)
 from cgt.models.cgt_hardened import (
@@ -80,6 +83,20 @@ from cgt.models.hyperbolic_transformer_hardened import (
     create_hyperbolic_gpt2_small_hardened,
 )
 
+
+from .lm_head_v2 import HyperbolicLMHeadV2
+from .layer_v2 import (
+    RiemannianLayerNormV2,
+    HyperbolicFFNV2,
+    HyperbolicResidualV2,
+    HAKORNLayerV2,
+    HAKORNEncoderV2,
+)
+from .transformer_v2 import (
+    HyperbolicTransformerConfigV2,
+    HyperbolicTransformerV2,
+)
+
 # Aliases for backward compatibility
 CGTStudent = CGTStudentHardened
 HomeostaticField = HomeostaticFieldHardened
@@ -95,6 +112,14 @@ __all__ = [
     "RiemannianOptimizerWrapper",
     "RiemannianAdam",  # AUDIT FIX v9.9.4
     "create_projector",
+    "RiemannianLayerNormV2" ,
+    "HyperbolicFFNV2",
+    "HyperbolicResidualV2",
+    "HAKORNLayerV2",
+    "HAKORNEncoderV2",
+    "HyperbolicTransformerConfigV2",
+    "HyperbolicTransformerV2",
+    "HyperbolicLMHeadV2",
     # Hyperbolic Transformer (H-LLM)
     "HyperbolicTransformer",
     "HyperbolicTransformerConfig",

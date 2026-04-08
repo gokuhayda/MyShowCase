@@ -47,11 +47,15 @@ from cgt.geometry.frechet import (
     frechet_mean,
 )
 
+from .lorentz_v2 import LorentzConfigV2, LorentzSubstrateV2, safe_acosh_v2, safe_sqrt_v2
+
 __all__ = [
     # Core (HARDENED)
     "LorentzConfig",
     "LorentzSubstrateHardened",
     "LorentzSubstrate",  # Alias
+    "LorentzConfigV2",
+    "LorentzSubstrateV2",
     # Fréchet mean
     "LorentzFrechetMean",
     "EinsteinMidpoint",
@@ -59,4 +63,6 @@ __all__ = [
     # Utilities
     "safe_acosh",
     "safe_sqrt",
+    "safe_acosh_v2",
+    "safe_sqrt_v2",
 ]

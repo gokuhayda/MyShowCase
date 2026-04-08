@@ -28,7 +28,10 @@ References
 import torch
 import torch.nn as nn
 from typing import Optional, Tuple
-import ot
+try:
+    import ot
+except ImportError:
+    ot = None  # POT not installed — GW functions unavailable (not needed for HyDRA training)
 
 # F1/GW CORRECTION: Use hardened substrate with safe_acosh
 from cgt.geometry.lorentz_hardened import LorentzSubstrateHardened as LorentzSubstrate

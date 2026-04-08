@@ -8,6 +8,19 @@ Distillation Module
 Knowledge distillation from Euclidean teachers to Hyperbolic models.
 """
 
+from .distillation_v2 import (
+    DistillationConfigV2,
+    GPT2TeacherWrapperV2,
+    DistillationTrainerV2,
+    TeacherDistillationLossV2,
+)
+
+
+from .dataset_v2 import (
+    WikiTextTokenDataset,
+    build_wikitext_loaders,
+)
+
 from .gpt2_distillation import (
     DistillationConfig,
     GPT2TeacherWrapper,
@@ -16,6 +29,13 @@ from .gpt2_distillation import (
 )
 
 __all__ = [
+    'DistillationConfigV2',
+    'GPT2TeacherWrapperV2',
+    'DistillationTrainerV2',
+    'TeacherDistillationLossV2',
+
+    'WikiTextTokenDataset',
+    'build_wikitext_loaders',
     'DistillationConfig',
     'GPT2TeacherWrapper', 
     'DistillationTrainer',
