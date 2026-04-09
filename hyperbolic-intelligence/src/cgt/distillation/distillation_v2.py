@@ -1280,6 +1280,9 @@ class DistillationConfigV2:
     use_decoupled_ra:     bool  = False   # D3: decoupled radial/angular loss
     use_oted:             bool  = False   # OTED: all loss in T_o (flat space)
     oted_r_target:        float = None    # None = entropy-calibrated
+    # V5 — Channel fixes
+    radial_momentum_projection: bool = False  # Channel 1: zero radial momentum
+    use_angular_head:           bool = False  # Channel 2: purely angular LM head
     proj_kl_r_fixed:      float = 1.5    # D1: fixed radius for projection
     proj_kl_anchor_delta: float = 0.2    # D1: elastic anchor deadzone
     proj_kl_anchor_w:     float = 0.01   # D1: anchor weight
@@ -2139,6 +2142,27 @@ class DistillationTrainerV2:
         device: str = "cpu",
     ) -> None:
         self.student        = student
+
+        # V5: swap LM head to AngularLMHead if requested (Channel 2 fix)
+        if getattr(config, "use_angular_head", False):
+            try:
+                from cgt.models.geodesic_lm_head import AngularLMHead
+                _parent = getattr(student, "core_model", student)
+                _lm = getattr(_parent, "lm_head", None)
+                if _lm is not None and hasattr(_lm, "n_embd"):
+                    _parent.lm_head = AngularLMHead(
+                        n_embd=_lm.n_embd,
+                        vocab_size=_lm.vocab_size,
+                        substrate=_lm.substrate,
+                        init_logit_scale=float(_lm.logit_scale.detach()),
+                    ).to(device)
+                    import warnings
+                    warnings.warn("[V5] AngularLMHead active — dL/dr=0 for all k.",
+                                  UserWarning, stacklevel=2)
+            except Exception as _e:
+                import warnings
+                warnings.warn(f"[V5] AngularLMHead swap failed: {_e}",
+                              UserWarning, stacklevel=2)
         self.teacher        = teacher
         self.config         = config
         self.tokenizer      = tokenizer
@@ -2202,6 +2226,28 @@ class DistillationTrainerV2:
 
         # Build substrate from student
         substrate = self._get_substrate(student)
+
+        # V5: upgrade to RiemannianAdamW if radial_momentum_projection requested
+        # Must be AFTER substrate is defined (substrate = self._get_substrate above)
+        _use_riemannian = getattr(config, "radial_momentum_projection", False)
+        if _use_riemannian:
+            try:
+                from cgt.dynamics.riemannian_adamw import RiemannianAdamW
+                self.optimizer = RiemannianAdamW(
+                    list(self.student.named_parameters()),
+                    substrate=substrate,
+                    lr=config.learning_rate,
+                    weight_decay=config.weight_decay,
+                    betas=(0.9, 0.95),
+                    radial_momentum_projection=True,
+                )
+                import warnings
+                warnings.warn("[V5] RiemannianAdamW with radial_momentum_projection=True active.",
+                              UserWarning, stacklevel=2)
+            except Exception as _e:
+                import warnings
+                warnings.warn(f"[V5] RiemannianAdamW failed ({_e}), falling back to AdamW.",
+                              UserWarning, stacklevel=2)
 
         # ── Paper 2: structural loss modules (D1 / D3) ────────────────────
         # Only one can be active; both default to False (reproduces Variant F).

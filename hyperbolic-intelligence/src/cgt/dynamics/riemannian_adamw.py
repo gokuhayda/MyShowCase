@@ -88,6 +88,10 @@ class RiemannianAdamW(torch.optim.AdamW):
         }
 
         self.substrate = substrate
+        # V5: radial momentum projection flag (Channel 1 fix)
+        self.radial_momentum_projection: bool = kwargs.pop(
+            "radial_momentum_projection", False
+        )
         params = [p for _, p in named_params]
         super().__init__(params, **kwargs)
 
@@ -151,5 +155,25 @@ class RiemannianAdamW(torch.optim.AdamW):
                         - m_flat[:, 0] * x_flat[:, 0]
                     ).unsqueeze(-1)
                     m.sub_((inner * x_flat).reshape_as(m))
+
+
+        # ── 5. Radial Momentum Projection (V5 — Channel 1 fix) ────────────
+        # Zeroes the radial component of exp_avg after each step.
+        # Breaks the Christoffel-momentum coupling that drives DegEq.
+        # The instantaneous gradient (legitimate radial loss signal)
+        # is unaffected — it is added on the NEXT step, not stored here.
+        if self.radial_momentum_projection and self.substrate is not None:
+            for group in self.param_groups:
+                for p in group['params']:
+                    if not self._is_manifold(p): continue
+                    if p.dim() < 1 or p.shape[-1] < 2: continue
+                    state = self.state[p]
+                    if 'exp_avg' not in state: continue
+                    m    = state['exp_avg']
+                    xs   = p.data[..., 1:]
+                    r    = xs.norm(dim=-1, keepdim=True).clamp(min=1e-7)
+                    r_hat = xs / r
+                    radial_comp = (m[..., 1:] * r_hat).sum(-1, keepdim=True)
+                    m[..., 1:].sub_(radial_comp * r_hat)
 
         return loss

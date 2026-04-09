@@ -150,3 +150,19 @@ __all__ = [
     "CGTStudent",
     "HomeostaticField",
 ]
+
+from .geodesic_lm_head import AngularLMHead
+
+# HypLoRA: 100% Hyperbolic LoRA adapter
+from .hyplora import (
+    HypLoRAConfig,
+    HypLoRALayer,
+    LorentzLowRank,
+    inject_hyplora,
+    extract_hyplora,
+    load_hyplora,
+    merge_hyplora,
+    delta_hyperbolicity,
+    token_freq_norm_stats,
+    print_trainable_params,
+)

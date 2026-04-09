@@ -114,7 +114,7 @@ try:
         create_hybrid_loss,
     )
     _HYBRID_AVAILABLE = True
-except ImportError as e:
+except (ImportError, OSError) as e:
     _HYBRID_AVAILABLE = False
     import warnings
     warnings.warn(f"HybridActiveLoss not available: {e}")

@@ -64,9 +64,10 @@ try:
         entropic_gromov_wasserstein_loss,
     )
     GW_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError):
     GW_AVAILABLE = False
     GromovWassersteinLoss = None
+    entropic_gromov_wasserstein_loss = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
