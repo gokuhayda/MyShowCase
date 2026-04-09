@@ -13,7 +13,8 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org)
 [![Status: Research Code](https://img.shields.io/badge/Status-Research%20Code-blueviolet.svg)](#6-experimental--research-status)
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19480998-blue.svg)](https://doi.org/10.5281/zenodo.19480998)
+[![DOI v2](https://img.shields.io/badge/DOI%20v2-10.5281%2Fzenodo.19480998-blue.svg)](https://doi.org/10.5281/zenodo.19480998)
+[![DOI v3](https://img.shields.io/badge/DOI%20v3-10.5281%2Fzenodo.19483206-blue.svg)](https://doi.org/10.5281/zenodo.19483206)
 
 ---
 
@@ -46,18 +47,19 @@ Hyperbolic geometry can compress high-dimensional Euclidean embeddings into lowe
 
 When extending this framework to autoregressive language model distillation, a failure mode emerges: **Degenerate Equilibrium (DegEq)** — a stable attractor where angular alignment stabilises while radial dynamics remain active, leading to geometrically valid but semantically degraded representations.
 
-Three ablation experiments (standard KL, Projective KL, and Decoupled Radial-Angular distillation) converge to an empirically identical fixed point (rdc* ≈ 10) by step ≈ 1,600 with consistent dynamics (σ ≤ 0.17), suggesting DegEq is a system-level property of KL-based distillation in hyperbolic spaces, robust across tested loss formulations.
+Four ablation experiments — standard KL, Projective KL (D1), Decoupled Radial-Angular (D3), and Origin-Tangent Euclidean Distillation (OTED) — converge to the same fixed point (rdc* ≈ 10, relative deviation <5%) by step ≈ 1,600. OTED eliminates all hyperbolic geometry from the loss backward pass yet reaches rdc* = 10.25 ± 0.30, establishing by exhaustion that DegEq originates in the model's forward dynamics via the Christoffel coupling ṙ = −sinh(r)cosh(r)·θ̇².
 
 **What this repository shows:**
 - Hyperbolic distillation converges to a stable fixed point (DegEq), empirically invariant across tested loss variants
 - Geometric validity does not imply linguistic quality
 - A Lyapunov-inspired potential (L_q = ½ · rdc²) characterises attractor onset
 - Late intervention produces transient suppression with relaxation time τ ≈ 905 steps (R² = 0.964)
+- OTED (T_o loss) reaches the same attractor as standard KL — proof that DegEq is forward-path intrinsic
 
 **What this repository does not show:**
 - That hyperbolic models outperform Euclidean ones on language modelling
 - That DegEq is universal (tested only in this architecture and dataset)
-- That current structural interventions eliminate DegEq
+- That any tested intervention eliminates DegEq (all four formulations converge to rdc* ≈ 10)
 
 ---
 
@@ -449,11 +451,12 @@ for ev in results:
 
 ## 10. HyDRA: Hyperbolic Distillation with Riemannian Adaptation
 
-> **Paper:** HyDRA v2 — Hyperbolic Distillation with Riemannian Adaptation  
-> **DOI:** [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998)  
+> **Paper:** HyDRA v3 — Hyperbolic Distillation with Riemannian Adaptation: Attractor Invariance and Proof by Elimination  
+> **DOI (v2):** [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998)  
+> **DOI (v3):** [10.5281/zenodo.19483206](https://doi.org/10.5281/zenodo.19483206)  
 > **SHA-256:** `9c844919d58f29cb7bb19b90154131996b5e3b2d6458c57834605068d3e8685e`
 
-HyDRA extends the CGT framework to **language model distillation**, training a compact hyperbolic student (≈12M parameters, H^128) via knowledge distillation from GPT-2-small (117M) on WikiText-2. Every layer — attention, feed-forward, and residual connections — preserves the Riemannian manifold constraint to float64 precision. The primary contribution is the identification, formal characterization, and mitigation of **Degenerate Equilibrium (DegEq)**: a stable fixed point where angular convergence completes but radial scale grows monotonically, wasting 38–48% of compute without perplexity improvement.
+HyDRA extends the CGT framework to **language model distillation**, training a compact hyperbolic student (≈12M parameters, H^128) via knowledge distillation from GPT-2-small (117M) on WikiText-2. Every layer — attention, feed-forward, and residual connections — preserves the Riemannian manifold constraint to float64 precision. The primary contribution is the identification, formal characterization, and mitigation of **Degenerate Equilibrium (DegEq)**: a stable fixed point where angular convergence completes but radial scale grows monotonically, converging to a geometrically stable but semantically degraded fixed point.
 
 ### New Modules (v2)
 
@@ -467,6 +470,7 @@ HyDRA extends the CGT framework to **language model distillation**, training a c
 | `distillation/distillation_v2.py` | Full distillation trainer: loss, EarlyStoppingV3, LossBalancer, AdaptiveTuner, DegEqController |
 | `distillation/geometric_distillation.py` | D1 (ProjectiveKL), D3 (DecoupledRadialAngular), F1/F2/φ metrics |
 | `distillation/hyperbolic_projector.py` | HyperbolicProjectorV3 — angular/radial gradient decoupling |
+| `distillation/geometric_distillation.py` | **OTEDLoss** — all loss in T_o H^n (Christoffel-free backward) |
 | `dynamics/riemannian_adamw.py` | RiemannianAdamW + parallel transport of momentum |
 | `dynamics/kuramoto_v2.py` | Kuramoto oscillator system (`dθ/dt = ω + K/N Σ sin(θⱼ − θᵢ)`) |
 | `api/entrypoint.py` | `SafeHyperbolicModel` + `SafeModelConfig` unified API |
@@ -539,6 +543,12 @@ Two-layer control system:
 | Variant F (standard KL) | 9.82 | 0.17 | ≈ 1,600 |
 | D1 (Projective KL) | 10.04 | 0.12 | ≈ 1,600 |
 | D3 (Decoupled R-A) | 10.04 | 0.12 | ≈ 1,600 |
+| **OTED (T₀ loss)** | **10.25** | **0.30** | **≈ 1,600** |
+
+**Proof by elimination:** OTED moves all loss computation to the flat tangent space
+T_o H^n, eliminating Christoffel symbols from the backward pass. It reaches rdc* = 10.25 ± 0.30 —
+indistinguishable from the KL baseline. Four interventions, same fixed point: DegEq originates
+in the model's forward dynamics, not in the loss surface.
 
 ### Usage
 
@@ -576,8 +586,10 @@ trainer.train(train_loader, val_loader)
 
 ## 8. References
 
-1. **HyDRA v2: Hyperbolic Distillation with Riemannian Adaptation**  
-   de Sena, Éric Gustavo Reis. (2026). DOI: [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998)
+1. **HyDRA v3: Hyperbolic Distillation with Riemannian Adaptation — Attractor Invariance and Proof by Elimination**  
+   de Sena, Éric Gustavo Reis. (2026).
+   - v2: DOI [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998)
+   - **v3 (current):** DOI [10.5281/zenodo.19483206](https://doi.org/10.5281/zenodo.19483206)
 
 2. **Lorentzian Hyperbolic Compression: A Family of Geometric Models for Euclidean-to-Hyperbolic Representation Transfer**  
    Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18382872](https://doi.org/10.5281/zenodo.18382872)
@@ -661,11 +673,12 @@ The following papers provide broader theoretical context. **These are NOT fully 
 
 ```bibtex
 @misc{sena2026hydra,
-  title={HyDRA v2: Hyperbolic Distillation with Riemannian Adaptation},
+  title={HyDRA v3: Hyperbolic Distillation with Riemannian Adaptation ---
+         Attractor Invariance and Proof by Elimination},
   author={de Sena, {\'E}ric Gustavo Reis},
   year={2026},
-  doi={10.5281/zenodo.19480998},
-  note={SHA-256: 9c844919d58f29cb7bb19b90154131996b5e3b2d6458c57834605068d3e8685e}
+  doi={10.5281/zenodo.19483206},
+  note={v2: 10.5281/zenodo.19480998}
 }
 
 @misc{sena2026cgt,
