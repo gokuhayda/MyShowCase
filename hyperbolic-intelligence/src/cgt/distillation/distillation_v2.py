@@ -1278,6 +1278,8 @@ class DistillationConfigV2:
     # Flags are mutually exclusive. Default=False reproduces Variant F exactly.
     use_projective_kl:    bool  = False   # D1: KL in angular subspace only
     use_decoupled_ra:     bool  = False   # D3: decoupled radial/angular loss
+    use_oted:             bool  = False   # OTED: all loss in T_o (flat space)
+    oted_r_target:        float = None    # None = entropy-calibrated
     proj_kl_r_fixed:      float = 1.5    # D1: fixed radius for projection
     proj_kl_anchor_delta: float = 0.2    # D1: elastic anchor deadzone
     proj_kl_anchor_w:     float = 0.01   # D1: anchor weight
@@ -2205,9 +2207,11 @@ class DistillationTrainerV2:
         # Only one can be active; both default to False (reproduces Variant F).
         self._p2_projective = None
         self._p2_decoupled  = None
-        if config.use_projective_kl and config.use_decoupled_ra:
+        self._p2_oted       = None
+        if sum([config.use_projective_kl, config.use_decoupled_ra,
+                getattr(config, 'use_oted', False)]) > 1:
             raise ValueError(
-                "use_projective_kl and use_decoupled_ra are mutually exclusive."
+                "use_projective_kl, use_decoupled_ra, use_oted are mutually exclusive."
             )
         if config.use_projective_kl:
             from cgt.distillation.geometric_distillation import ProjectiveKLLoss
@@ -2232,6 +2236,19 @@ class DistillationTrainerV2:
             ).to(device)
             import warnings
             warnings.warn("[Paper2] D3 active: DecoupledRadialAngularLoss replaces standard KL.",
+                          UserWarning, stacklevel=2)
+        elif getattr(config, 'use_oted', False):
+            from cgt.distillation.geometric_distillation import OTEDLoss
+            self._p2_oted = OTEDLoss(
+                substrate     = substrate,
+                vocab_size    = getattr(config, 'vocab_size', 50257),
+                r_max         = config.decoupled_r_max,
+                r_target      = getattr(config, 'oted_r_target', None),
+                lambda_radial = config.decoupled_lambda_rad,
+                temperature   = config.temperature,
+            ).to(device)
+            import warnings
+            warnings.warn("[Paper2] OTED active: Origin-Tangent Euclidean Distillation.",
                           UserWarning, stacklevel=2)
         self.loss_fn = TeacherDistillationLossV2(
             substrate          = substrate,
@@ -2512,8 +2529,33 @@ class DistillationTrainerV2:
                                     teacher_hidden=teacher_hidden)
                     distill_loss, l_hidden, l_radius, l_contrast = (
                         d['total'], d['l_hidden'], d['l_radius'], d['l_contrast'])
+            elif self._p2_oted is not None and student_hidden is not None:
+                # OTED: all loss computation in T_o (flat tangent space)
+                # Eliminates Christoffel coupling: r'' = -sinh(r)cosh(r)*theta'^2
+                W_vocab = self.student.core_model.lm_head.weight if hasattr(
+                    self.student, 'core_model') else None
+                if W_vocab is not None:
+                    p_teacher = torch.softmax(
+                        teacher_logits / self.config.temperature, dim=-1).detach()
+                    t_ent = -(p_teacher * (p_teacher + 1e-9).log()).sum(-1).detach()
+                    out = self._p2_oted(
+                        h_student       = student_hidden,
+                        W_vocab         = W_vocab.detach(),
+                        p_teacher       = p_teacher,
+                        teacher_entropy = t_ent,
+                    )
+                    distill_loss = out['total']
+                    l_hidden     = out['l_angular']
+                    l_radius     = out['l_radial']
+                else:
+                    d = self.loss_fn(student_logits=student_logits,
+                                    teacher_logits=teacher_logits, labels=labels,
+                                    student_hidden=student_hidden,
+                                    teacher_hidden=teacher_hidden)
+                    distill_loss, l_hidden, l_radius, l_contrast = (
+                        d['total'], d['l_hidden'], d['l_radius'], d['l_contrast'])
             else:
-                # Standard path — Variant F, D1/D3 without hidden states
+                # Standard path — Variant F
                 d = self.loss_fn(
                     student_logits = student_logits,
                     teacher_logits = teacher_logits,

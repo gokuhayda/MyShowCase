@@ -247,3 +247,135 @@ def compute_f2(
     num    = (d_s_c * d_t_c).sum()
     den    = (d_s_c.pow(2).sum() * d_t_c.pow(2).sum()).sqrt() + eps
     return (num / den).item()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OTED — Origin-Tangent Euclidean Distillation
+# ─────────────────────────────────────────────────────────────────────────────
+
+class OTEDLoss(nn.Module):
+    """
+    Origin-Tangent Euclidean Distillation (OTED).
+
+    Mechanistic motivation
+    ----------------------
+    DegEq emerges from the interaction between AdamW's inertial dynamics
+    and the hyperbolic Christoffel symbols, which convert angular momentum
+    into persistent radial acceleration via the geodesic equation:
+
+        r'' = -sinh(r) cosh(r) * theta'^2
+
+    This holds regardless of whether ∂L/∂r = 0 (proven by D1 and D3
+    from-scratch experiments both reaching rdc* ≈ 10).
+
+    Solution: move ALL loss computation to the origin tangent space
+    T_o H^n ≅ R^n, where Christoffel symbols vanish identically.
+    AdamW dynamics are then geometrically valid — no centrifugal
+    acceleration is injected into the radial coordinate.
+
+    Architecture
+    ------------
+    1. Project h_s to T_o via log_map_zero: v_s = log_o(h_s) ∈ R^n
+    2. Compute KL purely on angular direction: û_s = v_s / ||v_s||
+    3. Anchor radius via MSE to entropy-calibrated r_target
+    4. No manifold operations inside the loss → no Christoffel coupling
+
+    Gradient analysis
+    -----------------
+    ∂L_KL/∂r_h = 0  (exact, because û_s = v_s/||v_s|| is scale-invariant)
+    ∂L_rad/∂r_h ≠ 0  (provides unique stable equilibrium at r_target)
+    ∂L_KL/∂û_h ≠ 0  (angular learning signal preserved)
+
+    Difference from D3
+    ------------------
+    D3 computes angular KL from û extracted via log_o, but the student
+    model still operates on H^n during forward. OTED moves the ENTIRE
+    loss to T_o, so AdamW never encounters curved coordinates during
+    the backward pass through the loss.
+
+    Expected result
+    ---------------
+    rdc* < 3.0 (vs rdc* ≈ 10 for F/D1/D3), because the Christoffel
+    coupling is eliminated at the source rather than suppressed post-hoc.
+    """
+
+    def __init__(
+        self,
+        substrate,
+        vocab_size:    int   = 50257,
+        r_max:         float = 3.0,
+        r_target:      float = None,   # None = entropy-calibrated (recommended)
+        lambda_radial: float = 0.1,
+        temperature:   float = 1.0,
+    ):
+        super().__init__()
+        self.substrate     = substrate
+        self.log_V         = math.log(vocab_size)
+        self.r_max         = r_max
+        self._r_target_fixed = r_target   # None = dynamic per-position
+        self.lambda_radial = lambda_radial
+        self.T             = temperature
+
+    def _to_tangent(self, h: torch.Tensor) -> torch.Tensor:
+        """
+        Project H^n ambient coords to T_o H^n (Euclidean R^n).
+        h: [..., n+1] Lorentz ambient → v: [..., n] tangent spatial
+        """
+        orig = h.shape[:-1]
+        h_flat = h.reshape(-1, h.shape[-1]).float()
+        v      = self.substrate.log_map_zero(h_flat)  # [..., n+1]
+        return v[:, 1:].reshape(*orig, -1)             # spatial only, [..., n]
+
+    def forward(
+        self,
+        h_student:       torch.Tensor,   # [B, L, n+1] on H^n
+        W_vocab:         torch.Tensor,   # [V, n+1] on H^n
+        p_teacher:       torch.Tensor,   # [B, L, V] soft targets
+        teacher_entropy: torch.Tensor = None,  # [B, L] optional
+    ) -> dict:
+        # ── Step 1: project all manifold tensors to T_o (flat space) ─────────
+        # After this step there are NO manifold operations → Christoffel = 0
+        v_s = self._to_tangent(h_student)   # [B, L, n]
+        v_w = self._to_tangent(W_vocab)     # [V, n]
+
+        B, L, n = v_s.shape
+
+        # ── Step 2: angular KL in flat tangent space ─────────────────────────
+        # Scale-invariant: û_s = v_s/||v_s||  →  ∂L_KL/∂||v_s|| = 0 exactly
+        u_s = F.normalize(v_s.reshape(B*L, n), dim=-1)   # [BL, n]
+        u_w = F.normalize(v_w, dim=-1)                    # [V, n]
+
+        # Cosine logits in T_o (no sinh(r) amplification)
+        logits = (u_s @ u_w.T / self.T).reshape(B, L, -1)  # [B, L, V]
+        log_p  = F.log_softmax(logits, dim=-1)
+
+        l_angular = F.kl_div(
+            log_p.reshape(-1, logits.shape[-1]),
+            p_teacher.reshape(-1, p_teacher.shape[-1]),
+            reduction='batchmean',
+        ) * self.T ** 2
+
+        # ── Step 3: radial anchor — unique stable equilibrium ─────────────────
+        # r_h computed from tangent norm (equivalent to geodesic radius at o)
+        r_h = v_s.reshape(B*L, n).norm(dim=-1).reshape(B, L)  # [B, L]
+
+        if self._r_target_fixed is not None:
+            r_target = torch.full_like(r_h, self._r_target_fixed)
+        elif teacher_entropy is not None:
+            # Entropy-calibrated: high H → small r (near origin = uncertain)
+            H_norm   = (teacher_entropy / self.log_V).clamp(0.0, 1.0)
+            r_target = torch.sigmoid(-H_norm) * self.r_max
+        else:
+            r_target = torch.full_like(r_h, self.r_max * 0.5)
+
+        l_radial = F.mse_loss(r_h, r_target.detach())
+
+        l_total = l_angular + self.lambda_radial * l_radial
+
+        return {
+            'total':      l_total,
+            'l_angular':  l_angular,
+            'l_radial':   l_radial,
+            'r_mean':     r_h.mean(),
+            'r_target':   r_target.mean(),
+        }

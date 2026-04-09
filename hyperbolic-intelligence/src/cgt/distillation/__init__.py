@@ -58,3 +58,5 @@ from .geometric_distillation import (
     DecoupledRadialAngularLoss,
     compute_f2,
 )
+
+from .geometric_distillation import OTEDLoss
