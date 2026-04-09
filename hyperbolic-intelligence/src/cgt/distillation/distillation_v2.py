@@ -1274,6 +1274,16 @@ class DistillationConfigV2:
     deg_eq_temp_scale: float         = 1.10     # temperature multiplier per confirmation
     deg_eq_temp_max: float           = 2.5      # temperature upper bound
 
+    # ── Paper 2 — structural DegEq prevention ───────────────────────────────
+    # Flags are mutually exclusive. Default=False reproduces Variant F exactly.
+    use_projective_kl:    bool  = False   # D1: KL in angular subspace only
+    use_decoupled_ra:     bool  = False   # D3: decoupled radial/angular loss
+    proj_kl_r_fixed:      float = 1.5    # D1: fixed radius for projection
+    proj_kl_anchor_delta: float = 0.2    # D1: elastic anchor deadzone
+    proj_kl_anchor_w:     float = 0.01   # D1: anchor weight
+    decoupled_r_max:      float = 3.0    # D3: max radius for r_target
+    decoupled_lambda_rad: float = 0.1    # D3: weight of L_radial
+
     # ── legacy aliases ─────────────────────────────────────────────────────
     lr: Optional[float]     = None   # → learning_rate
     n_steps: Optional[int]  = None   # → max_steps
@@ -1323,7 +1333,22 @@ class GPT2TeacherWrapperV2(nn.Module):
             ) from e
 
         self.device = device
-        self.model  = GPT2LMHeadModel.from_pretrained(model_name).to(device)
+        # Retry wrapper: guards against transient HF 503/network errors
+        import time as _time
+        def _load(attempts=4, base_delay=8):
+            for attempt in range(1, attempts + 1):
+                try:
+                    return GPT2LMHeadModel.from_pretrained(model_name).to(device)
+                except (OSError, Exception) as exc:
+                    if attempt == attempts:
+                        raise
+                    wait = base_delay * (2 ** (attempt - 1))
+                    import warnings as _w
+                    _w.warn(f'GPT2TeacherWrapperV2: HF download attempt {attempt} '
+                            f'failed ({exc!s:.60}). Retrying in {wait}s.',
+                            UserWarning, stacklevel=2)
+                    _time.sleep(wait)
+        self.model  = _load()
         self.model.eval()
         for p in self.model.parameters():
             p.requires_grad = False
@@ -2175,6 +2200,39 @@ class DistillationTrainerV2:
 
         # Build substrate from student
         substrate = self._get_substrate(student)
+
+        # ── Paper 2: structural loss modules (D1 / D3) ────────────────────
+        # Only one can be active; both default to False (reproduces Variant F).
+        self._p2_projective = None
+        self._p2_decoupled  = None
+        if config.use_projective_kl and config.use_decoupled_ra:
+            raise ValueError(
+                "use_projective_kl and use_decoupled_ra are mutually exclusive."
+            )
+        if config.use_projective_kl:
+            from cgt.distillation.geometric_distillation import ProjectiveKLLoss
+            self._p2_projective = ProjectiveKLLoss(
+                substrate     = substrate,
+                r_fixed       = config.proj_kl_r_fixed,
+                temperature   = config.temperature,
+                anchor_weight = config.proj_kl_anchor_w,
+                anchor_delta  = config.proj_kl_anchor_delta,
+            ).to(device)
+            import warnings
+            warnings.warn("[Paper2] D1 active: ProjectiveKLLoss replaces standard KL.",
+                          UserWarning, stacklevel=2)
+        elif config.use_decoupled_ra:
+            from cgt.distillation.geometric_distillation import DecoupledRadialAngularLoss
+            self._p2_decoupled = DecoupledRadialAngularLoss(
+                substrate     = substrate,
+                vocab_size    = getattr(config, 'vocab_size', 50257),
+                r_max         = config.decoupled_r_max,
+                lambda_radial = config.decoupled_lambda_rad,
+                temperature   = config.temperature,
+            ).to(device)
+            import warnings
+            warnings.warn("[Paper2] D3 active: DecoupledRadialAngularLoss replaces standard KL.",
+                          UserWarning, stacklevel=2)
         self.loss_fn = TeacherDistillationLossV2(
             substrate          = substrate,
             temperature        = config.temperature,
@@ -2271,15 +2329,36 @@ class DistillationTrainerV2:
 
     @staticmethod
     def _get_substrate(model: nn.Module) -> LorentzSubstrateV2:
-        """Extract substrate from SafeHyperbolicModel or HyperbolicTransformerV2."""
+        """Extract substrate from SafeHyperbolicModel or HyperbolicTransformerV2.
+
+        Euclidean baseline fallback: if the student has no .substrate
+        (e.g. EuclideanStudent), returns a dummy LorentzSubstrateV2 inferred
+        from the embedding dimension.  The substrate is only consumed inside
+        blocks guarded by ``try/except`` or ``if student_hidden is not None``,
+        so the dummy is never used for manifold math on Euclidean models.
+        """
         if hasattr(model, "substrate"):
             return model.substrate
         if hasattr(model, "core_model") and hasattr(model.core_model, "substrate"):
             return model.core_model.substrate
-        raise AttributeError(
-            "DistillationTrainerV2: student has no .substrate attribute. "
-            "Use SafeHyperbolicModel or HyperbolicTransformerV2."
+        # ── Euclidean baseline: infer dim from embedding layer ────────────
+        # Riemannian corrections are gated by try/except and hidden guards;
+        # the dummy substrate is never used for actual manifold operations.
+        _n_embd = 128  # HyDRA default fallback
+        for _name, _param in model.named_parameters():
+            if "embed" in _name and _param.dim() == 2:
+                _n_embd = _param.shape[-1]
+                break
+        from cgt.geometry.lorentz_v2 import LorentzConfigV2
+        _dummy_cfg = LorentzConfigV2(intrinsic_dim=_n_embd)
+        import warnings
+        warnings.warn(
+            f"DistillationTrainerV2: student has no .substrate — "
+            f"using dummy LorentzSubstrateV2(n={_n_embd}) for Euclidean baseline. "
+            f"Riemannian corrections are disabled (guarded by try/except).",
+            UserWarning, stacklevel=3,
         )
+        return LorentzSubstrateV2(_dummy_cfg)
 
     # ── checkpoint ────────────────────────────────────────────────────────
 
@@ -2385,17 +2464,67 @@ class DistillationTrainerV2:
         distill_loss = torch.tensor(0.0, device=self.device)
         l_hidden = l_radius = l_contrast = torch.tensor(0.0, device=self.device)
         if teacher_logits is not None:
-            d = self.loss_fn(
-                student_logits = student_logits,
-                teacher_logits = teacher_logits,
-                labels         = labels,
-                student_hidden = student_hidden,
-                teacher_hidden = teacher_hidden,
-            )
-            distill_loss = d["total"]
-            l_hidden     = d["l_hidden"]
-            l_radius     = d["l_radius"]
-            l_contrast   = d["l_contrast"]
+            # ── Paper 2: structural loss override ────────────────────────
+            if self._p2_projective is not None and student_hidden is not None:
+                # D1: ProjectiveKLLoss — KL in angular subspace only
+                W_vocab = self.student.core_model.lm_head.weight if hasattr(
+                    self.student, 'core_model') else None
+                if W_vocab is not None:
+                    p_teacher = torch.softmax(
+                        teacher_logits / self.config.temperature, dim=-1).detach()
+                    out = self._p2_projective(
+                        h_student = student_hidden,
+                        W_vocab   = W_vocab.detach(),
+                        p_teacher = p_teacher,
+                    )
+                    distill_loss = out['total']
+                    l_radius     = out['l_anchor']
+                else:
+                    # fallback: standard loss
+                    d = self.loss_fn(student_logits=student_logits,
+                                    teacher_logits=teacher_logits, labels=labels,
+                                    student_hidden=student_hidden,
+                                    teacher_hidden=teacher_hidden)
+                    distill_loss, l_hidden, l_radius, l_contrast = (
+                        d['total'], d['l_hidden'], d['l_radius'], d['l_contrast'])
+            elif self._p2_decoupled is not None and student_hidden is not None:
+                # D3: DecoupledRadialAngularLoss — radial/angular orthogonal
+                W_vocab = self.student.core_model.lm_head.weight if hasattr(
+                    self.student, 'core_model') else None
+                if W_vocab is not None:
+                    p_teacher = torch.softmax(
+                        teacher_logits / self.config.temperature, dim=-1).detach()
+                    # Teacher entropy per position for r_target
+                    t_ent = -(p_teacher * (p_teacher + 1e-9).log()).sum(-1).detach()
+                    out = self._p2_decoupled(
+                        h_student       = student_hidden,
+                        W_vocab         = W_vocab.detach(),
+                        p_teacher       = p_teacher,
+                        teacher_entropy = t_ent,
+                    )
+                    distill_loss = out['total']
+                    l_hidden     = out['l_angular']   # angular ≡ semantic alignment
+                    l_radius     = out['l_radial']    # radial ≡ depth calibration
+                else:
+                    d = self.loss_fn(student_logits=student_logits,
+                                    teacher_logits=teacher_logits, labels=labels,
+                                    student_hidden=student_hidden,
+                                    teacher_hidden=teacher_hidden)
+                    distill_loss, l_hidden, l_radius, l_contrast = (
+                        d['total'], d['l_hidden'], d['l_radius'], d['l_contrast'])
+            else:
+                # Standard path — Variant F, D1/D3 without hidden states
+                d = self.loss_fn(
+                    student_logits = student_logits,
+                    teacher_logits = teacher_logits,
+                    labels         = labels,
+                    student_hidden = student_hidden,
+                    teacher_hidden = teacher_hidden,
+                )
+                distill_loss = d["total"]
+                l_hidden     = d["l_hidden"]
+                l_radius     = d["l_radius"]
+                l_contrast   = d["l_contrast"]
 
         total = (
             (1.0 - self.config.lambda_distill) * lm_loss
@@ -2616,7 +2745,10 @@ class DistillationTrainerV2:
             #   rdc_proxy 5-20 : transition (both active)   ⚠️ (Phase 2)
             #   rdc_proxy > 20 : Degenerate Equilibrium     ❌ (Phase 3+)
             "rdc_proxy":    logit_std / ((l_hidden.item() if isinstance(l_hidden, torch.Tensor) else l_hidden) + 1e-2),
-            "rdc_ema":      self._rdc_ema,   # smoothed version for regime detection
+            "rdc_ema":      self._rdc_ema,
+            # L_q: Lyapunov energy of DegEq pressure (H-GEMA §5.1)
+            # L(Q) = 0.5 * Q_rdc² — spikes at DegEq onset, then decays if stable
+            "L_q":          round(0.5 * (self._rdc_ema ** 2), 3),
         }
 
     # ── eval ──────────────────────────────────────────────────────────────
@@ -2625,6 +2757,9 @@ class DistillationTrainerV2:
     def evaluate(self, val_loader: DataLoader) -> Dict[str, float]:
         self.student.eval()
         total_lm = total_distill = total_tokens = 0.0
+        # F2 accumulators: last batch hiddens for distance correlation
+        _f2_student_last  = None
+        _f2_teacher_last  = None
 
         for batch in val_loader:
             input_ids = batch["input_ids"].to(self.device)
@@ -2639,17 +2774,33 @@ class DistillationTrainerV2:
             total_tokens += input_ids.numel()
 
             if self.teacher is not None and self.config.lambda_distill > 0:
-                t = self.teacher(input_ids, return_hidden=False)
-                # Pass labels correctly so CE is computed inside loss_fn
+                t = self.teacher(input_ids, return_hidden=True)
                 d = self.loss_fn(
                     student_logits=s["logits"],
                     teacher_logits=t["logits"],
                     labels=labels,
                 )
                 total_distill += d["total"].item() * input_ids.numel()
+                # Capture last-token hiddens for F2 (overwrite → last batch used)
+                if s.get("hidden_states") is not None:
+                    _f2_student_last = s["hidden_states"][:, -1, :].cpu()
+                if t.get("hidden_states") is not None:
+                    _f2_teacher_last = t["hidden_states"][:, -1, :].cpu()
 
         n = max(total_tokens, 1.0)
         lm = total_lm / n
+        # Store for F2 + F1 computation in train loop
+        self._val_student_last = _f2_student_last
+        self._val_teacher_last = _f2_teacher_last
+        # F1: manifold fidelity — mean |<h,h>_L + 1/K| over batch
+        self._val_f1 = None
+        with torch.no_grad():
+            if _f2_student_last is not None:
+                try:
+                    h = _f2_student_last.to(self.device).float().view(-1, _f2_student_last.shape[-1])
+                    self._val_f1 = self.loss_fn.substrate.manifold_violation(h).mean().item()
+                except Exception:
+                    pass  # non-critical
         return {
             "val_loss":    lm,
             "val_distill": total_distill / n,
@@ -2745,6 +2896,51 @@ class DistillationTrainerV2:
                 vm["noise"]    = info["noise"]
                 vm["phase"]    = info["phase"]
                 vm["sg"]       = info["steps_since_global"]
+
+                # ── Φ_embed: topological dispersion of embedding space ─────
+                # Analogue of H-GEMA Topological Dispersion Metric Φ (§3.5).
+                # Φ_embed = mean pairwise geodesic distance between last-token
+                # student hiddens in the batch.
+                # DegEq → Φ grows (embeddings pushed to boundary → farther apart)
+                # D3 stable → Φ stays bounded
+                try:
+                    _sh = getattr(self, '_val_student_last', None)
+                    if _sh is not None and _sh.shape[0] >= 4:
+                        _sh64  = _sh.double()
+                        _inner = (_sh64[:, 1:] @ _sh64[:, 1:].T
+                                  - _sh64[:, 0:1] @ _sh64[:, 0:1].T).clamp(max=-1 - 1e-6)
+                        _dists = torch.acosh(-_inner)  # [B, B]
+                        _mask  = torch.triu(torch.ones(_dists.shape[0], _dists.shape[0],
+                                            dtype=torch.bool), diagonal=1)
+                        vm["phi_embed"] = round(_dists[_mask].mean().item(), 4)
+                    else:
+                        vm["phi_embed"] = None
+                except Exception:
+                    vm["phi_embed"] = None
+                # F1: manifold fidelity (logged from evaluate())
+                vm["f1"] = round(getattr(self, "_val_f1", None) or 0.0, 8)
+
+                # ── F2: distance correlation (Paper 2 diagnostic) ─────────
+                # Measures preservation of geometric structure.
+                # F2→1: student geometry consistent with teacher.
+                # F2→0: DegEq — structural information lost.
+                # Computed from last-token student hidden + teacher hidden.
+                try:
+                    from cgt.distillation.geometric_distillation import compute_f2
+                    if (
+                        val_student_last is not None
+                        and val_teacher_last is not None
+                        and val_student_last.shape[0] >= 4
+                    ):
+                        vm["f2"] = round(compute_f2(
+                            val_student_last,
+                            val_teacher_last,
+                            self.loss_fn.substrate,
+                        ), 4)
+                    else:
+                        vm["f2"] = None
+                except Exception:
+                    vm["f2"] = None   # non-critical: F2 missing doesn't break training
 
                 self.val_hist.append(vm)
 

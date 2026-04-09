@@ -51,3 +51,10 @@ __all__ = [
     'DistillationTrainer',
     'plot_distillation_analysis',
 ]
+
+# Paper 2 — structural DegEq prevention
+from .geometric_distillation import (
+    ProjectiveKLLoss,
+    DecoupledRadialAngularLoss,
+    compute_f2,
+)

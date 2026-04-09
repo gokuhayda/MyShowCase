@@ -126,4 +126,30 @@ class RiemannianAdamW(torch.optim.AdamW):
                         continue
                     p.data.copy_(self.substrate.proj(p.data))
 
+        # ── 4. Parallel transport momentum to new tangent space ────────────
+        # Fonte: H-LLM Spec §10 Remark 10.1.
+        # Sem isso, m_t acumula em T_{x_t}H^n mas é usado em T_{x_{t+1}}H^n
+        # → frames inconsistentes → silent radius inflation (DegEq).
+        #
+        # Aproximação: PT_{x→x'}(v) ≈ v - ⟨v, x'⟩_M · x'
+        # Projeta m_t no espaço tangente do novo ponto x'.
+        # Erro: O(‖x'-x‖²) — desprezível para lr=3e-4.
+        if self.substrate is not None:
+            for group in self.param_groups:
+                for p in group['params']:
+                    if not self._is_manifold(p): continue
+                    if p.dim() < 1 or p.shape[-1] < 2: continue
+                    state = self.state[p]
+                    if 'exp_avg' not in state: continue
+                    m      = state['exp_avg']           # m_t em T_{x_old}
+                    x_new  = p.data                     # x_{t+1} em H^n
+                    x_flat = x_new.reshape(-1, x_new.shape[-1])
+                    m_flat = m.reshape(-1, m.shape[-1])
+                    # ⟨m, x'⟩_M = -m₀x'₀ + Σmᵢx'ᵢ
+                    inner = (
+                        (m_flat[:, 1:] * x_flat[:, 1:]).sum(-1)
+                        - m_flat[:, 0] * x_flat[:, 0]
+                    ).unsqueeze(-1)
+                    m.sub_((inner * x_flat).reshape_as(m))
+
         return loss
