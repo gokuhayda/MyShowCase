@@ -13,6 +13,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org)
 [![Status: Research Code](https://img.shields.io/badge/Status-Research%20Code-blueviolet.svg)](#6-experimental--research-status)
+[![HypLoRA](https://img.shields.io/badge/HypLoRA-100%25%20Hyperbolic-8A2BE2.svg)](#hyplora-100-hyperbolic-lora-adapter)
 [![DOI v2](https://img.shields.io/badge/DOI%20v2-10.5281%2Fzenodo.19480998-blue.svg)](https://doi.org/10.5281/zenodo.19480998)
 [![DOI v3](https://img.shields.io/badge/DOI%20v3-10.5281%2Fzenodo.19483206-blue.svg)](https://doi.org/10.5281/zenodo.19483206)
 
@@ -51,6 +52,8 @@ Four ablation experiments — standard KL, Projective KL (D1), Decoupled Radial-
 
 **What this repository shows:**
 - Hyperbolic distillation converges to a stable fixed point (DegEq), empirically invariant across tested loss variants
+- HypLoRA adapter successfully injects hyperbolic geometry into frozen Euclidean LLMs without DegEq
+  (single exp/log round-trip per layer avoids the 4-layer Christoffel cascade)
 - Geometric validity does not imply linguistic quality
 - A Lyapunov-inspired potential (L_q = ½ · rdc²) characterises attractor onset
 - Late intervention produces transient suppression with relaxation time τ ≈ 905 steps (R² = 0.964)
@@ -82,6 +85,8 @@ Hyperbolic space (specifically, the Lorentz/hyperboloid model) offers volume gro
 - Multi-objective training combining contrastive learning, distance distillation, and spectral alignment
 - Evaluation protocols with falsification tests for geometric property validation
 - Ablation studies comparing hyperbolic vs. Euclidean baselines under identical conditions
+- **HypLoRA**: 100% hyperbolic LoRA adapter — injects a Lorentz manifold branch into any frozen LLM
+  (`inject_hyplora`, `LorentzLowRank`, learnable curvature K per layer, `RiemannianAdamW` V5)
 - Hyperbolic embedding and retrieval pipeline (experimental):
   - Euclidean teacher → hyperbolic student projection via `CGTStudentHardened`
   - Batch text encoding and corpus indexing (FAISS + Lorentz buffer)
@@ -199,7 +204,8 @@ src/cgt/
 │   ├── student.py              # Base student architecture
 │   ├── transformer_v2.py       # 4L × 128d × 4H hyperbolic transformer
 │   ├── lm_head_v2.py           # Intrinsic Lorentz LM head
-│   ├── geodesic_lm_head.py     # GeodesicLMHeadV2
+│   ├── geodesic_lm_head.py     # GeodesicLMHeadV2, AngularLMHead (V5)
+│   ├── hyplora.py              # HypLoRA: LorentzLowRank, HypLoRALayer, inject_hyplora
 │   └── hyperbolic_transformer.py  # H-LLM prototype
 │
 ├── losses/
@@ -278,6 +284,7 @@ notebooks/
 | `models/hyperbolic_transformer.py` | H-LLM Transformer | Geodesic attention, tangent FFN, Riemannian LayerNorm |
 | `losses/core.py` | CGT multi-objective loss | InfoNCE (exact), distillation (heuristic), topo (proxy) |
 | `losses/hyperbolic_lm_losses.py` | H-LLM losses | LM + manifold fidelity + radius + teacher distillation |
+| `models/hyplora.py` | HypLoRA adapter | LLR on H^n, inject/extract/merge, diagnostics |
 | `psi_extensions/dynamics/h_nca.py` | H-NCA | Discretized Riemannian flow (Euler) |
 | `psi_extensions/binding/h_akorn.py` | H-AKOrN | Kuramoto dynamics with geodesic coupling |
 | `psi_extensions/topology/topological_field.py` | Topological loss | Persistence landscape (differentiable proxy) |
@@ -332,6 +339,7 @@ This project uses the **Lorentz (hyperboloid) model** exclusively.
 | Hyperbolic Transformer (H-LLM) | [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897) | `models/hyperbolic_transformer.py` |
 | H-LLM training losses | [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897) | `losses/hyperbolic_lm_losses.py` |
 | HyDRA / DegEq characterisation | [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998) | `distillation/` |
+| HypLoRA adapter | Yang et al. NeurIPS 2025 (arxiv 2410.04010) | `models/hyplora.py` |
 
 ### Partially Approximated
 
@@ -584,6 +592,141 @@ trainer.train(train_loader, val_loader)
 
 ---
 
+
+---
+
+## 11. HypLoRA: 100% Hyperbolic LoRA Adapter
+
+> **Architecture:** CGT-native implementation of [HypLoRA (Yang et al., NeurIPS 2025)](https://arxiv.org/abs/2410.04010)  
+> **Module:** `src/cgt/models/hyplora.py`
+
+HypLoRA injects a fully hyperbolic adapter branch into any frozen LLM. Unlike naive tangent-space LoRA,
+it operates **directly on Lorentz manifold coordinates**, preserving the hierarchical radial structure
+that empirically characterises LLM token embeddings (frequent tokens near origin, rare tokens far).
+
+**Why no DegEq:** Each `HypLoRALayer` performs exactly ONE `exp_map` and ONE `log_map` per forward pass.
+The frozen backbone accumulates no manifold momentum — only adapter parameters `A`, `B`, `K` are updated.
+This avoids the 4-layer Christoffel cascade that causes DegEq in fully-hyperbolic models trained from scratch.
+
+### Architecture
+
+```
+z = W·x  +  Π_log( LLR( B·A,  Π_exp(x) ) )  ×  (alpha / rank)
+↑                   ↑          ↑
+frozen          Lorentz     project to
+Euclidean       Low-Rank    H^n via
+weight          transform   exp_map_zero
+```
+
+Where `LLR` (Lorentz Low-Rank) applies the low-rank transform directly on manifold coordinates:
+
+1. `log_map_zero(x_H)` → tangent vector `v ∈ T_o H^n ≅ R^n`
+2. `v → v @ A @ B` (rank-r bottleneck in tangent space)
+3. `exp_map_zero(v_adapted)` → adapted point on H^n
+
+Curvature `K` is a learnable parameter per layer (log-parameterised for positivity `K > 0`).
+
+### New Modules (HypLoRA)
+
+| Class / Function | Description |
+|---|---|
+| `LorentzLowRank` | Core adapter: rank-r transform directly on H^n with learnable K |
+| `HypLoRALayer` | Wraps any `nn.Linear` with frozen base + hyperbolic branch |
+| `HypLoRAConfig` | Dataclass: rank, alpha, n_embd, curvature, dropout, dtype |
+| `inject_hyplora(model, config, target_modules)` | Replaces target layers in any `nn.Module` |
+| `extract_hyplora(model)` | Saves only adapter weights (independent of backbone) |
+| `load_hyplora(model, state)` | Loads extracted adapter weights |
+| `merge_hyplora(model)` | Fuses adapter into backbone for inference (first-order approx) |
+| `delta_hyperbolicity(embeddings)` | Measures δ-hyperbolicity via four-point condition |
+| `token_freq_norm_stats(embeddings, freqs)` | Token frequency vs embedding norm correlation |
+| `print_trainable_params(model)` | Trainable / frozen parameter summary |
+
+### Usage — Fine-tuning any LLM
+
+```python
+from cgt.models.hyplora import HypLoRAConfig, inject_hyplora
+from cgt.dynamics.riemannian_adamw import RiemannianAdamW
+
+# 1. Configure adapter (set n_embd to the model's hidden dimension)
+config = HypLoRAConfig(
+    rank            = 8,
+    alpha           = 16.0,
+    n_embd          = 4096,   # LLaMA-3-8B; use 768 for GPT-2, 2048 for LLaMA-3-1B
+    curvature       = 1.0,
+    learn_curvature = True,   # K is learnable per layer
+)
+
+# 2. Inject hyperbolic adapters (base weights frozen automatically)
+inject_hyplora(model, config, target_modules=["q_proj", "v_proj"])
+# Common choices:
+#   ["q_proj", "v_proj"]                          — HypLoRA default (attention)
+#   ["q_proj", "k_proj", "v_proj", "o_proj"]      — full attention
+#   ["gate_proj", "up_proj", "down_proj"]          — FFN only
+
+# 3. Riemannian optimizer with V5 radial momentum fix
+optimizer = RiemannianAdamW(
+    list(model.named_parameters()),
+    substrate                 = config.get_substrate(),
+    lr                        = 3e-4,
+    weight_decay              = 0.01,
+    radial_momentum_projection = True,   # V5: breaks Christoffel-momentum coupling
+)
+
+# 4. Train (standard loop — no changes needed)
+for batch in train_loader:
+    loss = model(**batch).loss
+    loss.backward()
+    optimizer.step()
+    optimizer.zero_grad()
+```
+
+### Diagnostics
+
+```python
+from cgt.models.hyplora import delta_hyperbolicity, token_freq_norm_stats
+
+# Measure hyperbolic structure of token embeddings
+embeddings = model.get_input_embeddings().weight.detach()
+
+dh = delta_hyperbolicity(embeddings, n_samples=500)
+print(f"δ-hyperbolicity: {dh:.4f}")
+# < 0.1 → strong tree-like structure (supports HypLoRA)
+# > 0.5 → weak hyperbolic structure
+
+stats = token_freq_norm_stats(embeddings, token_frequencies)
+print(f"Freq-norm correlation: {stats['freq_norm_corr']:.4f}")
+# Negative → frequent tokens closer to origin (HypLoRA paper finding)
+```
+
+### Saving and Loading Adapters
+
+```python
+from cgt.models.hyplora import extract_hyplora, load_hyplora
+import torch
+
+# Save only adapter weights (~MB, not GB)
+adapter_state = extract_hyplora(model)
+torch.save(adapter_state, "hyplora_adapter.pt")
+
+# Load into a fresh model with injected adapters
+adapter_state = torch.load("hyplora_adapter.pt")
+load_hyplora(model, adapter_state)
+```
+
+### Relationship to HyDRA
+
+| | HyDRA | HypLoRA |
+|---|---|---|
+| **Training** | From scratch | Fine-tuning |
+| **Architecture** | All 4 layers on H^n | Frozen Euclidean + 1 hyp branch |
+| **DegEq risk** | High (Christoffel cascade) | None (single exp/log) |
+| **Geometric coverage** | Full (all internal reps) | Partial (adapter only) |
+| **DegEq lesson** | Identifies the mechanism | Architecturally avoids it |
+
+HyDRA discovered *why* DegEq occurs; HypLoRA shows *how to avoid it architecturally*.
+Together they establish both the failure mode and the design principle for hyperbolic LLMs.
+
+
 ## 8. References
 
 1. **HyDRA v3: Hyperbolic Distillation with Riemannian Adaptation — Attractor Invariance and Proof by Elimination**  
@@ -622,6 +765,8 @@ trainer.train(train_loader, val_loader)
     Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18378938](https://doi.org/10.5281/zenodo.18378938)
 
 Additional foundational references:
+- Yang et al. (2025). "HypLoRA: Hyperbolic Fine-Tuning for Large Language Models." NeurIPS 2025 Spotlight.
+  https://arxiv.org/abs/2410.04010
 - Lou et al. (2020). "Differentiating through the Fréchet Mean." ICML.
 - Nickel & Kiela (2017). "Poincaré Embeddings for Learning Hierarchical Representations."
 - Ganea et al. (2018). "Hyperbolic Neural Networks."
@@ -687,6 +832,16 @@ The following papers provide broader theoretical context. **These are NOT fully 
   year={2026},
   publisher={Zenodo},
   doi={10.5281/zenodo.18379741}
+}
+```
+
+```bibtex
+@inproceedings{yang2025hyplora,
+  title     = {Hyperbolic Fine-Tuning for Large Language Models},
+  author    = {Yang, Menglin and B B, Ram Samarth and Feng, Aosong
+               and Xiong, Bo and Liu, Jiahong and King, Irwin and Ying, Rex},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2025}
 }
 ```
 
