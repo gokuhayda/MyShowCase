@@ -3032,36 +3032,6 @@ class DistillationTrainerV2:
                 except Exception:
                     vm["f2"] = None   # non-critical: F2 missing doesn't break training
 
-
-                # ── Frequency-radius correlation (Krioukov/Khrulkov diagnostic) ──
-                # rho(log f_k, r_k) < -0.1 → hierarchy preserved
-                # rho ≈ 0              → DegEq (radial structure collapsed)
-                try:
-                    _emb = None
-                    for _attr in ['embed', 'embedding', 'wte']:
-                        _m = getattr(
-                            getattr(self.student, 'core_model', self.student),
-                            _attr, None
-                        )
-                        if _m is not None and hasattr(_m, 'weight'):
-                            _emb = _m.weight.detach().float(); break
-                    if _emb is not None and hasattr(self, '_token_counts') and                        self._token_counts is not None:
-                        _tc  = self._token_counts.float().to(_emb.device)
-                        _min = min(_tc.shape[0], _emb.shape[0])
-                        _tc  = _tc[:_min]; _emb = _emb[:_min]
-                        # radii — ambient [V, n+1] or tangent [V, n]
-                        _r   = _emb[:, 1:].norm(dim=-1) if _emb.shape[-1] > 16                                else _emb.norm(dim=-1)
-                        _lf  = torch.log(_tc.clamp(min=1.0))
-                        _lf_m = _lf.mean(); _r_m = _r.mean()
-                        _cov  = ((_lf - _lf_m) * (_r - _r_m)).mean()
-                        _rho  = (_cov / (_lf.std().clamp(min=1e-8) *
-                                         _r.std().clamp(min=1e-8))).item()
-                        vm["rho_freq_radius"] = round(_rho, 4)
-                    else:
-                        vm["rho_freq_radius"] = None
-                except Exception:
-                    vm["rho_freq_radius"] = None  # non-critical
-
                 self.val_hist.append(vm)
 
                 # ── Regime health check ───────────────────────────────────
