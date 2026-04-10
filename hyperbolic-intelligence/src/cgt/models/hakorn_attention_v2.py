@@ -214,9 +214,17 @@ class HyperbolicKuramotoAttentionV2(nn.Module):
         phases, order = self.phase_evo(coupling_m, batch_size=B)
 
         # Hyperbolic distance scores
-        Q_exp = Q.unsqueeze(3)                    # [B, H, L, 1, Dh]
-        K_exp = K.unsqueeze(2)                    # [B, H, 1, L, Dh]
-        distances = self._hyperbolic_distance(Q_exp, K_exp)   # [B, H, L, L]
+        # Chunked hyperbolic distance — avoids [B,H,L,L,Dh] materialisation
+        # Splits L into chunks of CHUNK_SZ, computing distances one row-block at a time.
+        # Memory: O(B×H×CHUNK×L×Dh) instead of O(B×H×L²×Dh)
+        CHUNK_SZ = max(1, min(64, Q.shape[2]))
+        L_q = Q.shape[2]
+        dist_chunks = []
+        for _c in range(0, L_q, CHUNK_SZ):
+            Q_chunk = Q[:, :, _c:_c+CHUNK_SZ, :].unsqueeze(3)   # [B,H,chunk,1,Dh]
+            K_exp   = K.unsqueeze(2)                              # [B,H,1,L,Dh]
+            dist_chunks.append(self._hyperbolic_distance(Q_chunk, K_exp))  # [B,H,chunk,L]
+        distances = torch.cat(dist_chunks, dim=2)                 # [B,H,L,L]
         scores = torch.exp(-distances / self.temperature)
 
         # Phase modulation
