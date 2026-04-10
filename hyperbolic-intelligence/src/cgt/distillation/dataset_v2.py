@@ -305,7 +305,7 @@ def build_openwebtext_loaders(
     batch_size: int = 8,
     overlap:    int = 512,
     num_workers:int = 2,
-    max_train_samples: int = 500_000,   # ~1B tokens, comparable to GPT-2 short run
+    max_train_samples: int = 100_000,   # ~100M tokens — safe for Colab free (~30GB disk)
 ) -> "tuple[DataLoader, DataLoader]":
     """
     OpenWebText DataLoader for competitive HyDRA training.
@@ -358,19 +358,23 @@ def build_openwebtext_loaders(
 
     print(f"  [OpenWebText] {len(ds):,} documents")
 
-    # Tokenise all text
-    def _tokenise(batch):
-        return tokenizer(batch["text"], truncation=False, padding=False)
-
-    ds_tok = ds.map(_tokenise, batched=True, remove_columns=["text"],
-                    num_proc=min(num_workers, 4))
-
-    # Build sliding-window dataset
+    # Tokenise in-memory (no disk cache) — avoids /tmp disk exhaustion on Colab
+    # Streams through documents and builds flat token array directly
     from torch.utils.data import DataLoader
+    import torch as _torch
+
     all_ids = []
-    for ids in ds_tok["input_ids"]:
-        all_ids.extend(ids)
-        all_ids.append(tokenizer.eos_token_id)
+    _eos = tokenizer.eos_token_id
+    _report_every = max(1, len(ds) // 10)
+    print(f"  [OpenWebText] Tokenising {len(ds):,} docs in-memory...")
+    for _i, _doc in enumerate(ds):
+        _enc = tokenizer(_doc["text"], truncation=False,
+                         padding=False, return_attention_mask=False)
+        all_ids.extend(_enc["input_ids"])
+        all_ids.append(_eos)
+        if (_i + 1) % _report_every == 0:
+            print(f"  [OpenWebText]   {_i+1:,}/{len(ds):,}  "
+                  f"tokens so far: {len(all_ids):,}")
 
     import torch
     all_ids = torch.tensor(all_ids, dtype=torch.long)
