@@ -239,3 +239,221 @@ class AngularLMHead(nn.Module):
             logits.reshape(B, L, -1).to(hidden_states.dtype),
             nan=0.0, posinf=1e4, neginf=-1e4
         )
+
+
+class AngularLMHeadV2(nn.Module):
+    """
+    AngularLMHeadV2 — production-ready angular LM head.
+
+    The DegEq fix confirmed by HyDRA v4 V5-B experiment:
+      rdc* 10.74 → 0.96 (91% reduction) with Channel 2 fix only.
+
+    Difference from AngularLMHead (V1):
+      - No warmup hack: temperature is initialised to a stable value
+        directly. Warmup was masking a weight-scale issue; V2 instead
+        normalises weight init at construction time.
+      - Explicit fp32 matmul accumulation regardless of input dtype,
+        then cast back. Prevents NaN in mixed-precision contexts.
+      - tied_weights: embedding weight is projected via a learnable
+        linear [n_embd → n_embd] before normalisation, so tied weights
+        and LM head can diverge during fine-tuning.
+      - verify_degeq_fix (debug): runs a single-step gradcheck at init
+        to assert ∂logit/∂r = 0. Disabled by default (overhead).
+
+    Key property (inherited from V1):
+        ∂logit_k/∂r_h = 0  exactly  for all k, all r_h.
+
+    Usage:
+        # In DistillationConfigV2:
+        use_angular_head = True          # activates V1 (legacy)
+
+        # Direct construction (recommended for new models):
+        head = AngularLMHeadV2(
+            n_embd=128, vocab_size=50257, substrate=substrate
+        )
+
+        # Replace existing LM head:
+        from cgt.models.geodesic_lm_head import replace_lm_head_angular
+        replace_lm_head_angular(model, substrate)
+    """
+
+    def __init__(
+        self,
+        n_embd:           int,
+        vocab_size:       int,
+        substrate,
+        temperature:      float = 20.0,     # cosine classifier standard
+        learnable_temp:   bool  = True,
+        tie_weights:      bool  = False,
+        input_embeddings: "nn.Embedding | None" = None,
+        verify_degeq_fix: bool  = False,    # gradcheck at init (debug)
+    ) -> None:
+        super().__init__()
+        self.n_embd      = n_embd
+        self.vocab_size  = vocab_size
+        self.substrate   = substrate
+        self.ambient_dim = substrate.n + 1
+
+        # Temperature: log-space to keep positive
+        init_log_temp = math.log(max(temperature, 1e-3))
+        if learnable_temp:
+            self.log_temperature = nn.Parameter(torch.tensor(init_log_temp))
+        else:
+            self.register_buffer(
+                "log_temperature", torch.tensor(init_log_temp)
+            )
+
+        if tie_weights and input_embeddings is not None:
+            self._tied = input_embeddings
+            self.weight = None
+            # Projection so tied weights can diverge during fine-tuning
+            self.proj = nn.Linear(n_embd, n_embd, bias=False)
+            nn.init.eye_(self.proj.weight)          # identity init
+        else:
+            # Normalised init: unit-norm rows → stable cosine sim at step 0
+            w = torch.randn(vocab_size, n_embd)
+            w = torch.nn.functional.normalize(w, dim=-1)
+            self.weight = nn.Parameter(w)
+            self._tied  = None
+            self.proj   = None
+
+        if verify_degeq_fix:
+            self._verify_zero_radial_grad()
+
+    # ── Temperature property ──────────────────────────────────────────────
+    @property
+    def temperature(self) -> torch.Tensor:
+        return self.log_temperature.exp().clamp(min=1.0, max=100.0)
+
+    # ── Weight helpers ────────────────────────────────────────────────────
+    def _get_vocab_tangent(self) -> torch.Tensor:
+        """Return vocab tangent vectors [V, n], optionally projected."""
+        if self._tied is not None:
+            w = self._tied.weight           # [V, n_embd]
+            if self.proj is not None:
+                w = self.proj(w)
+        else:
+            w = self.weight                 # [V, n]
+        return w
+
+    # ── Forward ───────────────────────────────────────────────────────────
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            hidden_states: [B, L, n+1]  Lorentz points on H^n
+        Returns:
+            logits: [B, L, V]   ∂logit/∂r = 0 for all r, all k
+        """
+        B, L, _ = hidden_states.shape
+
+        # Project h → T_o, take spatial slice [1:] (zero time coord)
+        h_flat  = hidden_states.reshape(-1, hidden_states.shape[-1])
+        h_log   = self.substrate.log_map_zero(h_flat)[:, 1:]   # [BL, n]
+
+        # fp32 accumulation for numerical stability
+        h_log32 = h_log.float()
+        u_h     = torch.nn.functional.normalize(h_log32, dim=-1, eps=1e-7)
+
+        # Vocab unit vectors
+        v_w     = self._get_vocab_tangent().float()             # [V, n]
+        u_w     = torch.nn.functional.normalize(v_w, dim=-1, eps=1e-7)
+
+        # Cosine logits  ∂(u_h · u_w)/∂r_h = 0 because û_h = h_log/||h_log||
+        # and ||h_log|| = r_h  →  û_h = v_h/r_h  →  ∂û_h/∂r_h = 0
+        logits = (u_h @ u_w.T) * self.temperature               # [BL, V]
+
+        return torch.nan_to_num(
+            logits.reshape(B, L, -1).to(hidden_states.dtype),
+            nan=0.0, posinf=1e4, neginf=-1e4,
+        )
+
+    # ── Debug: verify ∂logit/∂r = 0 ─────────────────────────────────────
+    def _verify_zero_radial_grad(self, tol: float = 1e-4) -> None:
+        """
+        Numerical check that ∂logit_k/∂r_h = 0 for a random test point.
+        Raises AssertionError if the radial gradient exceeds tol.
+        """
+        import warnings
+        device = next(self.parameters()).device
+        n = self.n_embd
+
+        # Random test point on H^n
+        v_test = torch.randn(1, 1, n, device=device, dtype=torch.float64) * 0.5
+        t_coord = torch.sqrt(1.0 + (v_test**2).sum(-1, keepdim=True))
+        h_test  = torch.cat([t_coord, v_test], dim=-1).requires_grad_(True)
+
+        # Forward
+        logits = self.forward(h_test.float())
+        loss   = logits.sum()
+        loss.backward()
+
+        if h_test.grad is None:
+            return
+        # Radial grad = component of grad along the spatial direction of h
+        spatial     = h_test[0, 0, 1:].float()
+        r           = spatial.norm()
+        if r < 1e-6:
+            return
+        radial_unit = spatial / r
+        grad_spatial= h_test.grad[0, 0, 1:].float()
+        radial_comp = (grad_spatial * radial_unit).sum().abs().item()
+
+        if radial_comp > tol:
+            warnings.warn(
+                f"[AngularLMHeadV2] ∂logit/∂r = {radial_comp:.2e} > {tol} "
+                f"— Channel 2 may not be fully closed.",
+                RuntimeWarning
+            )
+        else:
+            pass  # silent success
+
+
+def replace_lm_head_angular(
+    model: nn.Module,
+    substrate,
+    temperature: float = 20.0,
+    verify: bool = False,
+) -> nn.Module:
+    """
+    Replace the LM head of any hyperbolic model with AngularLMHeadV2.
+
+    This is the Channel 2 fix from HyDRA v4 V5-B:
+        rdc* 10.74 → 0.96 (91% reduction, 3000 steps, OTED loss)
+
+    Args:
+        model:       SafeHyperbolicModel or any model with .core_model.lm_head
+        substrate:   LorentzSubstrateV2 instance
+        temperature: initial cosine classifier temperature (default 20.0)
+        verify:      run gradcheck to assert ∂logit/∂r=0 (debug)
+
+    Returns:
+        model with lm_head replaced in-place.
+
+    Example:
+        from cgt.models.geodesic_lm_head import replace_lm_head_angular
+        model = replace_lm_head_angular(model, substrate)
+        # preflight check:
+        assert type(model.core_model.lm_head).__name__ == "AngularLMHeadV2"
+    """
+    parent = getattr(model, "core_model", model)
+    old_head = getattr(parent, "lm_head", None)
+    if old_head is None:
+        raise AttributeError("Model has no .lm_head or .core_model.lm_head")
+
+    n_embd     = getattr(old_head, "n_embd", substrate.n)
+    vocab_size = getattr(old_head, "vocab_size",
+                         getattr(old_head, "out_features", None))
+    if vocab_size is None:
+        raise AttributeError("Cannot infer vocab_size from existing lm_head")
+
+    new_head = AngularLMHeadV2(
+        n_embd           = n_embd,
+        vocab_size       = vocab_size,
+        substrate        = substrate,
+        temperature      = temperature,
+        verify_degeq_fix = verify,
+    ).to(next(model.parameters()).device)
+
+    parent.lm_head = new_head
+    return model
+

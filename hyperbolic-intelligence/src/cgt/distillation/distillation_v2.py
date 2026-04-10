@@ -1177,12 +1177,12 @@ class TeacherDistillationLossV2(nn.Module):
 # Config
 # ─────────────────────────────────────────────────────────────────────────────
 
-@dataclass
 class RadiusCollapseAbort(Exception):
     """Raised when RadiusCollapse is auto-detected during training."""
     pass
 
 
+@dataclass
 class DistillationConfigV2:
     """
     Config for DistillationTrainerV2.
