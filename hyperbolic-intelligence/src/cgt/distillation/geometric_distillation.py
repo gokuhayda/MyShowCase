@@ -364,7 +364,7 @@ class OTEDLoss(nn.Module):
         # ── Step 2: angular KL in flat tangent space ─────────────────────────
         # Scale-invariant: û_s = v_s/||v_s||  →  ∂L_KL/∂||v_s|| = 0 exactly
         u_s = F.normalize(v_s.reshape(B*L, n), dim=-1)   # [BL, n]
-        u_w = F.normalize(v_w, dim=-1)                    # [V, n]
+        u_w = F.normalize(v_w, dim=-1).to(u_s.dtype)      # [V, n]  match dtype
 
         # Cosine logits in T_o (no sinh(r) amplification)
         logits = (u_s @ u_w.T / self.T).reshape(B, L, -1)  # [B, L, V]

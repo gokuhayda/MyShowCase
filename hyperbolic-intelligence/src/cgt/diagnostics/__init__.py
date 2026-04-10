@@ -17,6 +17,7 @@ from .degeq import (
     estimate_zipf_exponent,
     freq_radius_correlation,
     radial_collapse_score,
+    build_token_counts,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "estimate_zipf_exponent",
     "freq_radius_correlation",
     "radial_collapse_score",
+    "build_token_counts",
 ]

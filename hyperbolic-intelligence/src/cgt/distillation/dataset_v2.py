@@ -87,36 +87,83 @@ def _load_wikitext_hf(split: str, retries: int = 3, backoff: float = 5.0) -> str
     raise last_exc
 
 
+# Persistent cache: Drive → local /tmp copy (avoids re-download every session)
+_DRIVE_WIKITEXT_DIR = "/content/drive/MyDrive/HydraPaper_VariantF/data/wikitext2"
+_LOCAL_CACHE_DIR    = "/tmp/wikitext2_cache"
+
+
+def _get_wikitext_cache_path(split_key: str) -> tuple:
+    """
+    Return (drive_path, local_path) for a WikiText-2 split.
+
+    Drive path: persistent across Colab sessions.
+    Local path: fast /tmp copy used at runtime.
+    """
+    os.makedirs(_LOCAL_CACHE_DIR, exist_ok=True)
+    drive_path = os.path.join(_DRIVE_WIKITEXT_DIR, f"wikitext2_{split_key}.txt")
+    local_path = os.path.join(_LOCAL_CACHE_DIR,    f"wikitext2_{split_key}.txt")
+    return drive_path, local_path
+
+
 def _load_wikitext_raw(split: str) -> str:
-    """Load WikiText-2 directly from raw text files (no HF API)."""
-    # Normalize split name
-    split_key = "valid" if split == "validation" else split
+    """
+    Load WikiText-2 with 3-tier cache:
+      1. Local /tmp cache  (fastest — already copied this session)
+      2. Drive cache       (fast  — copy to /tmp then use)
+      3. Download + save   (slow  — save to Drive AND /tmp for next time)
+    """
+    split_key  = "valid" if split == "validation" else split
     if split_key not in _WIKITEXT2_URLS:
         raise ValueError(f"Unknown split: {split!r}. Choose from train/validation/test.")
 
+    drive_path, local_path = _get_wikitext_cache_path(split_key)
+
+    # ── Tier 1: local /tmp cache ───────────────────────────────────────────
+    if os.path.exists(local_path):
+        print(f"  [Cache] /tmp hit → {local_path}")
+        with open(local_path, encoding="utf-8") as f:
+            lines = f.readlines()
+        text = "\n".join(l.strip() for l in lines if l.strip() and len(l.strip()) > 10)
+        print(f"  [Cache] Loaded {len(text):,} chars")
+        return text
+
+    # ── Tier 2: Drive cache → copy to /tmp ────────────────────────────────
+    if os.path.exists(drive_path):
+        print(f"  [Cache] Drive hit → {drive_path}")
+        import shutil
+        shutil.copy2(drive_path, local_path)
+        print(f"  [Cache] Copied to /tmp")
+        with open(local_path, encoding="utf-8") as f:
+            lines = f.readlines()
+        text = "\n".join(l.strip() for l in lines if l.strip() and len(l.strip()) > 10)
+        print(f"  [Cache] Loaded {len(text):,} chars from Drive cache")
+        return text
+
+    # ── Tier 3: download → save to Drive + /tmp ───────────────────────────
     url = _WIKITEXT2_URLS[split_key]
-    cache_path = f"/tmp/wikitext2_{split_key}.txt"
+    print(f"  [Fallback] Downloading {url}")
+    try:
+        urllib.request.urlretrieve(url, local_path)
+        print(f"  [Fallback] Saved to {local_path}")
+    except Exception as e:
+        raise RuntimeError(
+            f"Could not download WikiText-2 from {url}: {e}\n"
+            "Check your internet connection or upload the data manually."
+        ) from e
 
-    if not os.path.exists(cache_path):
-        print(f"  [Fallback] Downloading {url}")
-        try:
-            urllib.request.urlretrieve(url, cache_path)
-            print(f"  [Fallback] Saved to {cache_path}")
-        except Exception as e:
-            raise RuntimeError(
-                f"Could not download WikiText-2 from {url}: {e}\n"
-                "Check your internet connection or upload the data manually."
-            ) from e
+    # Persist to Drive for next session
+    try:
+        os.makedirs(_DRIVE_WIKITEXT_DIR, exist_ok=True)
+        import shutil
+        shutil.copy2(local_path, drive_path)
+        print(f"  [Cache] Saved to Drive → {drive_path}")
+    except Exception as _drive_err:
+        print(f"  [Cache] Drive save skipped: {_drive_err}")  # non-critical
 
-    with open(cache_path, encoding="utf-8") as f:
+    with open(local_path, encoding="utf-8") as f:
         lines = f.readlines()
-
-    text = "\n".join(
-        line.strip()
-        for line in lines
-        if line.strip() and len(line.strip()) > 10
-    )
-    print(f"  [Fallback] Loaded {len(text):,} chars from {cache_path}")
+    text = "\n".join(l.strip() for l in lines if l.strip() and len(l.strip()) > 10)
+    print(f"  [Fallback] Loaded {len(text):,} chars")
     return text
 
 
