@@ -1339,8 +1339,26 @@ class GPT2TeacherWrapperV2(nn.Module):
             ) from e
 
         self.device = device
-        # Retry wrapper: guards against transient HF 503/network errors
+        # Monkey-patch peft/flash_attn availability checks to avoid
+        # importlib.util.find_spec() → OSError 107 on corrupted Colab filesystems
         import time as _time
+        try:
+            import transformers.integrations.peft as _peft_mod
+            _orig_peft = _peft_mod.is_peft_available
+            _peft_mod.is_peft_available = lambda: False
+        except Exception:
+            _orig_peft = None; _peft_mod = None
+        try:
+            import transformers.utils.import_utils as _iu
+            _orig_find = _iu._is_package_available
+            def _safe_find(pkg, *a, **kw):
+                try: return _orig_find(pkg, *a, **kw)
+                except OSError: return False
+            _iu._is_package_available = _safe_find
+        except Exception:
+            _orig_find = None; _iu = None
+
+        # Retry wrapper: guards against transient HF 503/network errors
         def _load(attempts=4, base_delay=8):
             for attempt in range(1, attempts + 1):
                 try:
@@ -1354,7 +1372,14 @@ class GPT2TeacherWrapperV2(nn.Module):
                             f'failed ({exc!s:.60}). Retrying in {wait}s.',
                             UserWarning, stacklevel=2)
                     _time.sleep(wait)
-        self.model  = _load()
+        try:
+            self.model = _load()
+        finally:
+            # Restore original functions
+            if _peft_mod is not None and _orig_peft is not None:
+                _peft_mod.is_peft_available = _orig_peft
+            if _iu is not None and _orig_find is not None:
+                _iu._is_package_available = _orig_find
         self.model.eval()
         for p in self.model.parameters():
             p.requires_grad = False
@@ -2962,7 +2987,8 @@ class DistillationTrainerV2:
                     f"div={diversity:.2f}{div_flag}  "
                     f"hid={l_hid:.3f}  rad={mean_rad:.3f}{rad_flag}  "
                     f"ctr={l_con:.3f}  rdc={rdc_v:.1f}{rdc_flag}  "
-                    f"w_std={w_std_v:.4f}{w_flag}  w_ent={w_ent_v:.2f}{h_flag}"
+                    f"w_std={w_std_v:.4f}{w_flag}  w_ent={w_ent_v:.2f}{h_flag}",
+                    flush=True
                 )
 
             if self.step % self.config.eval_every == 0:
