@@ -699,6 +699,224 @@ def token_freq_norm_stats(
     return stats
 
 
+
+def k_equilibrium_from_zipf(gamma: float, eps: float = 1e-6) -> float:
+    """
+    Compute the equilibrium Lorentz curvature K* for a vocabulary whose
+    token-frequency distribution follows Zipf's law with exponent gamma.
+
+    From Krioukov et al. (2010, PhysRevE 82:036106), the power-law exponent
+    of complex networks with underlying hyperbolic curvature K = -zeta^2 is:
+
+        gamma = 1 + 1 / (2 * zeta)   =>   zeta = 1 / (2*(gamma - 1))
+        K* = -zeta^2 = -1 / (4*(gamma - 1)^2)
+
+    For language modelling we use |K*| (positive curvature convention):
+
+        |K*| = 1 / (4*(gamma - 1)^2)
+
+    Typical values:
+      gamma=1.0  =>  K* → inf  (perfect Zipf, extremely curved space needed)
+      gamma=1.5  =>  K* = 1.0  (standard curvature, compatible with K=1 default)
+      gamma=2.0  =>  K* = 0.25 (flatter distribution, less curvature needed)
+
+    Args:
+        gamma:  Zipf exponent (typically 1.0–2.0 for natural language).
+        eps:    Small offset to prevent division by zero at gamma=1.
+
+    Returns:
+        K* (float, positive): equilibrium curvature magnitude.
+
+    Example:
+        >>> # WikiText-2 Zipf exponent ≈ 1.0–1.2
+        >>> k = k_equilibrium_from_zipf(1.1)   # => 25.0
+        >>> # Suggests K=1 is severely mismatched — supports DegEq conjecture
+    """
+    delta = max(gamma - 1.0, eps)
+    return 1.0 / (4.0 * delta ** 2)
+
+
+def estimate_zipf_exponent(
+    token_counts: torch.Tensor,
+    min_count: int = 5,
+) -> float:
+    """
+    Estimate the Zipf exponent gamma from observed token frequency counts
+    via OLS linear regression on log-rank vs log-count.
+
+    Args:
+        token_counts: [V] tensor of token occurrence counts.
+        min_count:    Exclude tokens with fewer than min_count occurrences.
+
+    Returns:
+        gamma (float): estimated Zipf exponent (absolute value of the log-log slope).
+
+    Example:
+        >>> counts = torch.load("wikitext2_token_counts.pt")
+        >>> gamma = estimate_zipf_exponent(counts)
+        >>> k_star = k_equilibrium_from_zipf(gamma)
+        >>> print(f"Zipf gamma={gamma:.3f}, K*={k_star:.2f}")
+    """
+    counts = token_counts.float()
+    mask   = counts >= min_count
+    counts = counts[mask]
+    if counts.numel() < 10:
+        return 1.0  # fallback
+
+    # Sort descending (rank 1 = most frequent)
+    sorted_counts, _ = counts.sort(descending=True)
+    ranks = torch.arange(1, sorted_counts.numel() + 1, dtype=torch.float32)
+
+    log_r = torch.log(ranks)
+    log_c = torch.log(sorted_counts)
+
+    # OLS: log_c = a - gamma * log_r
+    n   = log_r.numel()
+    lr_mean = log_r.mean(); lc_mean = log_c.mean()
+    cov     = ((log_r - lr_mean) * (log_c - lc_mean)).sum()
+    var_r   = ((log_r - lr_mean) ** 2).sum()
+    slope   = (cov / var_r).item()
+
+    return abs(slope)  # gamma = |slope|
+
+
+def degeq_radial_diagnostic(
+    model: torch.nn.Module,
+    tokenizer,
+    token_counts: Optional[torch.Tensor] = None,
+    device: Optional[torch.device] = None,
+) -> Dict[str, float]:
+    """
+    Full post-training DegEq diagnostic: measures whether the model has
+    preserved the frequency-radius stratification that makes hyperbolic
+    representations useful.
+
+    Computes:
+      rho_freq_radius:    Pearson r(log f_k, r_k) over vocabulary.
+                          Healthy: < -0.1  |  DegEq: ~0.0
+      mean_radius:        Mean geodesic radius of all token embeddings.
+      std_radius:         Std of radii (low = collapsed to ring).
+      gamma_zipf:         Estimated Zipf exponent from token_counts.
+      k_equilibrium:      K* = 1/(4*(gamma-1)^2) from Krioukov (2010).
+      k_mismatch:         |K_model - K*| (0 = no mismatch).
+      delta_hyperbolic:   δ-hyperbolicity of embedding space (lower = better).
+
+    Reference:
+      Krioukov et al. (2010). PhysRevE 82:036106.
+      Khrulkov et al. (2020). CVPR.
+      Yang et al. (2025). NeurIPS.
+
+    Args:
+        model:         Trained model with an embedding layer.
+        tokenizer:     Tokenizer to get vocabulary size.
+        token_counts:  [V] token occurrence counts (optional, enables Zipf).
+        device:        Computation device.
+
+    Returns:
+        Dict with all diagnostic values.
+    """
+    if device is None:
+        try:
+            device = next(model.parameters()).device
+        except StopIteration:
+            device = torch.device("cpu")
+
+    # Get embedding matrix
+    # Search for embedding layer: try direct attrs first, then recurse
+    emb_module = None
+
+    # 1. Direct: model has .weight directly (e.g. nn.Embedding)
+    if isinstance(model, nn.Embedding):
+        emb_module = model
+    else:
+        # 2. Named attrs at top level and one level deep
+        for attr in ['embed', 'embedding', 'token_embedding', 'wte',
+                     'embed_tokens', 'input_embeddings']:
+            m = getattr(model, attr, None)
+            if isinstance(m, nn.Embedding):
+                emb_module = m; break
+
+        if emb_module is None:
+            # 3. One level deep via core_model / model / transformer
+            for top_attr in ['core_model', 'model', 'transformer',
+                             'base_model', 'encoder']:
+                top = getattr(model, top_attr, None)
+                if top is None: continue
+                for sub_attr in ['embed', 'embedding', 'wte',
+                                 'embed_tokens', 'token_embedding']:
+                    sub = getattr(top, sub_attr, None)
+                    if isinstance(sub, nn.Embedding):
+                        emb_module = sub; break
+                if emb_module is not None: break
+
+        if emb_module is None:
+            # 4. Fallback: scan all modules for Embedding
+            for _, module in model.named_modules():
+                if isinstance(module, nn.Embedding) and \
+                   module.weight.shape[0] > 100:  # vocab-sized
+                    emb_module = module; break
+
+    if emb_module is None:
+        return {"error": "Could not find embedding layer"}
+
+    emb_weight = emb_module.weight.detach().to(device).float()   # [V, d] or [V, d+1]
+
+    # Compute radii — handle both ambient [V, n+1] and tangent [V, n]
+    if emb_weight.shape[-1] > 32:  # heuristic: large dim = likely ambient
+        # Ambient: radius = ||x[1:]||_2
+        radii = emb_weight[:, 1:].norm(dim=-1)
+    else:
+        radii = emb_weight.norm(dim=-1)
+
+    result: Dict[str, float] = {
+        "mean_radius":   radii.mean().item(),
+        "std_radius":    radii.std().item(),
+        "min_radius":    radii.min().item(),
+        "max_radius":    radii.max().item(),
+        "n_vocab":       emb_weight.shape[0],
+    }
+
+    # Freq-radius correlation
+    if token_counts is not None:
+        freqs = token_counts.float().to(device)
+        # Align vocab sizes
+        min_v = min(freqs.shape[0], radii.shape[0])
+        freqs  = freqs[:min_v]
+        r_clip = radii[:min_v]
+        log_f  = torch.log(freqs.clamp(min=1.0))
+        lf_m   = log_f.mean();  r_m = r_clip.mean()
+        cov    = ((log_f - lf_m) * (r_clip - r_m)).mean()
+        std_lf = log_f.std().clamp(min=1e-8)
+        std_r  = r_clip.std().clamp(min=1e-8)
+        rho    = (cov / (std_lf * std_r)).item()
+        result["rho_freq_radius"]  = round(rho, 4)
+        result["hierarchy_intact"] = rho < -0.1  # Khrulkov criterion
+
+        gamma = estimate_zipf_exponent(freqs)
+        k_eq  = k_equilibrium_from_zipf(gamma)
+
+        # Get model K if available
+        k_model = 1.0
+        for m in model.modules():
+            if hasattr(m, 'K') and hasattr(m, 'log_K'):
+                k_model = m.K.item(); break
+
+        result["gamma_zipf"]    = round(gamma, 4)
+        result["k_equilibrium"] = round(k_eq, 4)
+        result["k_model"]       = round(k_model, 4)
+        result["k_mismatch"]    = round(abs(k_model - k_eq), 4)
+        result["degeq_risk"]    = "HIGH" if abs(k_model - k_eq) > 5 else                                   "MEDIUM" if abs(k_model - k_eq) > 1 else "LOW"
+
+    # δ-hyperbolicity
+    try:
+        dh = delta_hyperbolicity(emb_weight.cpu(), n_samples=200)
+        result["delta_hyperbolic"] = round(dh, 4)
+    except Exception:
+        pass
+
+    return result
+
+
 def print_trainable_params(model: nn.Module, verbose: bool = False) -> None:
     """Print trainable / frozen parameter counts for HypLoRA analysis."""
     trainable = [(n, p) for n, p in model.named_parameters() if p.requires_grad]

@@ -92,6 +92,10 @@ class RiemannianAdamW(torch.optim.AdamW):
         self.radial_momentum_projection: bool = kwargs.pop(
             "radial_momentum_projection", False
         )
+        # Minimum radius below which projection is skipped (prevents RadiusCollapse)
+        self.radial_proj_min_r: float = kwargs.pop(
+            "radial_proj_min_r", 0.5
+        )
         params = [p for _, p in named_params]
         super().__init__(params, **kwargs)
 
@@ -173,7 +177,12 @@ class RiemannianAdamW(torch.optim.AdamW):
                     xs   = p.data[..., 1:]
                     r    = xs.norm(dim=-1, keepdim=True).clamp(min=1e-7)
                     r_hat = xs / r
+                    # Only project when r > r_min: below this threshold the
+                    # radial anchor OTED needs momentum to push radius up.
+                    # Projecting at r~0 kills the anchor and causes RadiusCollapse.
+                    r_min = getattr(self, 'radial_proj_min_r', 0.5)
+                    mask  = (r > r_min).float()           # 1 where safe to project
                     radial_comp = (m[..., 1:] * r_hat).sum(-1, keepdim=True)
-                    m[..., 1:].sub_(radial_comp * r_hat)
+                    m[..., 1:].sub_(mask * radial_comp * r_hat)
 
         return loss

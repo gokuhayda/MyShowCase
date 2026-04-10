@@ -165,4 +165,7 @@ from .hyplora import (
     delta_hyperbolicity,
     token_freq_norm_stats,
     print_trainable_params,
+    k_equilibrium_from_zipf,
+    estimate_zipf_exponent,
+    degeq_radial_diagnostic,
 )

@@ -318,13 +318,34 @@ class OTEDLoss(nn.Module):
 
     def _to_tangent(self, h: torch.Tensor) -> torch.Tensor:
         """
-        Project H^n ambient coords to T_o H^n (Euclidean R^n).
-        h: [..., n+1] Lorentz ambient → v: [..., n] tangent spatial
+        Project to T_o H^n (Euclidean R^n).
+
+        Handles two cases automatically:
+          Case A: h is [..., n+1] Lorentz ambient point → log_map_zero → spatial slice
+          Case B: h is [..., n]   tangent vector (e.g. AngularLMHead.weight) → return as-is
+
+        Detection: if last dim == substrate.n (intrinsic) → already tangent (Case B).
+                   if last dim == substrate.n+1 (ambient) → needs projection (Case A).
         """
-        orig = h.shape[:-1]
-        h_flat = h.reshape(-1, h.shape[-1]).float()
-        v      = self.substrate.log_map_zero(h_flat)  # [..., n+1]
-        return v[:, 1:].reshape(*orig, -1)             # spatial only, [..., n]
+        ambient_dim  = self.substrate.n + 1
+        tangent_dim  = self.substrate.n
+        last_dim     = h.shape[-1]
+
+        if last_dim == tangent_dim:
+            # Already a tangent vector (e.g. AngularLMHead stores weights as [V, n])
+            return h.float()
+
+        if last_dim != ambient_dim:
+            raise ValueError(
+                f"_to_tangent: expected last dim {tangent_dim} (tangent) or "
+                f"{ambient_dim} (ambient), got {last_dim}"
+            )
+
+        # Case A: ambient point → log_map_zero → spatial slice
+        orig   = h.shape[:-1]
+        h_flat = h.reshape(-1, last_dim).float()
+        v      = self.substrate.log_map_zero(h_flat)   # [..., n+1]
+        return v[:, 1:].reshape(*orig, -1)              # spatial only [..., n]
 
     def forward(
         self,
