@@ -1178,6 +1178,11 @@ class TeacherDistillationLossV2(nn.Module):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @dataclass
+class RadiusCollapseAbort(Exception):
+    """Raised when RadiusCollapse is auto-detected during training."""
+    pass
+
+
 class DistillationConfigV2:
     """
     Config for DistillationTrainerV2.
@@ -1289,6 +1294,14 @@ class DistillationConfigV2:
     proj_kl_anchor_w:     float = 0.01   # D1: anchor weight
     decoupled_r_max:      float = 3.0    # D3: max radius for r_target
     decoupled_lambda_rad: float = 0.1    # D3: weight of L_radial
+
+    # ── RadiusCollapse auto-abort ────────────────────────────────────────────
+    # Detects RadiusCollapse within the first N steps and aborts automatically.
+    # Saves the partial CSV and continues to next experiment if called from a loop.
+    radius_collapse_abort:       bool  = True   # enable auto-abort on collapse
+    radius_collapse_thresh:      float = 0.01   # rad < thresh = collapsed
+    radius_collapse_confirm:     int   = 3      # consecutive low-rad steps to confirm
+    radius_collapse_max_step:    int   = 300    # only detect within first N steps
 
     # ── legacy aliases ─────────────────────────────────────────────────────
     lr: Optional[float]     = None   # → learning_rate
@@ -2973,6 +2986,29 @@ class DistillationTrainerV2:
                 # w_entropy ≈ log(128)=4.85 is EXPECTED and correct (LayerNorm uniform norms).
                 # Flag ❌ only if entropy << log(L) (norm spike) or w_std > 0.05 (LN broken).
                 rad_flag = "✅" if mean_rad > 0.5 else ("⚠️" if mean_rad > 0.1 else "❌")
+
+                # ── RadiusCollapse auto-abort ──────────────────────────────
+                if getattr(self.config, "radius_collapse_abort", True):
+                    _rc_max = getattr(self.config, "radius_collapse_max_step", 300)
+                    _rc_thr = getattr(self.config, "radius_collapse_thresh", 0.01)
+                    _rc_cnt = getattr(self.config, "radius_collapse_confirm", 3)
+                    if self.step <= _rc_max:
+                        if mean_rad < _rc_thr:
+                            self._rc_low_count = getattr(self, "_rc_low_count", 0) + 1
+                            if self._rc_low_count >= _rc_cnt:
+                                # Flush CSV before abort if hook is wired
+                                _flush = getattr(self, "_flush_csv", None)
+                                if _flush is not None:
+                                    try: _flush(self.train_hist, self.val_hist)
+                                    except Exception: pass
+                                raise RadiusCollapseAbort(
+                                    f"RadiusCollapse at step {self.step}: "
+                                    f"mean_rad={mean_rad:.4f} < {_rc_thr} "
+                                    f"for {_rc_cnt} consecutive log steps. "
+                                    f"Auto-aborted — continuing to next experiment."
+                                )
+                        else:
+                            self._rc_low_count = 0  # reset on recovery
                 w_flag   = "✅" if w_std_v  < 0.05 else ("⚠️" if w_std_v < 0.1 else "❌")
                 h_flag   = "✅" if w_ent_v  > 4.0  else ("⚠️" if w_ent_v > 2.0  else "❌")
                 # RDC proxy: logit_std / (l_hidden + ε) — radial vs angular signal ratio

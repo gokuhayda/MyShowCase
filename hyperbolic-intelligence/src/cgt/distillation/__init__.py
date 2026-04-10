@@ -9,6 +9,7 @@ Knowledge distillation from Euclidean teachers to Hyperbolic models.
 """
 
 from .distillation_v2 import (
+    RadiusCollapseAbort,
     DistillationConfigV2,
     GPT2TeacherWrapperV2,
     DistillationTrainerV2,
