@@ -16,6 +16,7 @@
 [![HypLoRA](https://img.shields.io/badge/HypLoRA-100%25%20Hyperbolic-8A2BE2.svg)](#hyplora-100-hyperbolic-lora-adapter)
 [![DOI v2](https://img.shields.io/badge/DOI%20v2-10.5281%2Fzenodo.19480998-blue.svg)](https://doi.org/10.5281/zenodo.19480998)
 [![DOI v3](https://img.shields.io/badge/DOI%20v3-10.5281%2Fzenodo.19483206-blue.svg)](https://doi.org/10.5281/zenodo.19483206)
+[![DOI v4](https://img.shields.io/badge/DOI%20v4-10.5281%2Fzenodo.19501160-blue.svg)](https://doi.org/10.5281/zenodo.19501160)
 
 ---
 
@@ -206,7 +207,7 @@ src/cgt/
 │   ├── student.py              # Base student architecture
 │   ├── transformer_v2.py       # 4L × 128d × 4H hyperbolic transformer
 │   ├── lm_head_v2.py           # Intrinsic Lorentz LM head
-│   ├── geodesic_lm_head.py     # GeodesicLMHeadV2, AngularLMHead (V5)
+│   ├── geodesic_lm_head.py     # GeodesicLMHeadV2, AngularLMHead, AngularLMHeadV2, replace_lm_head_angular
 │   ├── hyplora.py              # HypLoRA: LorentzLowRank, HypLoRALayer, inject_hyplora
 │   └── hyperbolic_transformer.py  # H-LLM prototype
 │
@@ -345,7 +346,7 @@ This project uses the **Lorentz (hyperboloid) model** exclusively.
 | TB-PAG numerical stability | [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794) | `geometry/lorentz_hardened.py` |
 | Hyperbolic Transformer (H-LLM) | [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897) | `models/hyperbolic_transformer.py` |
 | H-LLM training losses | [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897) | `losses/hyperbolic_lm_losses.py` |
-| HyDRA / DegEq characterisation | [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998) | `distillation/` |
+| HyDRA / DegEq characterisation | [10.5281/zenodo.19501160](https://doi.org/10.5281/zenodo.19501160) | `distillation/` |
 | HypLoRA adapter | Yang et al. NeurIPS 2025 (arxiv 2410.04010) | `models/hyplora.py` |
 
 ### Partially Approximated
@@ -469,6 +470,7 @@ for ev in results:
 > **Paper:** HyDRA v3 — Hyperbolic Distillation with Riemannian Adaptation: Attractor Invariance and Proof by Elimination  
 > **DOI (v2):** [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998)  
 > **DOI (v3):** [10.5281/zenodo.19483206](https://doi.org/10.5281/zenodo.19483206)  
+> **DOI (v4):** [10.5281/zenodo.19501160](https://doi.org/10.5281/zenodo.19501160)  
 > **SHA-256:** `9c844919d58f29cb7bb19b90154131996b5e3b2d6458c57834605068d3e8685e`
 
 HyDRA extends the CGT framework to **language model distillation**, training a compact hyperbolic student (≈12M parameters, H^128) via knowledge distillation from GPT-2-small (117M) on WikiText-2. Every layer — attention, feed-forward, and residual connections — preserves the Riemannian manifold constraint to float64 precision. The primary contribution is the identification, formal characterization, and mitigation of **Degenerate Equilibrium (DegEq)**: a stable fixed point where angular convergence completes but radial scale grows monotonically, converging to a geometrically stable but semantically degraded fixed point.
@@ -806,7 +808,8 @@ fixed point ≠ 10 when K is free to adapt.
 1. **HyDRA v3: Hyperbolic Distillation with Riemannian Adaptation — Attractor Invariance and Proof by Elimination**  
    de Sena, Éric Gustavo Reis. (2026).
    - v2: DOI [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998)
-   - **v3 (current):** DOI [10.5281/zenodo.19483206](https://doi.org/10.5281/zenodo.19483206)
+   - v3: DOI [10.5281/zenodo.19483206](https://doi.org/10.5281/zenodo.19483206)
+   - **v4 (current):** DOI [10.5281/zenodo.19501160](https://doi.org/10.5281/zenodo.19501160)
 
 2. **Lorentzian Hyperbolic Compression: A Family of Geometric Models for Euclidean-to-Hyperbolic Representation Transfer**  
    Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18382872](https://doi.org/10.5281/zenodo.18382872)
@@ -892,12 +895,14 @@ The following papers provide broader theoretical context. **These are NOT fully 
 
 ```bibtex
 @misc{sena2026hydra,
-  title={HyDRA v3: Hyperbolic Distillation with Riemannian Adaptation ---
-         Attractor Invariance and Proof by Elimination},
+  title={HyDRA v4: Hyperbolic Distillation with Riemannian Adaptation ---
+         Channel Attribution and Proof by Elimination},
   author={de Sena, {\'E}ric Gustavo Reis},
   year={2026},
-  doi={10.5281/zenodo.19483206},
-  note={v2: 10.5281/zenodo.19480998}
+  publisher={Zenodo},
+  doi={10.5281/zenodo.19501160},
+  url={https://doi.org/10.5281/zenodo.19501160},
+  note={v2: 10.5281/zenodo.19480998 | v3: 10.5281/zenodo.19483206}
 }
 
 @misc{sena2026cgt,
