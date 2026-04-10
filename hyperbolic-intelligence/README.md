@@ -87,6 +87,8 @@ Hyperbolic space (specifically, the Lorentz/hyperboloid model) offers volume gro
 - Ablation studies comparing hyperbolic vs. Euclidean baselines under identical conditions
 - **HypLoRA**: 100% hyperbolic LoRA adapter — injects a Lorentz manifold branch into any frozen LLM
   (`inject_hyplora`, `LorentzLowRank`, learnable curvature K per layer, `RiemannianAdamW` V5)
+- **`cgt.diagnostics`**: additive post-training DegEq analysis module — Krioukov K* equilibrium,
+  frequency-radius correlation (Khrulkov criterion), radial collapse score, `DegEqDiagnostics`
 - Hyperbolic embedding and retrieval pipeline (experimental):
   - Euclidean teacher → hyperbolic student projection via `CGTStudentHardened`
   - Batch text encoding and corpus indexing (FAISS + Lorentz buffer)
@@ -247,6 +249,10 @@ src/cgt/
 │   ├── distance.py             # Lorentz batch distance utilities (inference-optimised)
 │   └── pipeline.py             # HyperbolicPipeline end-to-end
 │
+├── diagnostics/                # Post-training DegEq diagnostics (additive — no training code modified)
+│   ├── __init__.py             # DegEqDiagnostics, k_equilibrium_from_zipf, build_token_counts
+│   └── degeq.py                # Krioukov K* analysis, freq-radius correlation, radial collapse
+│
 └── api/
     └── entrypoint.py           # SafeHyperbolicModel unified API
 
@@ -285,6 +291,7 @@ notebooks/
 | `losses/core.py` | CGT multi-objective loss | InfoNCE (exact), distillation (heuristic), topo (proxy) |
 | `losses/hyperbolic_lm_losses.py` | H-LLM losses | LM + manifold fidelity + radius + teacher distillation |
 | `models/hyplora.py` | HypLoRA adapter | LLR on H^n, inject/extract/merge, diagnostics |
+| `diagnostics/degeq.py` | DegEq post-training analysis | Krioukov 2010, Khrulkov 2020, Yang 2025 |
 | `psi_extensions/dynamics/h_nca.py` | H-NCA | Discretized Riemannian flow (Euler) |
 | `psi_extensions/binding/h_akorn.py` | H-AKOrN | Kuramoto dynamics with geodesic coupling |
 | `psi_extensions/topology/topological_field.py` | Topological loss | Persistence landscape (differentiable proxy) |
@@ -682,10 +689,11 @@ for batch in train_loader:
 
 ### Diagnostics
 
+#### Quick geometry checks (from `cgt.models.hyplora`)
+
 ```python
 from cgt.models.hyplora import delta_hyperbolicity, token_freq_norm_stats
 
-# Measure hyperbolic structure of token embeddings
 embeddings = model.get_input_embeddings().weight.detach()
 
 dh = delta_hyperbolicity(embeddings, n_samples=500)
@@ -696,6 +704,65 @@ print(f"δ-hyperbolicity: {dh:.4f}")
 stats = token_freq_norm_stats(embeddings, token_frequencies)
 print(f"Freq-norm correlation: {stats['freq_norm_corr']:.4f}")
 # Negative → frequent tokens closer to origin (HypLoRA paper finding)
+```
+
+#### Full DegEq post-training report (from `cgt.diagnostics`)
+
+Fully additive module — reads from a completed trainer, modifies nothing.
+Implements the Krioukov (2010) curvature-Zipf equilibrium analysis and
+the Khrulkov (2020) frequency-radius hierarchy criterion.
+
+```python
+from cgt.diagnostics import DegEqDiagnostics, build_token_counts
+
+# Build token frequency counts from training data
+# (max_batches=50 is fast; use more for higher accuracy)
+token_counts = build_token_counts(train_loader, VOCAB_SIZE, max_batches=50)
+
+# Run full diagnostic after training completes
+diag   = DegEqDiagnostics(trainer, tokenizer, token_counts=token_counts)
+report = diag.run(verbose=True)
+
+# Report fields:
+#   report.rho_freq_radius   # Pearson r(log f_k, r_k). < -0.1 = hierarchy intact
+#   report.gamma_zipf        # Estimated Zipf exponent of the corpus
+#   report.k_equilibrium     # K* = 1/(4*(gamma-1)^2)  [Krioukov 2010]
+#   report.k_model           # Curvature K of the trained model
+#   report.k_mismatch        # |K_model - K*|  >5 = HIGH mismatch (DegEq risk)
+#   report.rdc_star          # Final rdc_ema from val_hist
+#   report.collapse_score    # Radial CV: 0=collapsed, 1=healthy
+#   report.degeq_risk        # "HIGH" | "MEDIUM" | "LOW"
+#   report.hierarchy_intact  # bool: rho < -0.1
+#   report.interpretation    # Human-readable summary string
+print(report.summary())
+```
+
+**Interpreting the output:**
+
+| `rho_freq_radius` | `degeq_risk` | Meaning |
+|---|---|---|
+| < -0.3 | LOW | Strong hierarchy — frequent tokens near origin, rare tokens far |
+| -0.3 to -0.1 | LOW/MEDIUM | Weak hierarchy — partially preserved |
+| ≈ 0.0 | HIGH | DegEq detected — radial structure collapsed |
+| > 0.1 | HIGH | Inverted hierarchy — unexpected, indicates training failure |
+
+**Standalone utilities:**
+
+```python
+from cgt.diagnostics import (
+    k_equilibrium_from_zipf,   # K* = 1/(4*(gamma-1)^2)
+    estimate_zipf_exponent,    # OLS log-rank vs log-count
+    freq_radius_correlation,   # dict with rho, p_value, mean/std_radius
+    radial_collapse_score,     # dict with collapse_score, cv, degeq_active
+)
+
+# Example: check if K=1 is appropriate for your corpus
+gamma  = estimate_zipf_exponent(token_counts)
+k_star = k_equilibrium_from_zipf(gamma)
+print(f"Corpus Zipf γ={gamma:.3f} → K*={k_star:.2f}")
+print(f"K=1 mismatch: {abs(1.0 - k_star):.2f} ({'HIGH' if abs(1.0-k_star)>5 else 'LOW'})")
+# WikiText-2: γ≈1.0–1.1 → K*≈25–100 → K=1 is HIGH mismatch
+# This is the conjectured root cause of DegEq at rdc*≈10
 ```
 
 ### Saving and Loading Adapters
@@ -725,6 +792,13 @@ load_hyplora(model, adapter_state)
 
 HyDRA discovered *why* DegEq occurs; HypLoRA shows *how to avoid it architecturally*.
 Together they establish both the failure mode and the design principle for hyperbolic LLMs.
+
+**Krioukov conjecture (implemented in `cgt.diagnostics`):** DegEq at rdc\*≈10 may reflect a
+thermodynamic equilibrium between fixed curvature K=1 and the Zipf exponent γ of the corpus.
+The equilibrium curvature K\* = 1/(4(γ−1)²) [Krioukov et al. 2010]; for WikiText-2 with γ≈1.1,
+K\*≈25 — meaning K=1 is severely mismatched. Learnable K per layer (V5-C, `LorentzLowRank`)
+is the falsifiable intervention: if the conjecture holds, rdc\* will shift to a data-dependent
+fixed point ≠ 10 when K is free to adapt.
 
 
 ## 8. References
