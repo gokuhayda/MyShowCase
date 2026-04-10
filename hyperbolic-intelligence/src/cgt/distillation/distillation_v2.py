@@ -2185,7 +2185,7 @@ class DistillationTrainerV2:
         # V5: swap LM head to AngularLMHead if requested (Channel 2 fix)
         if getattr(config, "use_angular_head", False):
             try:
-                from cgt.models.geodesic_lm_head import AngularLMHead
+                from cgt.models.geodesic_lm_head import AngularLMHead, AngularLMHeadV2
                 _parent = getattr(student, "core_model", student)
                 _lm = getattr(_parent, "lm_head", None)
                 if _lm is not None and hasattr(_lm, "n_embd"):

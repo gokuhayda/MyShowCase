@@ -152,6 +152,8 @@ __all__ = [
 ]
 
 from .geodesic_lm_head import AngularLMHead
+from .geodesic_lm_head import AngularLMHeadV2
+from .geodesic_lm_head import replace_lm_head_angular
 
 # HypLoRA: 100% Hyperbolic LoRA adapter
 from .hyplora import (

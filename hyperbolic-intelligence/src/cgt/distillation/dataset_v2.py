@@ -297,3 +297,109 @@ def build_wikitext_loaders(
     print(f"   seq_len={seq_len}  batch_size={batch_size}  overlap={overlap}")
 
     return train_loader, val_loader
+
+
+def build_openwebtext_loaders(
+    tokenizer,
+    seq_len:    int = 1024,
+    batch_size: int = 8,
+    overlap:    int = 512,
+    num_workers:int = 2,
+    max_train_samples: int = 500_000,   # ~1B tokens, comparable to GPT-2 short run
+) -> "tuple[DataLoader, DataLoader]":
+    """
+    OpenWebText DataLoader for competitive HyDRA training.
+
+    ~38GB of Reddit-curated web text — same distribution as GPT-2 training data.
+    Caches to Drive automatically on first load.
+
+    Args:
+        max_train_samples: cap training samples to control run time.
+            500_000 × 1024 tokens = ~512M tokens ≈ 3h on T4.
+            Use None for full dataset (~38B tokens).
+    """
+    from datasets import load_dataset
+    import os
+
+    _DRIVE_CACHE = "/content/drive/MyDrive/HydraPaper_VariantF/data/openwebtext"
+    _LOCAL_CACHE = "/tmp/openwebtext_cache"
+
+    print(f"  [OpenWebText] Loading dataset...")
+
+    # Try local cache first, then Drive, then download
+    for cache_path in [_LOCAL_CACHE, _DRIVE_CACHE]:
+        if os.path.isdir(cache_path) and os.listdir(cache_path):
+            print(f"  [OpenWebText] Cache hit: {cache_path}")
+            try:
+                ds = load_dataset("openwebtext", split="train",
+                                  cache_dir=cache_path, trust_remote_code=False)
+                break
+            except Exception:
+                pass
+    else:
+        print(f"  [OpenWebText] Downloading (~12GB compressed)...")
+        os.makedirs(_LOCAL_CACHE, exist_ok=True)
+        ds = load_dataset("openwebtext", split="train",
+                          cache_dir=_LOCAL_CACHE, trust_remote_code=False)
+        # Save to Drive
+        try:
+            import shutil
+            os.makedirs(_DRIVE_CACHE, exist_ok=True)
+            if not os.listdir(_DRIVE_CACHE):
+                shutil.copytree(_LOCAL_CACHE, _DRIVE_CACHE, dirs_exist_ok=True)
+                print(f"  [OpenWebText] Saved to Drive: {_DRIVE_CACHE}")
+        except Exception as _e:
+            print(f"  [OpenWebText] Drive save skipped: {_e}")
+
+    # Cap training samples
+    if max_train_samples and len(ds) > max_train_samples:
+        ds = ds.select(range(max_train_samples))
+        print(f"  [OpenWebText] Capped to {max_train_samples:,} samples")
+
+    print(f"  [OpenWebText] {len(ds):,} documents")
+
+    # Tokenise all text
+    def _tokenise(batch):
+        return tokenizer(batch["text"], truncation=False, padding=False)
+
+    ds_tok = ds.map(_tokenise, batched=True, remove_columns=["text"],
+                    num_proc=min(num_workers, 4))
+
+    # Build sliding-window dataset
+    from torch.utils.data import DataLoader
+    all_ids = []
+    for ids in ds_tok["input_ids"]:
+        all_ids.extend(ids)
+        all_ids.append(tokenizer.eos_token_id)
+
+    import torch
+    all_ids = torch.tensor(all_ids, dtype=torch.long)
+
+    # Split 95/5 train/val
+    split = int(len(all_ids) * 0.95)
+    train_ids, val_ids = all_ids[:split], all_ids[split:]
+
+    stride = seq_len - overlap
+    def _make_samples(ids):
+        samples = []
+        for i in range(0, len(ids) - seq_len, stride):
+            chunk = ids[i:i + seq_len]
+            samples.append({"input_ids": chunk, "labels": chunk})
+        return samples
+
+    train_samples = _make_samples(train_ids)
+    val_samples   = _make_samples(val_ids)
+    print(f"  [OpenWebText] {len(train_samples):,} train / {len(val_samples):,} val windows")
+
+    from torch.utils.data import Dataset as _DS
+    class _TokDataset(_DS):
+        def __init__(self, s): self.s = s
+        def __len__(self): return len(self.s)
+        def __getitem__(self, i): return self.s[i]
+
+    train_loader = DataLoader(_TokDataset(train_samples), batch_size=batch_size,
+                              shuffle=True,  num_workers=num_workers, pin_memory=True)
+    val_loader   = DataLoader(_TokDataset(val_samples),   batch_size=batch_size,
+                              shuffle=False, num_workers=num_workers, pin_memory=True)
+    return train_loader, val_loader
+
