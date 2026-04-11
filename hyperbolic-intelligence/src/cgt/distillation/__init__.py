@@ -61,3 +61,9 @@ from .geometric_distillation import (
 )
 
 from .geometric_distillation import OTEDLoss
+
+# ← estas 4 linhas foram adicionadas
+from .adaptive_controller import (
+    AdaptiveHyperController,
+    AdaptiveControllerConfig,
+)
