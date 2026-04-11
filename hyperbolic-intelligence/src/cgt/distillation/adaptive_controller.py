@@ -83,7 +83,7 @@ class AdaptiveControllerConfig:
     """
 
     # ── Level 1: GradBalance ─────────────────────────────────────────────────
-    grad_balance_every:  int   = 5000   # steps between balance checks
+    grad_balance_every:  int   = 500    # steps between balance checks (CGT: 50 batches)
     balance_tolerance:   float = 2.0    # max allowed eff_kl/eff_hidden ratio
     balance_lr:          float = 0.5    # how aggressively to correct (0–1)
     lambda_distill_min:  float = 0.001  # lower bound
@@ -108,6 +108,8 @@ class AdaptiveControllerConfig:
     logit_std_max:       float = 15.0   # above this = OverconfidenceSpiral
     div_min:             float = 0.3    # below this = DiversityCollapse
     rad_min:             float = 0.05   # below this = RadiusCollapse risk
+    rad_max:             float = 4.0    # above this = RadiusDrift (DegEq precursor)
+    loss_ema_beta:       float = 0.95   # EMA for loss magnitude tracking (CGT method)
     regime_confirm:      int   = 3      # consecutive bad checks before action
 
     # ── PBT: Population Based Training (multi-GPU) ───────────────────────────
@@ -162,8 +164,10 @@ class AdaptiveHyperController:
         self._stall_count:    int         = 0
         self._regime_counts:  Dict[str, int] = {
             "degeq": 0, "overconfidence": 0,
-            "diversity": 0, "radius": 0,
+            "diversity": 0, "radius": 0, "radius_drift": 0,
         }
+        # Loss magnitude EMA (CGT method — faster than GradBalance)
+        self._loss_ema: Dict[str, float] = {}
         self._action_log:     List[Dict]  = []
         self._last_gb_step:   int         = 0
         self._last_pbt_step:  int         = 0
@@ -387,6 +391,7 @@ class AdaptiveHyperController:
           OverconfidenceSpiral: logit_std > logit_std_max
           DiversityCollapse:    div < div_min
           RadiusCollapse risk:  mean_radius < rad_min
+          RadiusDrift:          mean_radius > rad_max  (DegEq precursor — CGT insight)
         """
         rdc       = float(metrics.get("rdc_proxy",    0.0))
         logit_std = float(metrics.get("logit_std",    1.0))
@@ -427,6 +432,17 @@ class AdaptiveHyperController:
                     self._regime_counts["diversity"] = 0
         else:
             self._regime_counts["diversity"] = 0
+
+        # RadiusDrift (DegEq precursor — CGT insight: rad > rad_max)
+        if rad > self.cfg.rad_max:
+            self._regime_counts["radius_drift"] += 1
+            if self._regime_counts["radius_drift"] >= self.cfg.regime_confirm:
+                action = self._respond_radius_drift(rad, step)
+                if action:
+                    actions["L3_radius_drift"] = action
+                    self._regime_counts["radius_drift"] = 0
+        else:
+            self._regime_counts["radius_drift"] = max(0, self._regime_counts["radius_drift"] - 1)
 
         # RadiusCollapse risk
         if 0 < rad < self.cfg.rad_min:
@@ -492,6 +508,20 @@ class AdaptiveHyperController:
         msg = f"rad={rad:.4f} < {self.cfg.rad_min} — lambda_radius: {old:.4f} → {new:.4f}"
         if self.cfg.verbose:
             print(f"  [L3-Radius]    ⚠️  {msg}")
+        return msg
+
+    def _respond_radius_drift(self, rad: float, step: int) -> str:
+        """RadiusDrift: embeddings drifting far from origin — DegEq precursor.
+        CGT insight: detect r̄ > rad_max early, reduce lambda_radius to stop drift.
+        """
+        old = self.dcfg.lambda_radius
+        new = min(0.5, old * 1.3)  # boost anchor to pull embeddings back
+        self.dcfg.lambda_radius = new
+        if hasattr(self.trainer, "config"):
+            self.trainer.config.lambda_radius = new
+        msg = f"rad={rad:.3f} > {self.cfg.rad_max} (drift) — lambda_radius: {old:.4f} → {new:.4f}"
+        if self.cfg.verbose:
+            print(f"  [L3-RadiusDrift] ⚠️  {msg}")
         return msg
 
     # ── PBT (multi-GPU) ──────────────────────────────────────────────────────
