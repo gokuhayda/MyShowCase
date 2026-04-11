@@ -2659,8 +2659,20 @@ class DistillationTrainerV2:
             + self.config.lambda_distill * distill_loss
         )
 
+        # ── Cache individual loss tensors for AdaptiveHyperController V3 ────
+        # GradNormMeasure needs tensors with live computation graphs,
+        # so this must be set BEFORE backward().
+        self._live_loss_components = {
+            "distill": distill_loss if distill_loss.requires_grad else None,
+            "hidden":  l_hidden     if l_hidden.requires_grad     else None,
+        }
+        self._live_loss_components = {
+            k: v for k, v in self._live_loss_components.items() if v is not None
+        }
+
         self.optimizer.zero_grad()
         total.backward()
+        self._live_loss_components = {}  # clear after backward
 
         # ── Curvature-aware Riemannian gradient scaling (TRAINER BUG FIX) ─────
         # Standard Euclidean gradients are incorrect for manifold parameters because
@@ -2961,6 +2973,10 @@ class DistillationTrainerV2:
 
             m = self.distillation_step(batch)
             self.train_hist.append(m)
+            # AdaptiveHyperController V3 — call after each step
+            _ctrl = getattr(self, "adaptive_controller", None)
+            if _ctrl is not None:
+                _ctrl.step(m, self.step)
 
             # Feed loss values to LossBalancer EMA tracker
             self.loss_balancer.update_ema({

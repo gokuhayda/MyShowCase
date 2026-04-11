@@ -68,6 +68,103 @@ from typing import Dict, List, Optional, Any
 import torch
 
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GradNorm Measure — V3 (adapted from CGTGradNormMeasure, Chen et al. 2018)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class GradNormMeasure:
+    """
+    Measures actual per-loss gradient norms via autograd.grad on a probe parameter.
+
+    V3 of the adaptive controller uses ‖∇_probe(λ_i · L_i)‖₂ instead of
+    abs(loss_magnitude) for gradient balance decisions.
+
+    The probe is the first LayerNorm weight found in the student model —
+    small enough for fast computation, deep enough to receive gradients
+    from all loss terms.
+
+    Cost: ~N extra autograd.grad calls (retain_graph=True) every
+    measure_every steps, where N = number of loss components.
+    At measure_every=500: negligible overhead (<1%).
+
+    Reference: Chen et al. GradNorm (2018), adapted by Sena (2026).
+    """
+
+    def __init__(self, measure_every: int = 500):
+        self.measure_every = measure_every
+        self._probe_cache: Optional[torch.nn.Parameter] = None
+
+    def _find_probe(self, model: "torch.nn.Module") -> "Optional[torch.nn.Parameter]":
+        """Find a small parameter deep in the model as gradient probe."""
+        if self._probe_cache is not None:
+            return self._probe_cache
+        # Priority 1: LayerNorm weight (small, receives all gradients)
+        for name, p in model.named_parameters():
+            if 'norm' in name.lower() and 'weight' in name and p.requires_grad and p.numel() < 512:
+                self._probe_cache = p
+                return p
+        # Priority 2: any small weight
+        for name, p in model.named_parameters():
+            if 'weight' in name and p.requires_grad and p.dim() >= 1 and p.numel() < 256:
+                self._probe_cache = p
+                return p
+        # Fallback: first trainable parameter
+        for p in model.parameters():
+            if p.requires_grad:
+                self._probe_cache = p
+                return p
+        return None
+
+    def measure(
+        self,
+        loss_components: "Dict[str, torch.Tensor]",
+        model:           "torch.nn.Module",
+        step:            int,
+    ) -> "Dict[str, float]":
+        """
+        Measure ‖∇_probe(L_i)‖₂ for each loss component.
+
+        Args:
+            loss_components: {name: loss_tensor} — must have valid computation graph
+            model:           student model (to find probe parameter)
+            step:            current training step
+
+        Returns:
+            {name: grad_norm, 'imbalance_ratio': float}
+            Empty dict if not a measurement step or probe not found.
+        """
+        if step % self.measure_every != 0:
+            return {}
+
+        probe = self._find_probe(model)
+        if probe is None:
+            return {}
+
+        norms: Dict[str, float] = {}
+        for name, loss_val in loss_components.items():
+            if not isinstance(loss_val, torch.Tensor) or not loss_val.requires_grad:
+                norms[name] = 0.0
+                continue
+            try:
+                grad = torch.autograd.grad(
+                    loss_val, probe,
+                    retain_graph=True,
+                    allow_unused=True,
+                )[0]
+                norms[name] = float(grad.norm().item()) if grad is not None else 0.0
+            except Exception:
+                norms[name] = 0.0
+
+        active = {k: v for k, v in norms.items() if v > 1e-12}
+        if len(active) >= 2:
+            norms['imbalance_ratio'] = max(active.values()) / min(active.values())
+        else:
+            norms['imbalance_ratio'] = 1.0
+
+        return norms
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Config
 # ─────────────────────────────────────────────────────────────────────────────
@@ -110,6 +207,11 @@ class AdaptiveControllerConfig:
     rad_min:             float = 0.05   # below this = RadiusCollapse risk
     rad_max:             float = 4.0    # above this = RadiusDrift (DegEq precursor)
     loss_ema_beta:       float = 0.95   # EMA for loss magnitude tracking (CGT method)
+
+    # ── V3: GradNorm real (Chen et al. 2018) ────────────────────────────────
+    use_gradnorm:        bool  = True   # V3: use ‖∇L_i‖₂ instead of loss magnitude
+    gradnorm_alpha:      float = 0.5    # GradNorm correction strength (0=off, 1=full)
+    gradnorm_clamp:      float = 2.0    # max scale factor per step (prevents oscillation)
     regime_confirm:      int   = 3      # consecutive bad checks before action
 
     # ── PBT: Population Based Training (multi-GPU) ───────────────────────────
@@ -160,6 +262,9 @@ class AdaptiveHyperController:
         self.dcfg    = trainer.config   # DistillationConfigV2
 
         # ── Internal state ────────────────────────────────────────────────────
+        # V3: GradNorm measure
+        self._grad_measure = GradNormMeasure(measure_every=config.grad_balance_every)
+        self._grad_norm_ema: Dict[str, float] = {}  # EMA of gradient norms
         self._ppl_history:    List[float] = []
         self._stall_count:    int         = 0
         self._regime_counts:  Dict[str, int] = {
@@ -263,13 +368,26 @@ class AdaptiveHyperController:
         self, gb: Dict[str, float], step: int
     ) -> Dict[str, Any]:
         """
-        Proportional controller to balance eff_kl and eff_hidden.
+        V1/V2: Proportional controller using eff_kl / eff_hidden ratio.
+        V3: Uses real gradient norms ‖∇L_i‖₂ when use_gradnorm=True.
 
-        The control law is:
-            ratio = eff_dominant / eff_weak
-            if ratio > tolerance:
-                lambda_dominant *= (1 - lr * (ratio - 1) / ratio)
+        V3 algorithm (GradNorm, Chen et al. 2018):
+            scale = (target_norm / current_norm) ^ gradnorm_alpha
+            scale = clamp(scale, 1/gradnorm_clamp, gradnorm_clamp)
+            lambda_i *= scale
         """
+        # ── V3: Try GradNorm first ────────────────────────────────────────
+        if self.cfg.use_gradnorm and hasattr(self, '_grad_measure'):
+            student = getattr(self.trainer, 'student', None)
+            if student is not None:
+                # Build loss component tensors from trainer's last step
+                loss_components = self._get_loss_components()
+                if loss_components:
+                    gnorms = self._grad_measure.measure(loss_components, student, step)
+                    if gnorms and 'imbalance_ratio' in gnorms:
+                        return self._level1_gradnorm_v3(gnorms, step)
+
+        # ── V1/V2 fallback: use GradBalance report ────────────────────────
         eff_kl  = gb.get("eff_kl",  0.0)
         eff_hid = gb.get("eff_hid", 0.0)
 
@@ -284,7 +402,6 @@ class AdaptiveHyperController:
         lr = self.cfg.balance_lr
 
         if eff_kl > eff_hid:
-            # KL dominates — reduce lambda_distill
             correction = 1.0 - lr * (ratio - 1.0) / ratio
             old = self.dcfg.lambda_distill
             new = float(max(
@@ -292,16 +409,13 @@ class AdaptiveHyperController:
                 min(self.cfg.lambda_distill_max, old * correction)
             ))
             self.dcfg.lambda_distill = new
-            # Also update the trainer's live config
             if hasattr(self.trainer, 'config'):
                 self.trainer.config.lambda_distill = new
-            actions["L1_lambda_distill"] = f"{old:.4f} → {new:.4f}"
+            actions["L1_lambda_distill"] = f"{old:.4f} → {new:.4f} (V1/V2 fallback)"
             if self.cfg.verbose:
-                print(f"  [L1-GradBalance] KL dominates ({ratio:.1f}x) "
+                print(f"  [L1-V2] KL dominates ({ratio:.1f}x) "
                       f"→ lambda_distill: {old:.4f} → {new:.4f}")
-
         else:
-            # Hidden dominates — reduce lambda_hidden
             correction = 1.0 - lr * (ratio - 1.0) / ratio
             old = self.dcfg.lambda_hidden
             new = float(max(
@@ -311,12 +425,80 @@ class AdaptiveHyperController:
             self.dcfg.lambda_hidden = new
             if hasattr(self.trainer, 'config'):
                 self.trainer.config.lambda_hidden = new
-            actions["L1_lambda_hidden"] = f"{old:.4f} → {new:.4f}"
+            actions["L1_lambda_hidden"] = f"{old:.4f} → {new:.4f} (V1/V2 fallback)"
             if self.cfg.verbose:
-                print(f"  [L1-GradBalance] Hidden dominates ({ratio:.1f}x) "
+                print(f"  [L1-V2] Hidden dominates ({ratio:.1f}x) "
                       f"→ lambda_hidden: {old:.4f} → {new:.4f}")
 
         return actions
+
+    def _level1_gradnorm_v3(
+        self, gnorms: Dict[str, float], step: int
+    ) -> Dict[str, Any]:
+        """
+        V3 GradNorm correction: scale each lambda by (target/current)^alpha.
+        target = mean gradient norm across active components.
+        """
+        imbalance = gnorms.pop('imbalance_ratio', 1.0)
+        if imbalance <= self.cfg.balance_tolerance:
+            return {}
+
+        active = {k: v for k, v in gnorms.items() if isinstance(v, float) and v > 1e-12}
+        if len(active) < 2:
+            return {}
+
+        target = sum(active.values()) / len(active)
+        alpha  = self.cfg.gradnorm_alpha
+        clamp  = self.cfg.gradnorm_clamp
+        actions: Dict[str, Any] = {}
+
+        # Map grad norm keys to lambda attrs
+        key_to_lambda = {
+            'distill': ('lambda_distill', self.cfg.lambda_distill_min, self.cfg.lambda_distill_max),
+            'hidden':  ('lambda_hidden',  self.cfg.lambda_hidden_min,  self.cfg.lambda_hidden_max),
+        }
+
+        for key, current_norm in active.items():
+            # Normalise key to match lambda name
+            lam_key = next((k for k in key_to_lambda if k in key.lower()), None)
+            if lam_key is None:
+                continue
+            attr, lo, hi = key_to_lambda[lam_key]
+            old = getattr(self.dcfg, attr, None)
+            if old is None:
+                continue
+
+            scale = (target / current_norm) ** alpha
+            scale = max(1.0 / clamp, min(clamp, scale))
+            new   = float(max(lo, min(hi, old * scale)))
+
+            if abs(new - old) / max(old, 1e-8) > 0.02:  # >2% change threshold
+                setattr(self.dcfg, attr, new)
+                if hasattr(self.trainer, 'config'):
+                    setattr(self.trainer.config, attr, new)
+                direction = '↓' if new < old else '↑'
+                actions[f"L1_V3_{attr}"] = (
+                    f"{old:.4f} → {new:.4f} {direction} "
+                    f"(‖∇‖={current_norm:.4f}, target={target:.4f}, imb={imbalance:.1f}x)"
+                )
+                if self.cfg.verbose:
+                    print(f"  [L1-V3-GradNorm] {attr}: {old:.4f} → {new:.4f} {direction} "
+                          f"(‖∇‖={current_norm:.4f}, target={target:.4f})")
+
+        return actions
+
+    def _get_loss_components(self) -> "Dict[str, torch.Tensor]":
+        """
+        Extract individual loss tensors from the trainer's last step metrics.
+        Returns tensors that still have computation graphs when called mid-step.
+        Falls back to empty dict if not available.
+        """
+        # Try to get from trainer's live loss cache if it exists
+        live = getattr(self.trainer, '_live_loss_components', {})
+        if live:
+            return {k: v for k, v in live.items()
+                    if isinstance(v, torch.Tensor) and v.requires_grad}
+        return {}
 
     # ── Level 2: PPL velocity ────────────────────────────────────────────────
 

@@ -63,3 +63,16 @@ __all__ = [
     "AdaptiveCGTController",
     "CGTControllerConfig",
 ]
+
+# V3: GradNorm-based controller (Chen et al. 2018)
+from cgt.experiments.adaptive_cgt_controller_v3 import (
+    AdaptiveCGTControllerV3,
+    CGTControllerConfigV3,
+    CGTGradNormMeasure,
+)
+
+__all__ += [
+    "AdaptiveCGTControllerV3",
+    "CGTControllerConfigV3",
+    "CGTGradNormMeasure",
+]
