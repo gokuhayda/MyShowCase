@@ -347,6 +347,7 @@ This project uses the **Lorentz (hyperboloid) model** exclusively.
 | Hyperbolic Transformer (H-LLM) | [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897) | `models/hyperbolic_transformer.py` |
 | H-LLM training losses | [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897) | `losses/hyperbolic_lm_losses.py` |
 | HyDRA / DegEq characterisation | [10.5281/zenodo.19501160](https://doi.org/10.5281/zenodo.19501160) | `distillation/` |
+| Adaptive hyperparameter control | — | `distillation/adaptive_controller.py` |
 | HypLoRA adapter | Yang et al. NeurIPS 2025 (arxiv 2410.04010) | `models/hyplora.py` |
 
 ### Partially Approximated
@@ -801,6 +802,134 @@ The equilibrium curvature K\* = 1/(4(γ−1)²) [Krioukov et al. 2010]; for Wiki
 K\*≈25 — meaning K=1 is severely mismatched. Learnable K per layer (V5-C, `LorentzLowRank`)
 is the falsifiable intervention: if the conjecture holds, rdc\* will shift to a data-dependent
 fixed point ≠ 10 when K is free to adapt.
+
+
+## 12. AdaptiveHyperController: Closed-Loop Hyperparameter Control
+
+> **Module:** `cgt.distillation.adaptive_controller`  
+> **Single-GPU:** fully supported (default)  
+> **Multi-GPU PBT:** supported via shared filesystem (Drive / NFS)
+
+Replaces manual lambda tuning during distillation with a three-level closed-loop controller.
+Monitors `GradBalance`, `val_ppl` velocity, and training regimes in real time and adjusts
+`lambda_distill`, `lambda_hidden`, `temperature`, and `learning_rate` automatically.
+
+### Architecture: Three Control Levels
+
+| Level | Runs every | Monitors | Adjusts |
+|---|---|---|---|
+| L1 — GradBalance | 5 000 steps | `eff_kl` vs `eff_hidden` | `lambda_distill`, `lambda_hidden` |
+| L2 — PPL velocity | every eval | val_ppl improvement rate | learning rate |
+| L3 — Regime | 200 steps | `rdc`, `logit_std`, `div`, `rad` | per-regime response |
+
+**L1** uses a proportional controller: if `eff_kl / eff_hidden > 2×`, the dominant lambda
+is reduced by `balance_lr × (ratio − 1) / ratio`. Resolves the `imbalance=10×❌` problem
+that previously required manual intervention.
+
+**L2** computes relative PPL improvement velocity over a sliding window. Below
+`ppl_min_velocity` for `ppl_stall_patience` evals → LR reduced by `lr_reduce_factor`.
+Above `3 × ppl_min_velocity` → LR boosted by `lr_boost_factor`.
+
+**L3** detects four pathological regimes and responds automatically:
+
+| Regime | Condition | Response |
+|---|---|---|
+| DegEq onset | `rdc > 3.0` for 3 steps | `lambda_distill × 0.7` |
+| OverconfidenceSpiral | `logit_std > 15.0` | clamp `log_temperature ≤ log(8)` |
+| DiversityCollapse | `div < 0.3` | `temperature × 1.2` |
+| RadiusCollapse risk | `rad < 0.05` | `lambda_radius × 1.5` |
+
+### Quick start (single GPU)
+
+```python
+from cgt.distillation import AdaptiveHyperController, AdaptiveControllerConfig
+
+controller = AdaptiveHyperController(
+    config  = AdaptiveControllerConfig(),   # all defaults
+    trainer = trainer,
+)
+trainer.adaptive_controller = controller
+
+# After training:
+print(controller.summary())
+```
+
+### Custom config
+
+```python
+controller = AdaptiveHyperController(
+    config = AdaptiveControllerConfig(
+        grad_balance_every = 5000,    # L1: check balance every N steps
+        balance_tolerance  = 2.0,     # L1: allow up to 2× imbalance
+        balance_lr         = 0.5,     # L1: correction aggressiveness (0–1)
+        lambda_distill_min = 0.001,   # L1: lower bound
+        lambda_hidden_min  = 0.001,   # L1: lower bound
+        ppl_stall_patience = 5,       # L2: evals before LR drop
+        lr_reduce_factor   = 0.7,     # L2: LR × 0.7 on stall
+        lr_boost_factor    = 1.1,     # L2: LR × 1.1 on fast convergence
+        regime_every       = 200,     # L3: regime check interval
+        rdc_danger         = 3.0,     # L3: DegEq onset threshold
+        logit_std_max      = 15.0,    # L3: OverconfidenceSpiral threshold
+        verbose            = True,    # print actions to training log
+    ),
+    trainer = trainer,
+)
+```
+
+### Population Based Training — multi-GPU (PBT)
+
+Based on [Jaderberg et al. 2017 (DeepMind)](https://arxiv.org/abs/1711.09846) with a
+hyperbolic-specific fitness function that penalises DegEq-active models alongside PPL.
+
+Every `pbt_interval` steps, workers synchronise via a shared directory. Bottom 20% copy
+hyperparameters from top 20% (exploit) and perturb them by ±20% (explore).
+
+**Fitness function** (higher = better):
+```
+fitness = 0.5 × ppl_score + 0.3 × rdc_score
+```
+where `ppl_score = 1 − clip((ppl − 50) / 450)` and `rdc_score = 1 − clip(rdc / 10)`.
+A model with good PPL but DegEq active (rdc ≈ 10) scores lower than a model with
+slightly worse PPL but rdc < 2 — the hyperbolic modification vs the original PBT paper.
+
+```python
+# Worker 0 (run on GPU 0):
+controller = AdaptiveHyperController(
+    config = AdaptiveControllerConfig(
+        n_workers        = 4,                    # total number of GPUs
+        worker_id        = 0,                    # this GPU's rank
+        pbt_interval     = 10_000,               # sync every 10k steps
+        pbt_exploit_frac = 0.2,                  # bottom/top 20%
+        pbt_perturb_factor = 0.2,                # ±20% perturbation
+        pbt_shared_dir   = "/content/drive/MyDrive/HydraPaper/pbt_sync",
+        pbt_fitness_weights = {
+            "val_ppl":  0.5,
+            "rdc_ema":  0.3,
+            "logit_std": 0.2,
+        },
+    ),
+    trainer = trainer,
+)
+
+# Each GPU runs independently. The controller handles all synchronisation.
+# Requires pbt_shared_dir to be accessible by all workers (Drive, NFS, etc.)
+```
+
+### Controller state in checkpoints
+
+```python
+# Save (add to your checkpoint logic):
+torch.save({
+    "model": student.state_dict(),
+    "controller": controller.get_state(),
+}, "checkpoint.pt")
+
+# Load:
+ckpt = torch.load("checkpoint.pt")
+student.load_state_dict(ckpt["model"])
+controller.load_state(ckpt["controller"])
+```
+
 
 
 ## 8. References
