@@ -30,10 +30,45 @@ from cgt.evaluation.metrics import (
     evaluate_stsb,
 )
 
+from cgt.evaluation.benchmarks import (
+    evaluate_stsb_quick,
+    evaluate_all_datasets,
+    run_falsification,
+    EuclideanStudent,
+    eval_pca_baseline,
+    eval_random_baseline,
+    eval_mrl_baseline,
+    train_euclidean_mlp,
+    benchmark_latency,
+    set_seed,
+)
+
+from cgt.evaluation.benchmarks import (
+    evaluate_stsb_quick,
+    evaluate_all_datasets,
+    run_falsification,
+    eval_pca_baseline,
+    eval_random_baseline,
+    eval_mrl_baseline,
+    train_euclidean_mlp,
+    benchmark_latency,
+    EuclideanStudent,
+)
+
 __all__ = [
     "FalsificationProtocols",
     "evaluate_stsb",
     "compute_effective_rank",
     "compute_gromov_delta",
     "compute_distortion",
+    "evaluate_stsb_quick",
+    "evaluate_all_datasets",
+    "run_falsification",
+    "EuclideanStudent",
+    "eval_pca_baseline",
+    "eval_random_baseline",
+    "eval_mrl_baseline",
+    "train_euclidean_mlp",
+    "benchmark_latency",
+    "set_seed",
 ]
