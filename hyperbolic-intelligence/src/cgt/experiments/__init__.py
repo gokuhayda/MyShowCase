@@ -46,6 +46,11 @@ from cgt.experiments.trainer_hardened import (
     RiemannianOptimizerWrapper,
 )
 
+from cgt.experiments.adaptive_cgt_controller import (
+    AdaptiveCGTController,
+    CGTControllerConfig,
+)
+
 __all__ = [
     "ExperimentConfig",
     "_EXPECTED_PARAMS",
@@ -55,4 +60,6 @@ __all__ = [
     "validate_config_against_expected",
     "CGTTrainer",
     "RiemannianOptimizerWrapper",
+    "AdaptiveCGTController",
+    "CGTControllerConfig",
 ]
