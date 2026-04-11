@@ -301,11 +301,13 @@ def build_wikitext_loaders(
 
 def build_openwebtext_loaders(
     tokenizer,
-    seq_len:    int = 1024,
-    batch_size: int = 8,
-    overlap:    int = 512,
-    num_workers:int = 2,
-    max_train_samples: int = 100_000,   # ~100M tokens — safe for Colab free (~30GB disk)
+    seq_len:           int  = 1024,
+    batch_size:        int  = 8,
+    overlap:           int  = 512,
+    num_workers:       int  = 2,
+    max_train_samples: int  = 100_000,   # ~100M tokens — safe for Colab free (~30GB disk)
+    force_redownload:  bool = False,     # True = ignora cache e baixa de novo
+    offline:           bool = False,     # True = usa só cache local, sem HF
 ) -> "tuple[DataLoader, DataLoader]":
     """
     OpenWebText DataLoader for competitive HyDRA training.
@@ -315,37 +317,87 @@ def build_openwebtext_loaders(
 
     Args:
         max_train_samples: cap training samples to control run time.
+            100_000 × 1024 tokens = ~100M tokens ≈ 1h on T4.
             500_000 × 1024 tokens = ~512M tokens ≈ 3h on T4.
             Use None for full dataset (~38B tokens).
+        force_redownload: delete existing cache and re-download from scratch.
+        offline:          use only local/Drive cache, never reach HuggingFace Hub.
     """
     from datasets import load_dataset
-    import os
+    import os, shutil
 
     _DRIVE_CACHE = "/content/drive/MyDrive/HydraPaper_VariantF/data/openwebtext"
     _LOCAL_CACHE = "/tmp/openwebtext_cache"
 
+    # ── Force redownload: wipe both caches ───────────────────────────────────
+    if force_redownload:
+        for p in [_LOCAL_CACHE, _DRIVE_CACHE]:
+            if os.path.exists(p):
+                shutil.rmtree(p, ignore_errors=True)
+                print(f"  [OpenWebText] Wiped cache: {p}")
+
+    # ── Validate cache: test first shard ─────────────────────────────────────
+    def _cache_valid(path):
+        if not os.path.isdir(path) or not os.listdir(path):
+            return False
+        import glob
+        arrow_files = glob.glob(f"{path}/**/*.arrow", recursive=True)
+        if not arrow_files:
+            return False
+        try:
+            import pyarrow as pa
+            f = sorted(arrow_files)[0]
+            reader = pa.ipc.open_stream(pa.memory_map(f))
+            reader.read_all()
+            return True
+        except Exception as _e:
+            print(f"  [OpenWebText] Cache corrupt at {path}: {_e}")
+            shutil.rmtree(path, ignore_errors=True)
+            return False
+
     print(f"  [OpenWebText] Loading dataset...")
 
-    # Try local cache first, then Drive, then download
-    for cache_path in [_LOCAL_CACHE, _DRIVE_CACHE]:
-        if os.path.isdir(cache_path) and os.listdir(cache_path):
-            print(f"  [OpenWebText] Cache hit: {cache_path}")
-            try:
-                ds = load_dataset("openwebtext", split="train",
-                                  cache_dir=cache_path, trust_remote_code=False)
-                break
-            except Exception:
-                pass
-    else:
-        print(f"  [OpenWebText] Downloading (~12GB compressed)...")
+    ds = None
+
+    # ── Tier 1: local /tmp ────────────────────────────────────────────────────
+    if _cache_valid(_LOCAL_CACHE):
+        print(f"  [OpenWebText] Cache hit: {_LOCAL_CACHE}")
+        try:
+            ds = load_dataset("openwebtext", split="train",
+                              cache_dir=_LOCAL_CACHE, trust_remote_code=False)
+        except Exception as _e:
+            print(f"  [OpenWebText] /tmp load failed: {_e} — trying Drive")
+            ds = None
+
+    # ── Tier 2: Drive cache ───────────────────────────────────────────────────
+    if ds is None and _cache_valid(_DRIVE_CACHE):
+        print(f"  [OpenWebText] Cache hit: {_DRIVE_CACHE}")
+        try:
+            ds = load_dataset("openwebtext", split="train",
+                              cache_dir=_DRIVE_CACHE, trust_remote_code=False)
+        except Exception as _e:
+            print(f"  [OpenWebText] Drive load failed: {_e} — will re-download")
+            shutil.rmtree(_DRIVE_CACHE, ignore_errors=True)
+            ds = None
+
+    # ── Tier 3: download ──────────────────────────────────────────────────────
+    if ds is None:
+        if offline:
+            raise RuntimeError(
+                "[OpenWebText] offline=True but no valid cache found. "
+                "Run once with offline=False to download."
+            )
+        print(f"  [OpenWebText] Downloading (~12GB compressed, ~30min)...")
         os.makedirs(_LOCAL_CACHE, exist_ok=True)
+        import os as _os
+        _os.environ["HF_DATASETS_OFFLINE"] = "0"
+        _os.environ["HF_HUB_OFFLINE"]      = "0"
         ds = load_dataset("openwebtext", split="train",
                           cache_dir=_LOCAL_CACHE, trust_remote_code=False)
-        # Save to Drive
+        # Save to Drive for future sessions
         try:
-            import shutil
-            os.makedirs(_DRIVE_CACHE, exist_ok=True)
-            if not os.listdir(_DRIVE_CACHE):
+            if not _cache_valid(_DRIVE_CACHE):
+                os.makedirs(_DRIVE_CACHE, exist_ok=True)
                 shutil.copytree(_LOCAL_CACHE, _DRIVE_CACHE, dirs_exist_ok=True)
                 print(f"  [OpenWebText] Saved to Drive: {_DRIVE_CACHE}")
         except Exception as _e:
