@@ -3228,7 +3228,12 @@ class DistillationTrainerV2:
                                 self.stop = True
 
                     # ── Adaptive tuner — regime-driven crisis response ────
-                    tuner_applied = self.adaptive_tuner.step(regime_code, self.step, self.val_hist)
+                    # Disabled when deg_eq_action="none" (AdaptiveHyperController takes over)
+                    _tuner_enabled = getattr(self.config, "deg_eq_action", "none") != "none"
+                    tuner_applied = (
+                        self.adaptive_tuner.step(regime_code, self.step, self.val_hist)
+                        if _tuner_enabled else []
+                    )
 
                     # AdaptiveTuner priority: freeze params it just touched in
                     # LossBalancer for the next cooldown window to prevent conflict.
