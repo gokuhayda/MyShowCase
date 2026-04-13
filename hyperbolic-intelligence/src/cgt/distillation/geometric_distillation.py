@@ -367,7 +367,17 @@ class OTEDLoss(nn.Module):
         u_w = F.normalize(v_w, dim=-1).to(u_s.dtype)      # [V, n]  match dtype
 
         # Cosine logits in T_o (no sinh(r) amplification)
-        logits = (u_s @ u_w.T / self.T).reshape(B, L, -1)  # [B, L, V]
+        # Chunked to avoid OOM: [BL, V] @ full vocab too large with SublatticeLMHead
+        _CHUNK = 512  # vocab chunks — tune down to 256 if still OOM
+        _V = u_w.shape[0]
+        if _V * u_s.shape[0] * u_s.element_size() > 800 * 1024 * 1024:  # >800MB
+            logits_chunks = []
+            for _c in range(0, _V, _CHUNK):
+                _uw_chunk = u_w[_c:_c+_CHUNK]          # [chunk, n]
+                logits_chunks.append(u_s @ _uw_chunk.T / self.T)  # [BL, chunk]
+            logits = torch.cat(logits_chunks, dim=-1).reshape(B, L, -1)  # [B, L, V]
+        else:
+            logits = (u_s @ u_w.T / self.T).reshape(B, L, -1)  # [B, L, V]
         log_p  = F.log_softmax(logits, dim=-1)
 
         l_angular = F.kl_div(
