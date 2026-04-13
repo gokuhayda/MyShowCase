@@ -2162,6 +2162,28 @@ class AdaptiveTuner:
 # Trainer
 # ─────────────────────────────────────────────────────────────────────────────
 
+
+def _get_lm_head_weight(lm_head) -> "Optional[torch.Tensor]":
+    """Get vocab weight matrix from any LM head variant.
+
+    Handles:
+      - Standard heads: .weight attribute
+      - SublatticeLMHead: .weight_frequent + .weight_rare merged via _get_all_weights()
+      - AngularLMHeadV2: .weight attribute
+    """
+    if lm_head is None:
+        return None
+    # SublatticeLMHead exposes _get_all_weights()
+    if hasattr(lm_head, '_get_all_weights'):
+        try:
+            return lm_head._get_all_weights()
+        except Exception:
+            pass
+    # Standard .weight
+    if hasattr(lm_head, 'weight'):
+        return lm_head.weight
+    return None
+
 class DistillationTrainerV2:
     """
     Training loop for GPT-2 → SafeHyperbolicModel distillation.
@@ -2570,8 +2592,9 @@ class DistillationTrainerV2:
             # ── Paper 2: structural loss override ────────────────────────
             if self._p2_projective is not None and student_hidden is not None:
                 # D1: ProjectiveKLLoss — KL in angular subspace only
-                W_vocab = self.student.core_model.lm_head.weight if hasattr(
-                    self.student, 'core_model') else None
+                W_vocab = _get_lm_head_weight(
+                    self.student.core_model.lm_head
+                ) if hasattr(self.student, 'core_model') else None
                 if W_vocab is not None:
                     p_teacher = torch.softmax(
                         teacher_logits / self.config.temperature, dim=-1).detach()
@@ -2592,8 +2615,9 @@ class DistillationTrainerV2:
                         d['total'], d['l_hidden'], d['l_radius'], d['l_contrast'])
             elif self._p2_decoupled is not None and student_hidden is not None:
                 # D3: DecoupledRadialAngularLoss — radial/angular orthogonal
-                W_vocab = self.student.core_model.lm_head.weight if hasattr(
-                    self.student, 'core_model') else None
+                W_vocab = _get_lm_head_weight(
+                    self.student.core_model.lm_head
+                ) if hasattr(self.student, 'core_model') else None
                 if W_vocab is not None:
                     p_teacher = torch.softmax(
                         teacher_logits / self.config.temperature, dim=-1).detach()
@@ -2618,8 +2642,9 @@ class DistillationTrainerV2:
             elif self._p2_oted is not None and student_hidden is not None:
                 # OTED: all loss computation in T_o (flat tangent space)
                 # Eliminates Christoffel coupling: r'' = -sinh(r)cosh(r)*theta'^2
-                W_vocab = self.student.core_model.lm_head.weight if hasattr(
-                    self.student, 'core_model') else None
+                W_vocab = _get_lm_head_weight(
+                    self.student.core_model.lm_head
+                ) if hasattr(self.student, 'core_model') else None
                 if W_vocab is not None:
                     p_teacher = torch.softmax(
                         teacher_logits / self.config.temperature, dim=-1).detach()
