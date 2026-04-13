@@ -366,25 +366,49 @@ class OTEDLoss(nn.Module):
         u_s = F.normalize(v_s.reshape(B*L, n), dim=-1)   # [BL, n]
         u_w = F.normalize(v_w, dim=-1).to(u_s.dtype)      # [V, n]  match dtype
 
-        # Cosine logits in T_o (no sinh(r) amplification)
-        # Chunked to avoid OOM: [BL, V] @ full vocab too large with SublatticeLMHead
-        _CHUNK = 512  # vocab chunks — tune down to 256 if still OOM
-        _V = u_w.shape[0]
-        if _V * u_s.shape[0] * u_s.element_size() > 800 * 1024 * 1024:  # >800MB
-            logits_chunks = []
-            for _c in range(0, _V, _CHUNK):
-                _uw_chunk = u_w[_c:_c+_CHUNK]          # [chunk, n]
-                logits_chunks.append(u_s @ _uw_chunk.T / self.T)  # [BL, chunk]
-            logits = torch.cat(logits_chunks, dim=-1).reshape(B, L, -1)  # [B, L, V]
-        else:
-            logits = (u_s @ u_w.T / self.T).reshape(B, L, -1)  # [B, L, V]
-        log_p  = F.log_softmax(logits, dim=-1)
+        # Cosine logits in T_o — streaming chunked KL (never materialises [BL,V])
+        # Two-pass algorithm:
+        #   Pass 1: streaming log-sum-exp → log Z per token  (O(V/chunk) memory)
+        #   Pass 2: accumulate KL = -Σ p_t * (logit/T - log Z) chunk-by-chunk
+        # Peak VRAM per chunk: [BL, _CHUNK] ≈ 8 MB (float32)
+        _CHUNK = 512
+        _V     = u_w.shape[0]
+        _BL    = u_s.shape[0]
+        _T     = float(self.T)
 
-        l_angular = F.kl_div(
-            log_p.reshape(-1, logits.shape[-1]),
-            p_teacher.reshape(-1, p_teacher.shape[-1]),
-            reduction='batchmean',
-        ) * self.T ** 2
+        # float32 for projection (halves vs float64)
+        _us32 = u_s.float()   # [BL, n]
+        _uw32 = u_w.float()   # [V,  n]
+        _pt   = p_teacher.reshape(_BL, _V).float()  # [BL, V]
+
+        # ── Pass 1: stable streaming log-sum-exp ─────────────────────────────
+        _max_l = torch.full((_BL,), float('-inf'), device=_us32.device, dtype=torch.float32)
+        _sum_e = torch.zeros((_BL,),               device=_us32.device, dtype=torch.float32)
+        for _c in range(0, _V, _CHUNK):
+            _lc       = (_us32 @ _uw32[_c:_c+_CHUNK].T) / _T  # [BL, chunk]
+            _cmax     = _lc.max(dim=-1).values                  # [BL]
+            _new_max  = torch.maximum(_max_l, _cmax)
+            _sum_e    = _sum_e * torch.exp(_max_l - _new_max)
+            _sum_e   += torch.exp(_lc - _new_max.unsqueeze(-1)).sum(dim=-1)
+            _max_l    = _new_max
+        _log_Z = _max_l + torch.log(_sum_e + 1e-40)  # [BL]
+
+        # ── Pass 2: accumulate cross-entropy Σ p_t * log_softmax_s ───────────
+        _ce = torch.tensor(0.0, device=_us32.device, dtype=torch.float32)
+        for _c in range(0, _V, _CHUNK):
+            _lc      = (_us32 @ _uw32[_c:_c+_CHUNK].T) / _T          # [BL, chunk]
+            _log_p_c = _lc - _log_Z.unsqueeze(-1)                      # log softmax chunk
+            _pt_c    = _pt[:, _c:_c+_CHUNK]                            # [BL, chunk]
+            _ce     -= (_pt_c * _log_p_c).sum()
+
+        l_angular = (_ce / _BL) * _T ** 2  # batchmean KL × T² (standard distillation scaling)
+
+        # Placeholders — log_p/logits not needed downstream (l_angular already set)
+        logits = torch.zeros(1, device=_us32.device)
+        log_p  = logits
+
+        # l_angular already computed above — skip F.kl_div
+        pass
 
         # ── Step 3: radial anchor — unique stable equilibrium ─────────────────
         # r_h computed from tangent norm (equivalent to geodesic radius at o)
