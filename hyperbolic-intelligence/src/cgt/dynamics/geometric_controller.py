@@ -223,9 +223,19 @@ class GeometricController:
             # Boost λ_radius: push radial anchor harder
             lam_r = self._get_attr('lambda_radius', 0.05)
             boost = 1.0 + self.cfg.rdc_radius_boost * rdc_severity
+
+            # ── Coherence-Curvature coupling (GCM Theorem A.5) ──────
+            # κ ∝ Γ²/(1−Γ²)  →  when Γ↑, geometry regularisation↑
+            # This formalises the heuristic rdc-based boost.
+            gamma = float(self._ema.get('order_parameter', 0.5))
+            gamma_sq = gamma * gamma
+            coherence_scale = 1.0 + gamma_sq / max(1.0 - gamma_sq, 0.05)
+            boost = boost * coherence_scale  # amplify when coherent
+
             new_lam_r = self._clamp(lam_r * boost, self.cfg.lambda_radius_bounds)
             self._set_attr('lambda_radius', new_lam_r)
             adjustments['lambda_radius'] = new_lam_r
+            adjustments['coherence_scale'] = round(coherence_scale, 3)
 
             # Boost volume weight strength (if loss supports it)
             vol_str = self._get_attr('volume_weight_strength', 0.5)

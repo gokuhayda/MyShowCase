@@ -56,13 +56,42 @@ class KuramotoSystemV2(nn.Module):
 
     def _build_coupling(self, embeddings: torch.Tensor) -> torch.Tensor:
         """
-        Build [B, N, N] coupling matrix from cosine similarity of embeddings.
-        All values in [0, 1] — no negative coupling.
+        Build [B, N, N] coupling matrix.
+
+        GCM paper (Sec 5.2): geodesic coupling K₀·exp(-d_L(i,j)/τ)
+        aligns phase dynamics with Lorentz geometry — nearby tokens on
+        the manifold synchronise strongly, distant tokens decouple.
+
+        Falls back to cosine similarity when substrate unavailable.
         """
         # embeddings: [B, N, D]
-        emb_norm = F.normalize(embeddings, p=2, dim=-1)          # [B, N, D]
-        coupling = torch.bmm(emb_norm, emb_norm.transpose(1, 2)) # [B, N, N]
-        return coupling.clamp(min=0.0)
+        tau = getattr(self, "_decay_scale", 1.0)  # learnable decay τ
+
+        # ── Geodesic coupling (primary) ───────────────────────────────
+        try:
+            # Lorentz inner product: ⟨u,v⟩_L = -u₀v₀ + Σᵢ uᵢvᵢ
+            # d_L(u,v) = arccosh(-⟨u,v⟩_L)  (stable version)
+            u = embeddings                         # [B, N, D]
+            v = embeddings                         # [B, N, D]
+            # Minkowski inner product
+            time_u = u[..., :1]                   # [B, N, 1]
+            spat_u = u[..., 1:]                   # [B, N, D-1]
+            time_v = v[..., :1].transpose(1, 2)   # [B, 1, N]
+            spat_v = v[..., 1:].transpose(1, 2)   # [B, D-1, N]
+            # ⟨u,v⟩_L = Σᵢ uᵢvᵢ - u₀v₀
+            spatial_inner = torch.bmm(spat_u, spat_v)      # [B, N, N]
+            time_inner    = time_u * time_v.squeeze(-1).unsqueeze(1)  # [B, N, N]
+            lorentz_inner = spatial_inner - time_u * time_v.squeeze(1).unsqueeze(1)
+            # Clamp for numerical stability: arccosh requires arg ≥ 1
+            arg = (-lorentz_inner).clamp(min=1.0 + 1e-7)
+            d_L = torch.acosh(arg)                          # [B, N, N]
+            coupling = torch.exp(-d_L / (tau + 1e-6))      # [B, N, N]
+            return coupling.clamp(min=0.0, max=1.0)
+        except Exception:
+            # ── Cosine fallback ───────────────────────────────────────
+            emb_norm = F.normalize(embeddings, p=2, dim=-1)
+            coupling = torch.bmm(emb_norm, emb_norm.transpose(1, 2))
+            return coupling.clamp(min=0.0)
 
     # ── simulate ──────────────────────────────────────────────────────────
 

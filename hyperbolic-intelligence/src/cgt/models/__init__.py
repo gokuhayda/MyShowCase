@@ -168,3 +168,5 @@ from .hyplora import (
     token_freq_norm_stats,
     print_trainable_params,
 )
+
+from cgt.models.phase_weighted_attention import PhaseWeightedAttention
