@@ -203,22 +203,23 @@ def attach_sparse_hakorn(student, cfg: dict, device: str) -> None:
     Standard layers get hakorn=None (no phase dynamics).
     """
     try:
-        from cgt.models.hakorn_attention_v2 import HAKORNLayer
-        layers = student.core_model.encoder.layers
+        from cgt.psi_extensions.binding import HAKORNLayer
+        layers  = student.core_model.encoder.layers
         seq_len = cfg["model"]["n_positions"]
 
         for idx, layer in enumerate(layers):
             if idx in PACEMAKER_LAYERS:
-                layer.hakorn = HAKORNLayer(
-                    num_nodes        = seq_len,
-                    coupling_strength= cfg["binding"]["coupling_strength"],
-                    temperature      = cfg["binding"]["decay_scale"],
-                    dt               = cfg["binding"]["dt"],
-                ).to(device)
-            else:
-                # Ensure non-pacemaker layers have no phase dynamics
                 if not hasattr(layer, 'hakorn') or layer.hakorn is None:
-                    layer.hakorn = None
+                    layer.hakorn = HAKORNLayer(
+                        num_nodes        = seq_len,
+                        coupling_strength= cfg["binding"]["coupling_strength"],
+                        temperature      = cfg["binding"]["decay_scale"],
+                        dt               = cfg["binding"]["dt"],
+                    ).to(device)
+                # else: keep existing (resume-safe)
+            else:
+                # Detach non-pacemaker layers
+                layer.hakorn = None
 
         active = [i for i in range(len(layers))
                   if hasattr(layers[i], 'hakorn') and layers[i].hakorn is not None]
