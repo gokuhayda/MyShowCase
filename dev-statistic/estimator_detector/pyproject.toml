@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "estimator-detector"
+version = "2.0.0"
+description = "Universal distribution analysis, power transforms, and loss function recommendation for gradient boosting"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "CC-BY-NC-SA-4.0" }
+authors = [{ name = "Éric Gustavo Reis de Sena", email = "eirikreisena@gmail.com" }]
+keywords = [
+    "statistics",
+    "distribution",
+    "gradient-boosting",
+    "catboost",
+    "lightgbm",
+    "loss-function",
+    "mlops",
+    "drift-detection",
+    "box-cox",
+    "yeo-johnson",
+    "conformal-prediction",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+dip = ["diptest>=0.7"]
+numba = ["numba>=0.58"]
+ml = ["catboost>=1.2", "lightgbm>=4.0", "pandas>=2.0"]
+conformal = ["mapie>=0.7"]
+s3 = ["boto3>=1.28"]
+all = [
+    "diptest>=0.7",
+    "numba>=0.58",
+    "catboost>=1.2",
+    "lightgbm>=4.0",
+    "pandas>=2.0",
+    "mapie>=0.7",
+    "boto3>=1.28",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "diptest>=0.7",
+]
+
+[project.urls]
+Repository = "https://github.com/gokuhayda/MyShowCase"
+Issues = "https://github.com/gokuhayda/MyShowCase/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["estimator_detector/tests"]
+
+[tool.setuptools.packages.find]
+include = ["estimator_detector*"]
