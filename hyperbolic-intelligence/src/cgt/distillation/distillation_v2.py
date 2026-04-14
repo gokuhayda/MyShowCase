@@ -2974,6 +2974,121 @@ class DistillationTrainerV2:
 
     # ── train loop ────────────────────────────────────────────────────────
 
+
+    def _export_embeddings_snapshot(self, log_dir: "Optional[Path]" = None) -> None:
+        """Export PCA-reduced token embeddings + Kuramoto phases for live visualizer.
+
+        Saves a compact JSON to <log_dir>/embeddings_snapshot.json with:
+          - top 500 tokens by frequency, PCA-projected to 3D on the hyperboloid
+          - sublattice assignment (frequent / rare)
+          - Kuramoto phase per head (last layer)
+          - key metrics snapshot
+
+        Designed to be called every checkpoint_every steps — takes <200ms.
+        """
+        try:
+            import torch, json, math
+            from pathlib import Path
+
+            lm_head = getattr(getattr(self.student, "core_model", self.student), "lm_head", None)
+            if lm_head is None:
+                return
+
+            # ── Get vocab weights [V, D] ──────────────────────────────────
+            W = _get_lm_head_weight(lm_head)
+            if W is None:
+                return
+            W = W.detach().float().cpu()  # [V, D+1] Lorentz coords
+            V, Dh = W.shape
+
+            # ── Sublattice assignment ─────────────────────────────────────
+            has_sublattice = hasattr(lm_head, "freq_indices") and hasattr(lm_head, "rare_indices")
+            if has_sublattice:
+                freq_set = set(lm_head.freq_indices.cpu().tolist())
+            else:
+                freq_set = set(range(min(15000, V)))
+
+            # ── Sample tokens: top 300 frequent + 100 rare ────────────────
+            freq_idx = sorted(freq_set)[:300]
+            rare_idx = [i for i in range(V) if i not in freq_set][:100]
+            sel_idx  = freq_idx + rare_idx
+            W_sel    = W[sel_idx]  # [400, Dh]
+
+            # ── PCA to 3D using SVD ───────────────────────────────────────
+            # Use spatial coords only (drop time component)
+            spatial = W_sel[:, 1:]  # [400, D]
+            spatial_centered = spatial - spatial.mean(0, keepdim=True)
+            try:
+                _, _, Vt = torch.linalg.svd(spatial_centered, full_matrices=False)
+                proj3 = spatial_centered @ Vt[:3].T  # [400, 3]
+            except Exception:
+                # Fallback: random projection
+                R = torch.randn(spatial.shape[1], 3)
+                proj3 = spatial_centered @ R
+
+            # ── Normalize to unit sphere then scale by geodesic radius ────
+            radii = W_sel[:, 0].abs().clamp(min=0.1)  # time component = cosh(r)
+            geo_r = torch.log(radii + (radii**2 - 1).clamp(min=0).sqrt()).clamp(min=0.1, max=5.0)
+            norms = proj3.norm(dim=-1, keepdim=True).clamp(min=1e-6)
+            pts3  = proj3 / norms * geo_r.unsqueeze(-1)  # [400, 3]
+
+            # ── Kuramoto phases (last layer if available) ─────────────────
+            phases = []
+            try:
+                encoder = getattr(getattr(self.student, "core_model", None), "encoder", None)
+                if encoder and hasattr(encoder, "layers") and len(encoder.layers) > 0:
+                    last_layer = encoder.layers[-1]
+                    attn = getattr(last_layer, "attention", None)
+                    if attn and hasattr(attn, "kuramoto"):
+                        ph = attn.kuramoto.phase_state.detach().cpu()  # [n_heads]
+                        phases = ph.tolist()
+            except Exception:
+                phases = []
+
+            # ── Build snapshot ────────────────────────────────────────────
+            tokens = []
+            for local_i, global_i in enumerate(sel_idx):
+                p = pts3[local_i]
+                tokens.append({
+                    "id":  global_i,
+                    "x":   round(float(p[0]), 4),
+                    "y":   round(float(p[1]), 4),
+                    "z":   round(float(p[2]), 4),
+                    "r":   round(float(geo_r[local_i]), 4),
+                    "sub": "A" if global_i in freq_set else "B",
+                })
+
+            last_train = self.train_hist[-1] if self.train_hist else {}
+            last_val   = self.val_hist[-1]   if self.val_hist   else {}
+            snapshot = {
+                "step":     self.step,
+                "ppl":      round(float(last_train.get("ppl", 9999) or 9999), 2),
+                "rdc":      round(float(last_train.get("rdc_ema", 0) or 0), 4),
+                "rad":      round(float(last_train.get("mean_radius", 1.5) or 1.5), 4),
+                "div":      round(float(last_train.get("diversity", 0) or 0), 4),
+                "val_ppl":  round(float(last_val.get("val_ppl", 9999) or 9999), 2),
+                "phases":   [round(p, 4) for p in phases],
+                "tokens":   tokens,
+                "n_freq":   len(freq_idx),
+                "n_rare":   len(rare_idx),
+            }
+
+            # ── Save ──────────────────────────────────────────────────────
+            if log_dir is not None:
+                out = Path(log_dir) / "embeddings_snapshot.json"
+            elif self.checkpoint_dir is not None:
+                out = Path(self.checkpoint_dir).parent / "logs" /                       Path(self.checkpoint_dir).name / "embeddings_snapshot.json"
+                out.parent.mkdir(parents=True, exist_ok=True)
+            else:
+                return
+
+            with open(out, "w") as f:
+                json.dump(snapshot, f, separators=(",", ":"))
+
+        except Exception as _e:
+            pass  # Never crash training for visualization
+
+
     def train(
         self,
         train_loader: DataLoader,
@@ -3323,6 +3438,12 @@ class DistillationTrainerV2:
 
             if self.step % self.config.checkpoint_every == 0:
                 self.save()
+                # ── Export embeddings snapshot for live visualizer ───
+                try:
+                    _log_dir = getattr(self, "_log_dir", None)
+                    self._export_embeddings_snapshot(log_dir=_log_dir)
+                except Exception:
+                    pass
                 # ── GradNorm audit — real per-loss gradient contribution ──
                 # Probe: final LayerNorm weight (128 params, 0.6% overhead).
                 # Requires loss tensors from the LAST distillation step.
