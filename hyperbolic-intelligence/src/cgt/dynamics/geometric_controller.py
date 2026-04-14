@@ -237,6 +237,20 @@ class GeometricController:
             adjustments['lambda_radius'] = new_lam_r
             adjustments['coherence_scale'] = round(coherence_scale, 3)
 
+            # ── γ(Δ) entropic expansion (PMH Appendix A.2.3 eq 17) ─
+            # γ(Δ) = γ₀·log(Δ/Δ₀): when diversity falls, shrink boost
+            # Prevents collapse into low-diversity attractors
+            w_ent = float(telemetry.get('w_entropy', 6.0))
+            delta_0 = 5.5  # reference entropy (w_ent in healthy run)
+            gamma_0 = 0.3  # coupling constant
+            entropic_scale = 1.0 + gamma_0 * max(0.0,
+                                 math.log(max(w_ent, 0.1) / delta_0))
+            # Modulate lambda_radius by both coherence and entropy
+            final_lam_r = self._clamp(
+                new_lam_r * entropic_scale, self.cfg.lambda_radius_bounds)
+            self._set_attr('lambda_radius', final_lam_r)
+            adjustments['entropic_scale'] = round(entropic_scale, 3)
+
             # Boost volume weight strength (if loss supports it)
             vol_str = self._get_attr('volume_weight_strength', 0.5)
             vol_boost = self.cfg.rdc_volume_boost * rdc_severity

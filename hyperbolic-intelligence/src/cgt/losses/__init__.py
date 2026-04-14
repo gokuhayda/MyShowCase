@@ -128,3 +128,6 @@ if _BOOTSTRAP_AVAILABLE:
         "BootstrapBettiEstimator",
         "BettiEstimate",
     ])
+
+from cgt.losses.anosov_topo_loss import AnosovTopoLoss, AnosovTopoConfig, FormanRicciRegularizer
+from cgt.losses.persistence_landscape import PersistenceLandscapeLoss, PersistenceLandscape

@@ -28,3 +28,4 @@ __all__ = [
     "radial_collapse_score",
     "build_token_counts",
 ]
+from cgt.diagnostics.gw_monitor import GWDivergenceMonitor
