@@ -3085,6 +3085,39 @@ class DistillationTrainerV2:
             with open(out, "w") as f:
                 json.dump(snapshot, f, separators=(",", ":"))
 
+            # ── binding_metrics.csv (H-AKORN / v3 only) ──────────────
+            try:
+                import csv as _csv
+                _order_params, _phases_all = [], []
+                _enc = getattr(getattr(self.student,"core_model",None),"encoder",None)
+                if _enc and hasattr(_enc, "layers"):
+                    for _lay in _enc.layers:
+                        if hasattr(_lay, "hakorn"):
+                            _ph = _lay.hakorn.phases.detach().float().cpu()
+                            import cmath as _cm
+                            _op = abs(sum(_cm.exp(1j*float(p)) for p in _ph) / len(_ph))
+                            _order_params.append(_op)
+                            _phases_all.extend([round(float(p),3) for p in _ph.tolist()])
+                if _order_params:
+                    _mean_op  = sum(_order_params)/len(_order_params)
+                    _blog     = Path(log_dir) / "binding_metrics.csv"
+                    _write_h  = not _blog.exists()
+                    with open(_blog, "a", newline="") as _bf:
+                        _bw = _csv.DictWriter(_bf, fieldnames=[
+                            "step","order_param","coherence","n_groups",
+                            "binding_loss","phases_json"])
+                        if _write_h: _bw.writeheader()
+                        _bw.writerow({
+                            "step":        self.step,
+                            "order_param": round(_mean_op, 4),
+                            "coherence":   round(_mean_op, 4),
+                            "n_groups":    max(1,round((1-_mean_op)*len(_order_params))),
+                            "binding_loss":round(max(0, 0.3-_mean_op), 4),
+                            "phases_json": json.dumps(_phases_all[:64]),
+                        })
+            except Exception:
+                pass
+
         except Exception as _e:
             pass  # Never crash training for visualization
 
