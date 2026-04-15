@@ -58,7 +58,7 @@ class HyDRAUniverse(nn.Module):
         # Initialise near LJ equilibrium d* ≈ 1.0
         # Each particle placed on a sphere of radius ~ d*/2 ≈ 0.5 in spatial coords
         sa, sr = cfg.sigma_a, cfg.sigma_r
-        d_star = sa * sr / (sa - sr) * _m.log(sa / sr)
+        d_star = sa * sr / (sa - sr) * math.log(sa / sr)
         r_init = d_star * 0.5   # spatial radius ≈ d*/2 (geodesic d ≈ r at small r)
 
         hs  = torch.randn(N, n, dtype=torch.float64) * r_init
