@@ -25,4 +25,6 @@ __all__ = [
     "lorentz_inner", "lorentz_exp", "lorentz_log",
     "lorentz_proj", "safe_acosh",
     "K", "EPS", "_BACKEND",
+    "EuclideanUniverse",
 ]
+from cgt.physics.euclidean_universe import EuclideanUniverse
