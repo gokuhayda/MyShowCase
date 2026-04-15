@@ -1,6 +1,6 @@
-# Contrastive Geometric Transfer (CGT)
+# Temporal Binding on the Lorentz Manifold: Geodesic Kuramoto Oscillators, Topological Regularisation, and Closed-Loop Geometric Control for Hyperbolic Language Model Distillation
 
-**Hyperbolic Sentence Embedding Compression & Language Model Distillation**
+**HyDRA: Temporal Binding on the Lorentz Manifold — Proof of Concept Preprint**
 
 > This repository introduces the **Contrastive Geometric Transfer (CGT)** framework,
 > which compresses high-dimensional Euclidean embeddings into lower-dimensional
@@ -8,6 +8,11 @@
 >
 > A secondary line of work (**HyDRA**) extends this framework to language model
 > distillation and reveals a fundamental failure mode: **Degenerate Equilibrium (DegEq)**.
+>
+> The latest preprint (**HyDRA v7**) presents a complete architectural resolution:
+> geodesic Kuramoto oscillators, topological Lyapunov regularisation, and closed-loop
+> coupling control on the Lorentz manifold — drawing on Minkowski geometry,
+> Kuramoto synchronisation physics, and algebraic topology.
 
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
@@ -17,23 +22,46 @@
 [![DOI v2](https://img.shields.io/badge/DOI%20v2-10.5281%2Fzenodo.19480998-blue.svg)](https://doi.org/10.5281/zenodo.19480998)
 [![DOI v3](https://img.shields.io/badge/DOI%20v3-10.5281%2Fzenodo.19483206-blue.svg)](https://doi.org/10.5281/zenodo.19483206)
 [![DOI v4](https://img.shields.io/badge/DOI%20v4-10.5281%2Fzenodo.19501160-blue.svg)](https://doi.org/10.5281/zenodo.19501160)
+[![DOI v7](https://img.shields.io/badge/DOI%20v7-10.5281%2Fzenodo.19583481-blue.svg)](https://doi.org/10.5281/zenodo.19583481)
+
+---
+
+## Latest Preprint (v7)
+
+**Temporal Binding on the Lorentz Manifold: Geodesic Kuramoto Oscillators,
+Topological Regularisation, and Closed-Loop Geometric Control
+for Hyperbolic Language Model Distillation**
+
+> DOI: [10.5281/zenodo.19583481](https://doi.org/10.5281/zenodo.19583481)
+>
+> ⚠️ **Proof of concept.** All experiments conducted on Google Colab Pro
+> (single GPU ≤ 40 GB) by an independent researcher without institutional
+> affiliation, funding, or GPU cluster access. The training run covers
+> 1,603 of 200,000 planned steps (best train PPL = 324.8, val PPL = 669.9).
+> Full-scale ablations, multi-seed runs, and Euclidean baselines are pending
+> due to compute constraints. The theoretical framework and 118-module
+> implementation are the primary contributions.
 
 ---
 
 ## Research Philosophy
 
-This repository represents **exploratory research**, not production-ready software. All code is provided as proof-of-concept implementations accompanying preprint publications.
+This repository represents **exploratory research**, not production-ready software.
+All code is provided as proof-of-concept implementations accompanying preprint publications.
 
 **Why this exists:**
-
-The dominant paradigm in AI scales parameters and compute, but rarely questions the geometric substrate. Scaling has been remarkably effective — but effectiveness does not imply exhaustiveness. This project asks a different question: *what if the bottleneck isn't size, but shape?*
+The dominant paradigm in AI scales parameters and compute, but rarely questions the
+geometric substrate. Scaling has been remarkably effective — but effectiveness does not
+imply exhaustiveness. This project asks a different question:
+*what if the bottleneck isn't size, but shape?*
 
 These experiments aim to:
 - **Explore alternative architectures** grounded in differential geometry and dynamical systems
 - **Democratize frontier research** by making theoretical frameworks implementable and testable
 - **Invite collaboration** from researchers who share curiosity about non-Euclidean approaches to intelligence
 
-This is not a claim of superiority over existing methods. It is an invitation to investigate whether different mathematical foundations might unlock capabilities that scaling alone cannot reach.
+This is not a claim of superiority over existing methods. It is an invitation to investigate
+whether different mathematical foundations might unlock capabilities that scaling alone cannot reach.
 
 *Contributions, critiques, and collaborations welcome.*
 
@@ -43,65 +71,77 @@ This is not a claim of superiority over existing methods. It is an invitation to
 
 ### Embedding (CGT)
 
-Hyperbolic geometry can compress high-dimensional Euclidean embeddings into lower-dimensional representations while preserving semantic structure and pairwise similarity. The CGT framework provides a student-teacher distillation pipeline with geometric fidelity guarantees on the Lorentz manifold.
+Hyperbolic geometry can compress high-dimensional Euclidean embeddings into
+lower-dimensional representations while preserving semantic structure and pairwise
+similarity. The CGT framework provides a student-teacher distillation pipeline with
+geometric fidelity guarantees on the Lorentz manifold.
 
-### Extension: Language Model Distillation (HyDRA)
+### Extension: Language Model Distillation (HyDRA v1–v4)
 
-When extending this framework to autoregressive language model distillation, a failure mode emerges: **Degenerate Equilibrium (DegEq)** — a stable attractor where angular alignment stabilises while radial dynamics remain active, leading to geometrically valid but semantically degraded representations.
+When extending this framework to autoregressive language model distillation, a failure
+mode emerges: **Degenerate Equilibrium (DegEq)** — a stable attractor where angular
+alignment stabilises while radial dynamics remain active, leading to geometrically valid
+but semantically degraded representations.
 
-Four ablation experiments — standard KL, Projective KL (D1), Decoupled Radial-Angular (D3), and Origin-Tangent Euclidean Distillation (OTED) — converge to the same fixed point (rdc* ≈ 10, relative deviation <5%) by step ≈ 1,600. OTED eliminates all hyperbolic geometry from the loss backward pass yet reaches rdc* = 10.25 ± 0.30, establishing by exhaustion that DegEq originates in the model's forward dynamics via the Christoffel coupling ṙ = −sinh(r)cosh(r)·θ̇².
+Four ablation experiments — standard KL, Projective KL (D1), Decoupled Radial-Angular
+(D3), and Origin-Tangent Euclidean Distillation (OTED) — converge to the same fixed
+point (rdc* ≈ 10, relative deviation <5%) by step ≈ 1,600. OTED eliminates all
+hyperbolic geometry from the loss backward pass yet reaches rdc* = 10.25 ± 0.30,
+establishing by exhaustion that DegEq originates in the model's forward dynamics via
+the Christoffel coupling ṙ = −sinh(r)cosh(r)·θ̇².
 
-**What this repository shows:**
-- Hyperbolic distillation converges to a stable fixed point (DegEq), empirically invariant across tested loss variants
-- HypLoRA adapter successfully injects hyperbolic geometry into frozen Euclidean LLMs without DegEq
-  (single exp/log round-trip per layer avoids the 4-layer Christoffel cascade)
-- Geometric validity does not imply linguistic quality
-- A Lyapunov-inspired potential (L_q = ½ · rdc²) characterises attractor onset
-- Late intervention produces transient suppression with relaxation time τ ≈ 905 steps (R² = 0.964)
-- OTED (T_o loss) reaches the same attractor as standard KL — proof that DegEq is forward-path intrinsic
+### Resolution: HyDRA v7
 
-**What this repository does not show:**
-- That hyperbolic models outperform Euclidean ones on language modelling
-- That DegEq is universal (tested only in this architecture and dataset)
-- That any tested intervention eliminates DegEq (all four formulations converge to rdc* ≈ 10)
+The v7 architecture resolves the instabilities identified in prior versions through
+eight integrated components:
+
+- **SublatticeLMHead**: angular projection (∂ℓ/∂r = 0), provably immune to DegEq
+- **H-AKORN**: geodesic-modulated Kuramoto oscillators at sparse pacemaker layers {4,8,11}
+- **CGT**: Lorentz-preserving initialisation with formal guarantees F1–F4
+- **AnosovTopoLoss**: differentiable Lyapunov energy via persistence landscapes, β*=(1,0)
+- **FrictionAwareCouplingSchedulerV7**: composite telemetry gate K_eff = K_max·σ_rdc·σ_logit
+- **Asymmetric PCGrad**: CE-priority gradient surgery
+- **Radial Drift Coefficient (RDC)**: early-warning diagnostic, predicts collapse ~500 steps ahead
+- **Riemannian Natural Gradient**: curvature-aware AdamW with momentum parallel transport
+
+**v7 results (1,603-step run):** best train PPL = 324.8, diversity > 0.82 throughout,
+RDC = 0.21 (healthy), K_eff constant at 0.300 (gate never needed to fire).
+Comparison: unconstrained v6 collapsed at step 700 (diversity → 0.04, logit_std → 5.98).
 
 ---
 
 ## 1. Project Overview
 
-CGT (Contrastive Geometric Transfer) is a research framework exploring whether hyperbolic geometry can compress high-dimensional Euclidean sentence embeddings into lower-dimensional representations while preserving semantic structure. The core hypothesis: negatively curved spaces may offer a more natural substrate for hierarchical information than flat Euclidean space.
+CGT (Contrastive Geometric Transfer) is a research framework exploring whether hyperbolic
+geometry can compress high-dimensional Euclidean sentence embeddings into lower-dimensional
+representations while preserving semantic structure. The core hypothesis: negatively curved
+spaces may offer a more natural substrate for hierarchical information than flat Euclidean space.
 
 ### The Question
 
-Pre-trained sentence embedding models (e.g., MiniLM-384d, MPNet-768d) produce high-dimensional vectors that incur significant storage and computational costs at scale. But the deeper question is geometric: *can we exploit the exponential volume growth of negatively curved spaces to embed hierarchical semantic structures more compactly?* This project is an empirical investigation of that hypothesis.
+Pre-trained sentence embedding models (e.g., MiniLM-384d, MPNet-768d) produce
+high-dimensional vectors that incur significant storage and computational costs at scale.
+But the deeper question is geometric: *can we exploit the exponential volume growth of
+negatively curved spaces to embed hierarchical semantic structures more compactly?*
 
 ### The Geometric Intuition
 
-Hyperbolic space (specifically, the Lorentz/hyperboloid model) offers volume growth proportional to $e^r$ rather than the polynomial $r^n$ of Euclidean space. This property suggests that hierarchical structures — trees, taxonomies, semantic hierarchies — might embed with lower distortion in fewer dimensions. CGT tests this intuition by projecting from flat Euclidean embeddings to a curved hyperbolic manifold while attempting to preserve pairwise similarity structure.
+Hyperbolic space (the Lorentz/hyperboloid model) offers volume growth proportional to e^r
+rather than the polynomial r^n of Euclidean space. This property suggests that hierarchical
+structures — trees, taxonomies, semantic hierarchies — might embed with lower distortion
+in fewer dimensions. CGT tests this intuition by projecting from flat Euclidean embeddings
+to a curved hyperbolic manifold while preserving pairwise similarity structure.
 
-### What This Repository Implements
+### Physics Connections (HyDRA v7)
 
-- A student-teacher framework where a small hyperbolic encoder learns to preserve the similarity structure of a large Euclidean teacher model
-- Lorentz manifold operations with numerical stability guarantees (exp/log maps, geodesic distances, parallel transport)
-- Multi-objective training combining contrastive learning, distance distillation, and spectral alignment
-- Evaluation protocols with falsification tests for geometric property validation
-- Ablation studies comparing hyperbolic vs. Euclidean baselines under identical conditions
-- **HypLoRA**: 100% hyperbolic LoRA adapter — injects a Lorentz manifold branch into any frozen LLM
-  (`inject_hyplora`, `LorentzLowRank`, learnable curvature K per layer, `RiemannianAdamW` V5)
-- **`cgt.diagnostics`**: additive post-training DegEq analysis module — Krioukov K* equilibrium,
-  frequency-radius correlation (Khrulkov criterion), radial collapse score, `DegEqDiagnostics`
-- Hyperbolic embedding and retrieval pipeline (experimental):
-  - Euclidean teacher → hyperbolic student projection via `CGTStudentHardened`
-  - Batch text encoding and corpus indexing (FAISS + Lorentz buffer)
-  - Hybrid retrieval: Euclidean ANN (FAISS) candidate selection + Lorentz geodesic reranking
-  - End-to-end semantic retrieval pipeline (`HyperbolicPipeline`)
+HyDRA v7 explicitly bridges machine learning with established physical theory:
 
-### What This Repository Does NOT Implement
-
-- Production-ready deployment code
-- Formal theoretical proofs of optimality
-- Complete topological invariant computation (only differentiable proxies are implemented)
-- Real-time inference optimization
+- **Special Relativity / Minkowski geometry**: ⟨x,y⟩_L = −x₀y₀ + Σxᵢyᵢ (Nickel & Kiela 2018)
+- **Statistical Physics**: Kuramoto coupled oscillator model (Kuramoto 1984; Strogatz 2000)
+- **Dynamical Systems**: Lyapunov energy E(t) ≤ E(0)·e^{−μt}, measured μ: 0.31 → 0.84
+- **Algebraic Topology**: persistent homology and Betti numbers as differentiable objectives
+- **Discrete Differential Geometry**: Forman-Ricci curvature on k-NN graphs (Forman 2003)
+- **Optimal Transport**: Gromov-Wasserstein divergence as structural isometry monitor
 
 ---
 
@@ -109,85 +149,71 @@ Hyperbolic space (specifically, the Lorentz/hyperboloid model) offers volume gro
 
 ### 2.1 Lorentzian Hyperbolic Geometry
 
-The geometric substrate is the Lorentz (hyperboloid) model, embedding $H^n$ as the upper sheet of a two-sheeted hyperboloid in Minkowski space $\mathbb{R}^{n,1}$ with signature $(-,+,+,\ldots,+)$.
+The geometric substrate is the Lorentz (hyperboloid) model, embedding H^n as the upper
+sheet of a two-sheeted hyperboloid in Minkowski space R^{n,1} with signature (−,+,+,…,+).
 
 **Implemented operations:**
-- Minkowski inner product: $\langle x, y \rangle_L = -x_0 y_0 + \sum_i x_i y_i$
-- Geodesic distance: $d_H(x,y) = \frac{1}{\sqrt{K}} \text{arccosh}(-K \langle x, y \rangle_L)$
-- Exponential map: Projects tangent vectors to the manifold
-- Logarithmic map: Projects manifold points to tangent space
-- Parallel transport: Transports vectors along geodesics
-- Fréchet mean: Iterative algorithm following Lou et al. (2020)
+- Minkowski inner product: ⟨x, y⟩_L = −x₀y₀ + Σᵢ xᵢyᵢ
+- Geodesic distance: d_H(x,y) = (1/√K) arccosh(−K ⟨x, y⟩_L)
+- Exponential map: projects tangent vectors to the manifold
+- Logarithmic map: projects manifold points to tangent space
+- Parallel transport: transports vectors along geodesics (with momentum correction in v7)
+- Fréchet mean: iterative algorithm following Lou et al. (2020)
+- Projection: x₀ = √(1/K + ‖x_{1:n}‖²) — enforces Lorentz constraint exactly
 
-All operations include numerical stability measures (safe acosh, tangent space projection) explicitly labeled as such in the code.
-
-> **Reference:** The Lorentz model implementation and the geometric compression methodology are formally specified in *Lorentzian Hyperbolic Compression: A Family of Geometric Models for Euclidean-to-Hyperbolic Representation Transfer* (DOI: [10.5281/zenodo.18382872](https://doi.org/10.5281/zenodo.18382872)).
-
-> **Numerical Stability Reference:** The deterministic root causes of Lorentz manifold instabilities — catastrophic cancellation in the Minkowski inner product, Precision Boundary Rupture at dtype boundaries, and the `acosh` singularity — are rigorously analyzed in *Topological Bridges and Precision-Aware Geometry: Eradicating Deterministic Numerical Instability in Lorentz Manifold Deep Learning* (DOI: [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794)). That paper formally introduces the TB-PAG framework and proves that a floating-point residual δ ∼ 10⁻⁷ is geometrically amplified to O(10⁻³) geodesic errors via `acosh(1+δ) ≈ √(2δ)`. The `lorentz_hardened.py` module implements the hyperboloid reprojection and `acosh`-safe surrogate strategies described therein.
+> **Reference:** Lorentz model implementation formally specified in
+> *Lorentzian Hyperbolic Compression* (DOI: [10.5281/zenodo.18382872](https://doi.org/10.5281/zenodo.18382872))
+>
+> **Numerical Stability:** TB-PAG framework analysed in
+> *Topological Bridges and Precision-Aware Geometry*
+> (DOI: [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794)).
+> Float64 mandatory for all Lorentz boundary operations; float32 causes
+> catastrophic cancellation at r > 3.
 
 ### 2.2 Contrastive Geometric Transfer
 
-The core CGT method trains a student encoder to project Euclidean teacher embeddings onto the Lorentz manifold while preserving similarity structure. The loss function combines:
+The core CGT method trains a student encoder to project Euclidean teacher embeddings
+onto the Lorentz manifold while preserving similarity structure. The loss combines:
 
-1. **Hyperbolic InfoNCE**: Contrastive loss using geodesic distances as similarity metric
-2. **Power-law distillation**: Empirical distance scaling ($d_{target} = d_{teacher}^\alpha$) to address capacity mismatch
-3. **Spectral alignment**: Graph Laplacian eigenvalue matching (first-order approximation)
-4. **Topological regularization**: Differentiable proxy for Betti-0 (connectivity)
+1. **Hyperbolic InfoNCE**: contrastive loss using geodesic distances as similarity metric
+2. **Power-law distillation**: empirical distance scaling (d_target = d_teacher^α)
+3. **Spectral alignment**: graph Laplacian eigenvalue matching (first-order approximation)
+4. **Topological regularization**: differentiable proxy for Betti-0 (connectivity)
 
-> **Reference:** The CGT methodology is documented in *Contrastive Geometric Transfer: Efficient Sentence Embeddings via Hyperbolic Projection with 24× Compression* (DOI: [10.5281/zenodo.18379741](https://doi.org/10.5281/zenodo.18379741)).
+> **Reference:** CGT methodology documented in
+> *Contrastive Geometric Transfer: Efficient Sentence Embeddings via Hyperbolic Projection with 24× Compression*
+> (DOI: [10.5281/zenodo.18379741](https://doi.org/10.5281/zenodo.18379741))
 
 ### 2.3 Hyperbolic Transformer (H-LLM)
 
-A complete implementation of a Hyperbolic-native Transformer for language modeling, based on the Lorentz model with geodesic attention.
+A complete implementation of a hyperbolic-native Transformer for language modeling.
 
 **Architecture:**
-- **HyperbolicEmbedding**: Token embeddings stored in tangent space, projected via exp_map
-- **HyperbolicLayerNorm**: Riemannian normalization (log → normalize spatial → exp)
-- **HyperbolicAttention**: Geodesic distance-based attention: $s_{ij} = -d_H(q_i, k_j)^2 / \tau$
-- **HyperbolicFFN**: Tangent space processing (log → linear → GELU → linear → exp)
-- **Geodesic Residual**: Approximated via tangent space addition
+- **HyperbolicEmbedding**: token embeddings stored in tangent space, projected via exp_map
+- **HyperbolicLayerNorm**: Riemannian normalisation (log → normalise spatial → exp)
+- **HyperbolicAttention**: geodesic distance-based attention: s_ij = −d_H(q_i, k_j)² / τ
+- **HyperbolicFFN**: tangent space processing (log → linear → GELU → linear → exp)
+- **Geodesic Residual**: approximated via tangent space addition
 
-**Training:**
-- Multi-objective loss: LM + InfoNCE + manifold fidelity + radius regularization
-- Teacher distillation from GPT-2 (soft targets + hidden state alignment)
-- Stability monitoring: radius bounds, manifold violations
-
-**Notebooks:**
-- `hyperbolic_llm_training.ipynb`: Full training pipeline with WikiText-2
-- `prototype_hyperbolic_llm_training.ipynb`: Extended prototype with chat interface
-- `h_akorn_llm_training.ipynb`: H-AKORN attention variant with Kuramoto phase dynamics
-
-> **Reference:** The Hyperbolic Transformer specification is described in *Hyperbolic-Native Large Language Model: Complete Mathematical Specification for Direct Implementation* (DOI: [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897)). The H-AKORN attention mechanism is specified in *Geometric Dynamics in Neural Architectures: The Integration of Hyperbolic Adaptive Kuramoto Oscillators into Large Language Models* (DOI: [10.5281/zenodo.18394033](https://doi.org/10.5281/zenodo.18394033)).
+> **Reference:** H-LLM specification in
+> *Hyperbolic-Native Large Language Model*
+> (DOI: [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897)).
+> H-AKORN mechanism specified in
+> *Geometric Dynamics in Neural Architectures*
+> (DOI: [10.5281/zenodo.18394033](https://doi.org/10.5281/zenodo.18394033))
 
 ### 2.4 Ψ-SLM Extensions (Experimental)
 
-The `psi_extensions/` module contains experimental implementations inspired by the Geometric Control Manifolds framework. These are prototypes, not production components.
+The `psi_extensions/` module contains experimental implementations inspired by the
+Geometric Control Manifolds framework.
 
-**H-NCA (Hyperbolic Neural Cellular Automata):**
-- Local state updates on the Lorentz manifold
-- Four-stage cycle: perception → log_map → neural operator → exp_map
-- Supports k-NN or adjacency-based neighbor selection
+**H-NCA (Hyperbolic Neural Cellular Automata):** local state updates on the Lorentz manifold.
 
-**H-AKOrN (Hyperbolic Artificial Kuramoto Oscillatory Neurons):**
-- Phase synchronization dynamics for the binding problem
-- Kuramoto coupling: $\frac{d\theta_i}{dt} = \omega_i + \sum_j K_{ij} \sin(\theta_j - \theta_i)$
-- Coupling decays exponentially with hyperbolic distance
+**H-AKOrN (Hyperbolic Kuramoto Oscillatory Neurons):**
+- Phase synchronisation dynamics: dθᵢ/dt = ωᵢ + Σⱼ Kᵢⱼ sin(θⱼ − θᵢ)
+- Coupling decays exponentially with hyperbolic distance: Kᵢⱼ = K₀·exp(−d_L(i,j)/τ)
 
-**Topological Constraint Field:**
-- Persistence landscape approximation for differentiable topology
-- Provides scalar feedback for "topological downward causation"
-- This is a CLASSICAL APPROXIMATION, not exact TDA
-
-> **References:**
-> - *Hyperbolic Neural Cellular Automata* (DOI: [10.5281/zenodo.18334091](https://doi.org/10.5281/zenodo.18334091))
-> - *Geometric Control Manifolds for Hyperbolic Self-Organizing Intelligence* (DOI: [10.5281/zenodo.18334132](https://doi.org/10.5281/zenodo.18334132))
-> - *From Geometric Control Manifolds to Toy Ψ-SLM* (DOI: [10.5281/zenodo.18334140](https://doi.org/10.5281/zenodo.18334140))
-
-### 2.5 Gromov-Wasserstein Transfer
-
-An optional geometric alignment mechanism using entropic Gromov-Wasserstein optimal transport to compare metric spaces without requiring coordinate correspondence.
-
-> **Reference:** *Unsupervised Topological Alignment Between Neural and Phenomenal Spaces via Gromov-Wasserstein Transport* (DOI: [10.5281/zenodo.18334153](https://doi.org/10.5281/zenodo.18334153)).
+**Topological Constraint Field:** persistence landscape approximation for differentiable topology.
 
 ---
 
@@ -199,857 +225,257 @@ An optional geometric alignment mechanism using entropic Gromov-Wasserstein opti
 src/cgt/
 ├── geometry/
 │   ├── lorentz.py              # Lorentz manifold operations (exp/log maps, distances)
-│   ├── lorentz_hardened.py     # Numerically hardened version with TB-PAG stability
+│   ├── lorentz_hardened.py     # TB-PAG numerically hardened version
+│   ├── lorentz_v2.py           # v7 substrate: float64, safe_acosh, proj
 │   └── frechet.py              # Fréchet mean (Lou et al. 2020)
 │
 ├── models/
-│   ├── cgt_hardened.py         # CGTStudentHardened encoder (main model)
+│   ├── sublattice_lm_head.py   # SublatticeLMHead — angular mode, DegEq immunity
+│   ├── cgt_hardened.py         # CGTStudentHardened + HomeostaticField
 │   ├── student.py              # Base student architecture
-│   ├── transformer_v2.py       # 4L × 128d × 4H hyperbolic transformer
-│   ├── lm_head_v2.py           # Intrinsic Lorentz LM head
-│   ├── geodesic_lm_head.py     # GeodesicLMHeadV2, AngularLMHead, AngularLMHeadV2, replace_lm_head_angular
-│   ├── hyplora.py              # HypLoRA: LorentzLowRank, HypLoRALayer, inject_hyplora
-│   └── hyperbolic_transformer.py  # H-LLM prototype
+│   ├── transformer_v2.py       # HyperbolicTransformerV2 (12L × 256d × 8H)
+│   ├── layer_v2.py             # RiemannianLayerNormV2, HyperbolicFFNV2,
+│   │                           # HyperbolicResidualV2, HAKORNLayerV2
+│   ├── hakorn_attention_v2.py  # HyperbolicKuramotoAttentionV2
+│   ├── phase_weighted_attention.py  # PhaseWeightedAttention (alpha learnable)
+│   ├── geodesic_lm_head.py     # GeodesicLMHeadV2, AngularLMHeadV2
+│   ├── hyplora.py              # HypLoRA: LorentzLowRank, inject_hyplora
+│   └── hyperbolic_transformer.py    # H-LLM prototype
 │
 ├── losses/
-│   ├── core.py                 # HyperbolicInfoNCE, PowerLawDistillation, TopoLoss
-│   ├── losses_hardened.py      # Hardened multi-objective loss
-│   ├── hyperbolic_lm_losses.py # H-LLM losses
-│   ├── hybrid_active_loss.py   # Experimental active learning losses
-│   └── topo_bootstrap.py       # Topological bootstrap regularization
+│   ├── anosov_topo_loss.py     # AnosovTopoLoss, FormanRicciRegularizer
+│   ├── persistence_landscape.py # PersistenceLandscape, PersistenceLandscapeLoss
+│   ├── core.py                 # HyperbolicInfoNCE, PowerLawDistillation
+│   └── losses_hardened.py      # Production multi-objective loss suite
 │
 ├── distillation/
-│   ├── distillation_v2.py      # DistillationTrainerV2, EarlyStoppingV3, DegEqController
-│   ├── geometric_distillation.py  # D1 (ProjectiveKL), D3 (DecoupledRadialAngular), F1/F2/φ
-│   └── hyperbolic_projector.py    # HyperbolicProjectorV3 — angular/radial gradient decoupling
+│   ├── distillation_v2.py      # DistillationTrainerV2, EarlyStoppingV3
+│   ├── active_integration_v7.py # FrictionAwareCouplingSchedulerV7,
+│   │                           # HPCTrainingGuardV7, compute_l_align,
+│   │                           # attach_sparse_hakorn, activate_all_modules_v7
+│   ├── geometric_distillation.py  # OTEDLoss, ProjectiveKL, DecoupledRadialAngular
+│   └── adaptive_controller.py  # AdaptiveHyperController (3-level closed-loop)
 │
 ├── dynamics/
 │   ├── riemannian_adamw.py     # RiemannianAdamW + parallel transport of momentum
-│   └── kuramoto_v2.py          # Kuramoto oscillator (post-convergence, negative result)
+│   ├── pcgrad.py               # PCGrad (symmetric + asymmetric CE-priority)
+│   ├── geometric_controller.py # GeometricController
+│   └── kuramoto_v2.py          # Kuramoto oscillator system
+│
+├── diagnostics/
+│   ├── gw_monitor.py           # GWDivergenceMonitor (Gromov-Wasserstein)
+│   ├── hysteresis.py           # HysteresisDetector, PhaseTrajectoryAnalyzer
+│   ├── hpc_guard.py            # HPCTrainingGuard
+│   └── degeq.py                # DegEqDiagnostics, Krioukov K* analysis
+│
+├── guard/
+│   ├── domain_guard_v2.py      # DomainGuardV2 — tensor manifold tagging
+│   └── paranoid_monitor_v2.py  # ParanoidMonitorV2 — per-op manifold assertion
 │
 ├── evaluation/
-│   └── metrics.py              # Falsification protocols (F1-F3), STS-B evaluation
-│
-├── regularization/
-│   ├── lipschitz.py            # Lipschitz regularization
-│   └── lipschitz_analysis.py   # Lipschitz constant analysis
-│
-├── psi_extensions/             # Research prototypes — not central to main findings
-│   ├── dynamics/h_nca.py       # Hyperbolic Neural Cellular Automata
-│   ├── binding/h_akorn.py      # Hyperbolic Kuramoto oscillators
-│   ├── topology/topological_field.py  # Differentiable topology proxy
-│   └── transfer/gw_transfer.py # Gromov-Wasserstein alignment
-│
-├── utils/
-│   └── helpers.py              # Utility functions
+│   ├── thesis_falsification.py # ThesisFalsificationSuite (F1–F4 protocols)
+│   └── metrics.py              # STS-B, effective rank, distortion
 │
 ├── embedding/                  # Hyperbolic retrieval pipeline (experimental)
-│   ├── encoder.py              # Teacher → hyperbolic projection (HyperbolicEncoder)
-│   ├── index.py                # FAISS + Lorentz buffer
-│   ├── retrieval.py            # FAISS candidate + Lorentz geodesic rerank
-│   ├── distance.py             # Lorentz batch distance utilities (inference-optimised)
-│   └── pipeline.py             # HyperbolicPipeline end-to-end
+│   ├── encoder.py, index.py, retrieval.py, distance.py, pipeline.py
 │
-├── diagnostics/                # Post-training DegEq diagnostics (additive — no training code modified)
-│   ├── __init__.py             # DegEqDiagnostics, k_equilibrium_from_zipf, build_token_counts
-│   └── degeq.py                # Krioukov K* analysis, freq-radius correlation, radial collapse
-│
-└── api/
-    └── entrypoint.py           # SafeHyperbolicModel unified API
-
-experiments/
-├── ablations/
-│   ├── euclidean_ablation.py   # CGT vs Euclidean baseline (Part IV)
-│   ├── dimensional_ablation.py # Dimension crossover analysis
-│   ├── mrl_comparison.py       # Matryoshka Representation Learning comparison
-│   └── bq_comparison.py        # Binary quantization comparison
-│
-├── benchmarks/
-│   ├── mteb_evaluation.py      # MTEB dataset evaluation
-│   ├── latency_benchmark.py    # Inference timing
-│   └── multi_model_benchmark.py # Multi-teacher benchmarks
-│
-└── unified/
-    ├── final_executor_v2.py    # Cartesian experiment executor
-    └── evaluation.py           # Unified evaluation pipeline
-
-notebooks/
-├── hyperbolic_llm_training.ipynb           # H-LLM training with GPT-2 distillation
-├── prototype_hyperbolic_llm_training.ipynb # Extended H-LLM with chat interface
-├── CGT_GW.ipynb                            # CGT-GW three-phase training
-├── HyDRA.ipynb                             # HyDRA reproduction (Google Colab compatible)
-└── final_experiment_launcher_v*.ipynb      # CGT experiment notebooks (v0-v7)
+└── psi_extensions/             # Research prototypes
+    ├── binding/h_akorn.py      # HAKORNLayer, HAKORNConfig, PhaseCoherenceLoss
+    ├── dynamics/h_nca.py       # H-NCA
+    ├── topology/               # Topological constraint field
+    └── transfer/gw_transfer.py # Gromov-Wasserstein alignment
 ```
 
-### Module Mapping
+---
 
-| Module | Implements | Theoretical Basis |
-|--------|-----------|-------------------|
-| `geometry/lorentz.py` | Lorentz model operations | Exact closed-form for constant negative curvature |
-| `geometry/frechet.py` | Fréchet mean | Lou et al. (2020), exact iterative algorithm |
-| `models/cgt_hardened.py` | CGT student encoder | MLP projector + exp_map + homeostatic field |
-| `models/hyperbolic_transformer.py` | H-LLM Transformer | Geodesic attention, tangent FFN, Riemannian LayerNorm |
-| `losses/core.py` | CGT multi-objective loss | InfoNCE (exact), distillation (heuristic), topo (proxy) |
-| `losses/hyperbolic_lm_losses.py` | H-LLM losses | LM + manifold fidelity + radius + teacher distillation |
-| `models/hyplora.py` | HypLoRA adapter | LLR on H^n, inject/extract/merge, diagnostics |
-| `diagnostics/degeq.py` | DegEq post-training analysis | Krioukov 2010, Khrulkov 2020, Yang 2025 |
-| `psi_extensions/dynamics/h_nca.py` | H-NCA | Discretized Riemannian flow (Euler) |
-| `psi_extensions/binding/h_akorn.py` | H-AKOrN | Kuramoto dynamics with geodesic coupling |
-| `psi_extensions/topology/topological_field.py` | Topological loss | Persistence landscape (differentiable proxy) |
+## 4. HyDRA v7: Complete Architecture Reference
 
-### 3.1 Hyperbolic Embedding and Retrieval Pipeline
+> **Preprint:** *Temporal Binding on the Lorentz Manifold*
+> **DOI:** [10.5281/zenodo.19583481](https://doi.org/10.5281/zenodo.19583481)
 
-The repository includes a full inference pipeline bridging Euclidean embeddings, hyperbolic projection, and semantic retrieval (`src/cgt/embedding/`), intended for use after a `CGTStudentHardened` model has been trained.
+### Eight Novel Components
 
-This module is **experimental** — not optimised for production latency.
+| Component | Source | Role |
+|-----------|--------|------|
+| SublatticeLMHead | `models/sublattice_lm_head.py` | Angular logits, ∂ℓ/∂r=0, DegEq immunity |
+| H-AKORN | `psi_extensions/binding/h_akorn.py` | Geodesic Kuramoto binding at layers {4,8,11} |
+| CGT | `models/cgt_hardened.py` | Lorentz-preserving teacher→student init |
+| AnosovTopoLoss | `losses/anosov_topo_loss.py` | Lyapunov topological energy, β*=(1,0) |
+| PersistenceLandscapeLoss | `losses/persistence_landscape.py` | Differentiable TDA |
+| FrictionAwareCouplingSchedulerV7 | `distillation/active_integration_v7.py` | Composite Kuramoto gate |
+| Asymmetric PCGrad | `dynamics/pcgrad.py` | CE-priority gradient surgery |
+| RiemannianAdamW | `dynamics/riemannian_adamw.py` | Curvature-aware AdamW + momentum PT |
 
-**Pipeline stages:**
+### Key Metrics Introduced
 
-1. **Text → teacher embedding** — A multilingual `SentenceTransformer` encodes texts into L2-normalised Euclidean vectors (`float32`, shape `[N, teacher_dim]`).
-2. **Euclidean → hyperbolic projection** — The teacher embeddings are passed through `CGTStudentHardened`, mapping them onto the Lorentz manifold H^n (`[N, student_dim + 1]`).
-3. **Corpus indexing** — Two parallel structures: a **FAISS `IndexFlatIP`** on Euclidean embeddings for fast ANN, and a **`torch.Tensor` buffer** of hyperbolic embeddings for geodesic reranking.
-4. **FAISS candidate search** — The query is encoded by the teacher and submitted to FAISS for `k_candidates` approximate neighbours.
-5. **Lorentz geodesic reranking** — The query is projected to H^n; geodesic distances are computed via the Lorentz inner product: `d(q, c) = (1/√K) · arccosh(−K · ⟨q, c⟩_L)`. Candidates are reordered by ascending geodesic distance.
+| Metric | Formula | Early warning |
+|--------|---------|---------------|
+| RDC | σ_ℓ / (L_hid + ε) | ~500 steps before collapse |
+| K_eff | K_max · σ_rdc · σ_logit | Kuramoto safety monitor |
+| GW Divergence | ‖D^S − D^T‖_F / M | Structural isometry test |
+| Stratification quality | (r̄_B − r̄_A) / r̄_rare | Sublattice health |
 
-**Key design insight:** Retrieval is decomposed into fast approximate search in Euclidean space (FAISS) and precise semantic ranking in hyperbolic space (Lorentz geodesics), avoiding prohibitive brute-force geodesic computation over the full corpus.
+### v7 Configuration
+
+```python
+CFG = {
+    "model":    {"n_embd": 256, "n_layer": 12, "n_head": 8},
+    "training": {"alpha": 1.0,  # CE ALWAYS 1.0 — never reduce
+                 "learning_rate": 3e-4, "warmup_steps": 4000, "batch_size": 8},
+    "topo":     {"lambda_topo": 0.10, "betti_target": [1, 0], "warmup_steps": 2000},
+    "l_align":  {"lambda_align": 0.05, "sample_k": 64},
+    "kuramoto_gate": {"coupling_min": 0.05, "coupling_max": 0.30,
+                      "rdc_danger": 2.0, "logit_std_target": 2.5},
+}
+```
+
+### Critical Implementation Notes
+
+1. `allow_tf32 = False` — set globally before model construction
+2. Float64 scope: all Lorentz boundary operations (minkowski_inner, dist, exp/log, proj)
+3. No `torch.compile` — H-AKORN phase buffer uses in-place detach (graph breaks)
+4. CE weight `λ_CE = 1.0` always — never implement 3-phase CE reduction
+5. `VolumeWeightedCE = None` — conflicts with SublatticeLMHead (double-counting)
+6. HAKORNLayer import: `from cgt.psi_extensions.binding import HAKORNLayer`
+7. Call `attach_sparse_hakorn` before creating `DistillationTrainerV2`
 
 ---
 
-## 4. Implemented Geometry and Constraints
+## 5. HyDRA v1–v4: Attractor Characterisation
 
-This project uses the **Lorentz (hyperboloid) model** exclusively.
+> **DOI (v4):** [10.5281/zenodo.19501160](https://doi.org/10.5281/zenodo.19501160)
 
-**Numerical stability measures:**
-- `safe_acosh()`: Taylor expansion near x=1 to avoid gradient explosion
-- `safe_sqrt()`: Minimum clamp to prevent infinite gradients at zero
-- `proj()`: Enforces the hyperboloid constraint ⟨x,x⟩ = -1/K (clamp-based, no additive ε), preventing manifold drift
-- `proj_tangent()`: Ensures vectors satisfy ⟨x, v⟩_L = 0
+### Degenerate Equilibrium — Proof by Elimination
 
-**What is NOT implemented:**
-- Exact Betti numbers (only differentiable proxies via persistence landscapes)
-- OT-optimal bounds (power-law distillation is an empirical heuristic)
-- Global Lipschitz bounds (local estimates only)
-- Poincaré ball model
+| Variant | Loss formulation | rdc* | Onset |
+|---------|-----------------|------|-------|
+| Baseline KL | Standard KL distillation | 9.82 ± 0.17 | ~1,600 steps |
+| D1 (Projective KL) | Angular KL only | 10.04 ± 0.12 | ~1,600 steps |
+| D3 (Decoupled R-A) | Separate radial + angular | 10.04 ± 0.12 | ~1,600 steps |
+| **OTED (T_o loss)** | **All loss in flat T_oH^n** | **10.25 ± 0.30** | **~1,600 steps** |
 
----
+OTED eliminates all hyperbolic geometry from the backward pass. Same fixed point.
+**DegEq is forward-path intrinsic, not a loss design choice.**
 
-## 5. Relationship to the Papers
+### Extended Training Results (v4)
 
-### Directly Implemented
-
-| Concept | DOI | Module |
-|---------|-----|--------|
-| Lorentz manifold operations | [10.5281/zenodo.18382872](https://doi.org/10.5281/zenodo.18382872) | `geometry/lorentz.py` |
-| CGT student-teacher framework | [10.5281/zenodo.18379741](https://doi.org/10.5281/zenodo.18379741) | `models/cgt_hardened.py` |
-| Hyperbolic InfoNCE loss | [10.5281/zenodo.18379741](https://doi.org/10.5281/zenodo.18379741) | `losses/core.py` |
-| Euclidean ablation methodology | [10.5281/zenodo.18379741](https://doi.org/10.5281/zenodo.18379741) | `experiments/ablations/euclidean_ablation.py` |
-| TB-PAG numerical stability | [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794) | `geometry/lorentz_hardened.py` |
-| Hyperbolic Transformer (H-LLM) | [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897) | `models/hyperbolic_transformer.py` |
-| H-LLM training losses | [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897) | `losses/hyperbolic_lm_losses.py` |
-| HyDRA / DegEq characterisation | [10.5281/zenodo.19501160](https://doi.org/10.5281/zenodo.19501160) | `distillation/` |
-| Adaptive hyperparameter control | — | `distillation/adaptive_controller.py` |
-| HypLoRA adapter | Yang et al. NeurIPS 2025 (arxiv 2410.04010) | `models/hyplora.py` |
-
-### Partially Approximated
-
-| Concept | DOI | Approximation |
-|---------|-----|---------------|
-| Topological regularization | [10.5281/zenodo.18334132](https://doi.org/10.5281/zenodo.18334132) | Persistence landscape proxy (not exact Betti) |
-| H-NCA dynamics | [10.5281/zenodo.18334091](https://doi.org/10.5281/zenodo.18334091) | Euler discretization (not continuous flow) |
-| H-AKOrN binding | [10.5281/zenodo.18334091](https://doi.org/10.5281/zenodo.18334091) | RK2 integration of Kuramoto equations |
-| GW alignment | [10.5281/zenodo.18334153](https://doi.org/10.5281/zenodo.18334153) | Entropic regularization via POT library |
-
-### Theoretical Only (Not Implemented)
-
-| Concept | DOI | Status |
-|---------|-----|--------|
-| Quantum topological estimation | [10.5281/zenodo.18334098](https://doi.org/10.5281/zenodo.18334098) | Not implemented (classical approximation only) |
-| Continuous Riemannian flow | [10.5281/zenodo.18334140](https://doi.org/10.5281/zenodo.18334140) | Discretized as Euler updates |
-| Anosov flow stability | [10.5281/zenodo.18334123](https://doi.org/10.5281/zenodo.18334123) | Not implemented |
-| Lorentz-Manifold Transformers | [10.5281/zenodo.18334083](https://doi.org/10.5281/zenodo.18334083) | Prototype only in notebooks |
+| Variant | Steps | Best PPL | DegEq onset |
+|---------|-------|----------|-------------|
+| A (baseline) | 10k | 482.8 | ~5,400 |
+| D (hyperbolic vocab) | 10k | 401.0 | ~5,400 |
+| E (symmetric vocab) | 13k | 377.6 | >13k |
+| **F (full Riemannian)** | **33.4k** | **291.3** | **>33.4k (delayed)** |
 
 ---
 
-## 6. Experimental / Research Status
+## 6. HypLoRA: 100% Hyperbolic LoRA Adapter
 
-This is **research code** intended for reproducing experimental results, ablation studies, and academic reference. It is **not** production-ready software, optimized for deployment, or validated beyond the reported experiments.
+> **Architecture:** CGT-native implementation of [HypLoRA (Yang et al., NeurIPS 2025)](https://arxiv.org/abs/2410.04010)
+> **Module:** `src/cgt/models/hyplora.py`
 
-**Single-seed results:** All experiments use SEED=42. Multi-seed validation is reserved for future work. The Euclidean baseline comparison is estimated rather than directly run at identical parameter count and steps.
+HypLoRA injects a fully hyperbolic adapter branch into any frozen LLM, operating directly
+on Lorentz manifold coordinates. Avoids DegEq by design: a single exp/log round-trip per
+layer avoids the 4-layer Christoffel cascade.
 
-**Attractor characterisation scope:** The rdc* ≈ 10, τ ≈ 905 steps results are empirical and restricted to the tested architecture (4L × 128d × 4H) and dataset (WikiText-2). Generalisation to other hyperbolic models or training objectives requires further investigation.
+```python
+from cgt.models.hyplora import HypLoRAConfig, inject_hyplora
+from cgt.dynamics.riemannian_adamw import RiemannianAdamW
 
-### Limitations
+config = HypLoRAConfig(rank=8, alpha=16.0, n_embd=4096, curvature=1.0, learn_curvature=True)
+inject_hyplora(model, config, target_modules=["q_proj", "v_proj"])
 
-1. **Topological claims**: Differentiable proxies only. No claims about exact homology preservation.
-2. **Scalability**: Experiments use sentence-level embeddings (hundreds to thousands of samples). Behavior at larger scales is not validated.
-3. **Hyperparameter sensitivity**: Loss weights were tuned empirically; different datasets may require re-tuning.
-4. **Numerical precision**: The code uses float64 for geometric operations. Float32 may introduce manifold violations.
-5. **Embedding and retrieval pipeline**: Experimental, not optimised for production latency.
-6. **FAISS scalability**: Not validated beyond medium-scale datasets; no IVF/HNSW tuning applied.
-7. **Hybrid retrieval heuristic**: The Euclidean + hyperbolic decomposition is a heuristic, not theoretically optimal.
-
-### Falsification Protocols
-
-The code includes three falsification tests (not proofs):
-- **F1 (Homotopy)**: Tests β₀ stability under input perturbation
-- **F2 (Stability)**: Measures encoder perturbation amplification
-- **F3 (Forman-Ricci)**: Checks discrete curvature on k-NN graph
-
-These tests can **disprove** claims but cannot **prove** geometric properties hold globally.
+optimizer = RiemannianAdamW(
+    list(model.named_parameters()),
+    substrate=config.get_substrate(), lr=3e-4,
+    radial_momentum_projection=True,
+)
+```
 
 ---
 
-## 7. Installation and Usage
+## 7. Experimental / Research Status
 
-### Installation
+**Single-seed results.** All experiments use SEED=42. Multi-seed validation is reserved
+for future work due to compute constraints.
+
+**Limitations:**
+1. Topological claims use differentiable proxies only — not exact Betti numbers
+2. Experiments limited to ≤33,400 steps on a single GPU (Colab Pro)
+3. Hyperbolic vs. Euclidean baseline at matched parameter count pending
+4. Retrieval pipeline not optimised for production latency
+
+---
+
+## 8. Installation and Usage
 
 ```bash
 pip install -e .
-```
-
-### Basic Usage — CGT Sentence Embedding Compression
-
-```python
-from cgt.models.cgt_hardened import CGTStudentHardened, StudentConfig
-from cgt.geometry.lorentz_hardened import LorentzSubstrateHardened, LorentzConfig
-import torch
-
-# Initialize geometry
-substrate = LorentzSubstrateHardened(LorentzConfig(curvature=-1.0))
-
-# Initialize model
-model = CGTStudentHardened(
-    config=StudentConfig(input_dim=384, hidden_dim=256, output_dim=32),
-    lorentz=substrate,
-)
-
-# Forward pass
-teacher_embeddings = torch.randn(32, 384, dtype=torch.float64)
-hyperbolic_embeddings = model(teacher_embeddings)  # [32, 33] on H^32
-
-# Compute similarity using Lorentz distance
-dist = substrate.dist(hyperbolic_embeddings[:16], hyperbolic_embeddings[16:])
-similarity = -dist  # Negative distance = similarity
-```
-
-### Running Experiments
-
-```python
-from experiments.unified.final_executor_v2 import run_cartesian_execution
-from pathlib import Path
-
-summary = run_cartesian_execution(
-    output_base=Path("./outputs"),
-    scope="canonical",  # "minimal", "canonical", or "full_cartesian"
-    seed=42,
-)
-```
-
-### Hyperbolic Embedding and Retrieval (Experimental)
-
-```python
-from sentence_transformers import SentenceTransformer
-from cgt.models.cgt_hardened import CGTStudentHardened
-from cgt.embedding.pipeline import HyperbolicPipeline
-
-teacher = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-student = CGTStudentHardened(teacher_dim=384, student_dim=32, hidden_dim=256)
-# student.load_state_dict(torch.load("checkpoint.pt")["model_state_dict"])
-
-pipeline = HyperbolicPipeline(teacher, student)
-pipeline.index_corpus(texts)
-
-results = pipeline.query("What is hyperbolic embedding?")
-for ev in results:
-    print(ev.rank, ev.score, ev.text[:80])
-```
-
----
-
-## 10. HyDRA: Hyperbolic Distillation with Riemannian Adaptation
-
-> **Paper:** HyDRA v3 — Hyperbolic Distillation with Riemannian Adaptation: Attractor Invariance and Proof by Elimination  
-> **DOI (v2):** [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998)  
-> **DOI (v3):** [10.5281/zenodo.19483206](https://doi.org/10.5281/zenodo.19483206)  
-> **DOI (v4):** [10.5281/zenodo.19501160](https://doi.org/10.5281/zenodo.19501160)  
-> **SHA-256:** `9c844919d58f29cb7bb19b90154131996b5e3b2d6458c57834605068d3e8685e`
-
-HyDRA extends the CGT framework to **language model distillation**, training a compact hyperbolic student (≈12M parameters, H^128) via knowledge distillation from GPT-2-small (117M) on WikiText-2. Every layer — attention, feed-forward, and residual connections — preserves the Riemannian manifold constraint to float64 precision. The primary contribution is the identification, formal characterization, and mitigation of **Degenerate Equilibrium (DegEq)**: a stable fixed point where angular convergence completes but radial scale grows monotonically, converging to a geometrically stable but semantically degraded fixed point.
-
-### New Modules (v2)
-
-| Module | Description |
-|--------|-------------|
-| `geometry/lorentz_v2.py` | Isolated Lorentz substrate with TB-PAG precision policy, `safe_acosh_v2`, L2-norm clamped `exp_map_zero` |
-| `models/transformer_v2.py` | Compact hyperbolic transformer (4L × 128d × 4H) with geodesic residuals |
-| `models/lm_head_v2.py` | **Intrinsic Lorentz LM head** — Minkowski inner product scoring, replaces broken `log_map_zero` approach |
-| `models/layer_v2.py` | Riemannian Layer Normalization with `r_max = 1.5` tangent clamp |
-| `models/hakorn_attention_v2.py` | HaKOrN attention variant (experimental) |
-| `distillation/distillation_v2.py` | Full distillation trainer: loss, EarlyStoppingV3, LossBalancer, AdaptiveTuner, DegEqController |
-| `distillation/geometric_distillation.py` | D1 (ProjectiveKL), D3 (DecoupledRadialAngular), F1/F2/φ metrics |
-| `distillation/hyperbolic_projector.py` | HyperbolicProjectorV3 — angular/radial gradient decoupling |
-| `distillation/geometric_distillation.py` | **OTEDLoss** — all loss in T_o H^n (Christoffel-free backward) |
-| `dynamics/riemannian_adamw.py` | RiemannianAdamW + parallel transport of momentum |
-| `dynamics/kuramoto_v2.py` | Kuramoto oscillator system (`dθ/dt = ω + K/N Σ sin(θⱼ − θᵢ)`) |
-| `api/entrypoint.py` | `SafeHyperbolicModel` + `SafeModelConfig` unified API |
-
-### Key Innovations
-
-**1. Degenerate Equilibrium (DegEq) Characterization**
-
-A stable fixed point where angular convergence is complete but radial scale grows monotonically. Formally defined by three simultaneous conditions:
-- `L_hidden < 0.25` (angular learning complete)
-- `rdc_ema > 15` (radial drift dominant)
-- `σ_logit > 2.0` (logit overconfidence)
-
-**2. Radial Drift Coefficient (RDC)**
-
-Real-time proxy for DegEq onset, computed in-training at every step:
-```
-RDC(t) = σ_logit(t) / (L_hidden(t) + 0.01)
-rdc_ema(t) = 0.95 · rdc_ema(t−1) + 0.05 · RDC(t)
-```
-Reliably predicts DegEq onset 500–1,000 steps in advance.
-
-**3. Intrinsic Lorentz LM Head**
-
-Replaces the manifold-folding `log_map_zero + spatial slice` scoring with Minkowski inner product in `float64`:
-```
-score(h, wₖ) = ⟨h, wₖ⟩_L = −h₀w₀ + Σᵢ hᵢwᵢ
-logit_k = clamp(τ, 0.01, 2.5) · ⟨h, wₖ⟩_L
-```
-
-**4. Riemannian Natural Gradient Correction**
-
-`r/sinh(r)` scaling of Euclidean Adam gradients on manifold parameters, derived from the Lorentz metric tensor pullback (Amari 1998):
-```python
-r = ‖θ_{1:n}‖₂.clamp(ε)
-grad *= r / sinh(r.clamp(max=10))
-```
-
-**5. Symmetric Hyperbolic Vocabulary (Variant E/F)**
-
-Stores vocabulary as tangent vectors `[V, n]` and lifts to manifold via `exp_map_zero` with `vocab_r_max=3.0`. Prevents unlimited radial growth without constraining semantic expressiveness.
-
-**6. EarlyStoppingV3 — Dual-EMA**
-
-Dual-reference EMA (fast β=0.3, slow β=0.9) with sliding window local maximum and detrended noise estimation. Correctly accumulates patience on true plateaus where single-reference EMA perpetually fires false positives.
-
-**7. Adaptive Training Infrastructure**
-
-Two-layer control system:
-- `LossBalancer` (proactive): equalizes effective gradient contributions across all loss terms at every evaluation
-- `AdaptiveTuner` (reactive): fires on regime alerts, adjusts temperature and loss weights
-
-### Experimental Results
-
-| Variant | Description | Steps | Best PPL | DegEq onset |
-|---------|-------------|-------|----------|-------------|
-| A | Baseline — no intervention | 10k | 482.8 | step ≈ 5,400 |
-| D | Hyperbolic vocab via `proj()` | 10k | 401.0 | step ≈ 5,400 |
-| E | Symmetric vocab (`exp_map_zero`) | 13k | 377.6 | > 13k |
-| **F** | **Full Riemannian (HyDRA)** | **33.4k** | **291.3** | **Delayed (> 33.4k steps)** |
-
-**Note on Variant F:** The Riemannian natural gradient correction delays DegEq onset beyond the observed training window (> 33,400 steps). It does not eliminate the attractor — it delays entry into this regime.
-
-**Negative result:** Kuramoto phase coupling applied post-convergence consistently degrades perplexity (+175%, PPL 291 → 850) across all tested coupling strengths, consistent with hyperbolic representations being geometrically locked against post-hoc tangent-space perturbations.
-
-### DegEq Attractor (Cross-Variant)
-
-| Run | rdc* (mean) | rdc* (σ) | Step rdc > 9 |
-|-----|-------------|----------|--------------|
-| Variant F (standard KL) | 9.82 | 0.17 | ≈ 1,600 |
-| D1 (Projective KL) | 10.04 | 0.12 | ≈ 1,600 |
-| D3 (Decoupled R-A) | 10.04 | 0.12 | ≈ 1,600 |
-| **OTED (T₀ loss)** | **10.25** | **0.30** | **≈ 1,600** |
-
-**Proof by elimination:** OTED moves all loss computation to the flat tangent space
-T_o H^n, eliminating Christoffel symbols from the backward pass. It reaches rdc* = 10.25 ± 0.30 —
-indistinguishable from the KL baseline. Four interventions, same fixed point: DegEq originates
-in the model's forward dynamics, not in the loss surface.
-
-### Usage
-
-```python
-from cgt.api.entrypoint import SafeHyperbolicModel, SafeModelConfig
-from cgt.distillation.distillation_v2 import DistillationTrainerV2, DistillationConfigV2
-
-# Build student (≈12M parameters, H^128)
-student_cfg = SafeModelConfig(
-    vocab_size=50257, n_embd=128, n_layer=4, n_head=4, n_positions=128,
-    riemannian_correct_vocab=True,
-    riemannian_correct_embed=True,
-    riemannian_correct_encoder=True,
-)
-student = SafeHyperbolicModel(student_cfg)
-
-# Configure distillation
-dist_cfg = DistillationConfigV2(
-    alpha=0.25, temperature=1.2,
-    lambda_hidden=0.15, lambda_radius=0.05, lambda_contrast=0.10,
-    max_steps=100000, learning_rate=3e-4,
-    riemannian_correct_vocab=True,
-    riemannian_correct_embed=True,
-    riemannian_correct_encoder=True,
-)
-
-# Train
-trainer = DistillationTrainerV2(student, teacher, dist_cfg, ckpt_dir)
-trainer.train(train_loader, val_loader)
 ```
 
 **Reproduction notebook:** `notebooks/HyDRA.ipynb` — Google Colab compatible.
 
 ---
 
+## 9. References
 
----
+1. **Temporal Binding on the Lorentz Manifold** (HyDRA v7, this work)
+   DOI: [10.5281/zenodo.19583481](https://doi.org/10.5281/zenodo.19583481)
 
-## 11. HypLoRA: 100% Hyperbolic LoRA Adapter
+2. **HyDRA v4: Attractor Invariance and Proof by Elimination**
+   DOI: [10.5281/zenodo.19501160](https://doi.org/10.5281/zenodo.19501160)
+   v2: [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998) |
+   v3: [10.5281/zenodo.19483206](https://doi.org/10.5281/zenodo.19483206)
 
-> **Architecture:** CGT-native implementation of [HypLoRA (Yang et al., NeurIPS 2025)](https://arxiv.org/abs/2410.04010)  
-> **Module:** `src/cgt/models/hyplora.py`
+3. **Contrastive Geometric Transfer: 24× Compression**
+   DOI: [10.5281/zenodo.18379741](https://doi.org/10.5281/zenodo.18379741)
 
-HypLoRA injects a fully hyperbolic adapter branch into any frozen LLM. Unlike naive tangent-space LoRA,
-it operates **directly on Lorentz manifold coordinates**, preserving the hierarchical radial structure
-that empirically characterises LLM token embeddings (frequent tokens near origin, rare tokens far).
+4. **Topological Bridges and Precision-Aware Geometry (TB-PAG)**
+   DOI: [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794)
 
-**Why no DegEq:** Each `HypLoRALayer` performs exactly ONE `exp_map` and ONE `log_map` per forward pass.
-The frozen backbone accumulates no manifold momentum — only adapter parameters `A`, `B`, `K` are updated.
-This avoids the 4-layer Christoffel cascade that causes DegEq in fully-hyperbolic models trained from scratch.
+5. **Lorentzian Hyperbolic Compression**
+   DOI: [10.5281/zenodo.18382872](https://doi.org/10.5281/zenodo.18382872)
 
-### Architecture
+6. **Hyperbolic-Native LLM: Mathematical Specification**
+   DOI: [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897)
 
-```
-z = W·x  +  Π_log( LLR( B·A,  Π_exp(x) ) )  ×  (alpha / rank)
-↑                   ↑          ↑
-frozen          Lorentz     project to
-Euclidean       Low-Rank    H^n via
-weight          transform   exp_map_zero
-```
+7. **Geometric Dynamics / H-AKORN**
+   DOI: [10.5281/zenodo.18394033](https://doi.org/10.5281/zenodo.18394033)
 
-Where `LLR` (Lorentz Low-Rank) applies the low-rank transform directly on manifold coordinates:
+8. **Geometric Control Manifolds**
+   DOI: [10.5281/zenodo.18334132](https://doi.org/10.5281/zenodo.18334132)
 
-1. `log_map_zero(x_H)` → tangent vector `v ∈ T_o H^n ≅ R^n`
-2. `v → v @ A @ B` (rank-r bottleneck in tangent space)
-3. `exp_map_zero(v_adapted)` → adapted point on H^n
-
-Curvature `K` is a learnable parameter per layer (log-parameterised for positivity `K > 0`).
-
-### New Modules (HypLoRA)
-
-| Class / Function | Description |
-|---|---|
-| `LorentzLowRank` | Core adapter: rank-r transform directly on H^n with learnable K |
-| `HypLoRALayer` | Wraps any `nn.Linear` with frozen base + hyperbolic branch |
-| `HypLoRAConfig` | Dataclass: rank, alpha, n_embd, curvature, dropout, dtype |
-| `inject_hyplora(model, config, target_modules)` | Replaces target layers in any `nn.Module` |
-| `extract_hyplora(model)` | Saves only adapter weights (independent of backbone) |
-| `load_hyplora(model, state)` | Loads extracted adapter weights |
-| `merge_hyplora(model)` | Fuses adapter into backbone for inference (first-order approx) |
-| `delta_hyperbolicity(embeddings)` | Measures δ-hyperbolicity via four-point condition |
-| `token_freq_norm_stats(embeddings, freqs)` | Token frequency vs embedding norm correlation |
-| `print_trainable_params(model)` | Trainable / frozen parameter summary |
-
-### Usage — Fine-tuning any LLM
-
-```python
-from cgt.models.hyplora import HypLoRAConfig, inject_hyplora
-from cgt.dynamics.riemannian_adamw import RiemannianAdamW
-
-# 1. Configure adapter (set n_embd to the model's hidden dimension)
-config = HypLoRAConfig(
-    rank            = 8,
-    alpha           = 16.0,
-    n_embd          = 4096,   # LLaMA-3-8B; use 768 for GPT-2, 2048 for LLaMA-3-1B
-    curvature       = 1.0,
-    learn_curvature = True,   # K is learnable per layer
-)
-
-# 2. Inject hyperbolic adapters (base weights frozen automatically)
-inject_hyplora(model, config, target_modules=["q_proj", "v_proj"])
-# Common choices:
-#   ["q_proj", "v_proj"]                          — HypLoRA default (attention)
-#   ["q_proj", "k_proj", "v_proj", "o_proj"]      — full attention
-#   ["gate_proj", "up_proj", "down_proj"]          — FFN only
-
-# 3. Riemannian optimizer with V5 radial momentum fix
-optimizer = RiemannianAdamW(
-    list(model.named_parameters()),
-    substrate                 = config.get_substrate(),
-    lr                        = 3e-4,
-    weight_decay              = 0.01,
-    radial_momentum_projection = True,   # V5: breaks Christoffel-momentum coupling
-)
-
-# 4. Train (standard loop — no changes needed)
-for batch in train_loader:
-    loss = model(**batch).loss
-    loss.backward()
-    optimizer.step()
-    optimizer.zero_grad()
-```
-
-### Diagnostics
-
-#### Quick geometry checks (from `cgt.models.hyplora`)
-
-```python
-from cgt.models.hyplora import delta_hyperbolicity, token_freq_norm_stats
-
-embeddings = model.get_input_embeddings().weight.detach()
-
-dh = delta_hyperbolicity(embeddings, n_samples=500)
-print(f"δ-hyperbolicity: {dh:.4f}")
-# < 0.1 → strong tree-like structure (supports HypLoRA)
-# > 0.5 → weak hyperbolic structure
-
-stats = token_freq_norm_stats(embeddings, token_frequencies)
-print(f"Freq-norm correlation: {stats['freq_norm_corr']:.4f}")
-# Negative → frequent tokens closer to origin (HypLoRA paper finding)
-```
-
-#### Full DegEq post-training report (from `cgt.diagnostics`)
-
-Fully additive module — reads from a completed trainer, modifies nothing.
-Implements the Krioukov (2010) curvature-Zipf equilibrium analysis and
-the Khrulkov (2020) frequency-radius hierarchy criterion.
-
-```python
-from cgt.diagnostics import DegEqDiagnostics, build_token_counts
-
-# Build token frequency counts from training data
-# (max_batches=50 is fast; use more for higher accuracy)
-token_counts = build_token_counts(train_loader, VOCAB_SIZE, max_batches=50)
-
-# Run full diagnostic after training completes
-diag   = DegEqDiagnostics(trainer, tokenizer, token_counts=token_counts)
-report = diag.run(verbose=True)
-
-# Report fields:
-#   report.rho_freq_radius   # Pearson r(log f_k, r_k). < -0.1 = hierarchy intact
-#   report.gamma_zipf        # Estimated Zipf exponent of the corpus
-#   report.k_equilibrium     # K* = 1/(4*(gamma-1)^2)  [Krioukov 2010]
-#   report.k_model           # Curvature K of the trained model
-#   report.k_mismatch        # |K_model - K*|  >5 = HIGH mismatch (DegEq risk)
-#   report.rdc_star          # Final rdc_ema from val_hist
-#   report.collapse_score    # Radial CV: 0=collapsed, 1=healthy
-#   report.degeq_risk        # "HIGH" | "MEDIUM" | "LOW"
-#   report.hierarchy_intact  # bool: rho < -0.1
-#   report.interpretation    # Human-readable summary string
-print(report.summary())
-```
-
-**Interpreting the output:**
-
-| `rho_freq_radius` | `degeq_risk` | Meaning |
-|---|---|---|
-| < -0.3 | LOW | Strong hierarchy — frequent tokens near origin, rare tokens far |
-| -0.3 to -0.1 | LOW/MEDIUM | Weak hierarchy — partially preserved |
-| ≈ 0.0 | HIGH | DegEq detected — radial structure collapsed |
-| > 0.1 | HIGH | Inverted hierarchy — unexpected, indicates training failure |
-
-**Standalone utilities:**
-
-```python
-from cgt.diagnostics import (
-    k_equilibrium_from_zipf,   # K* = 1/(4*(gamma-1)^2)
-    estimate_zipf_exponent,    # OLS log-rank vs log-count
-    freq_radius_correlation,   # dict with rho, p_value, mean/std_radius
-    radial_collapse_score,     # dict with collapse_score, cv, degeq_active
-)
-
-# Example: check if K=1 is appropriate for your corpus
-gamma  = estimate_zipf_exponent(token_counts)
-k_star = k_equilibrium_from_zipf(gamma)
-print(f"Corpus Zipf γ={gamma:.3f} → K*={k_star:.2f}")
-print(f"K=1 mismatch: {abs(1.0 - k_star):.2f} ({'HIGH' if abs(1.0-k_star)>5 else 'LOW'})")
-# WikiText-2: γ≈1.0–1.1 → K*≈25–100 → K=1 is HIGH mismatch
-# This is the conjectured root cause of DegEq at rdc*≈10
-```
-
-### Saving and Loading Adapters
-
-```python
-from cgt.models.hyplora import extract_hyplora, load_hyplora
-import torch
-
-# Save only adapter weights (~MB, not GB)
-adapter_state = extract_hyplora(model)
-torch.save(adapter_state, "hyplora_adapter.pt")
-
-# Load into a fresh model with injected adapters
-adapter_state = torch.load("hyplora_adapter.pt")
-load_hyplora(model, adapter_state)
-```
-
-### Relationship to HyDRA
-
-| | HyDRA | HypLoRA |
-|---|---|---|
-| **Training** | From scratch | Fine-tuning |
-| **Architecture** | All 4 layers on H^n | Frozen Euclidean + 1 hyp branch |
-| **DegEq risk** | High (Christoffel cascade) | None (single exp/log) |
-| **Geometric coverage** | Full (all internal reps) | Partial (adapter only) |
-| **DegEq lesson** | Identifies the mechanism | Architecturally avoids it |
-
-HyDRA discovered *why* DegEq occurs; HypLoRA shows *how to avoid it architecturally*.
-Together they establish both the failure mode and the design principle for hyperbolic LLMs.
-
-**Krioukov conjecture (implemented in `cgt.diagnostics`):** DegEq at rdc\*≈10 may reflect a
-thermodynamic equilibrium between fixed curvature K=1 and the Zipf exponent γ of the corpus.
-The equilibrium curvature K\* = 1/(4(γ−1)²) [Krioukov et al. 2010]; for WikiText-2 with γ≈1.1,
-K\*≈25 — meaning K=1 is severely mismatched. Learnable K per layer (V5-C, `LorentzLowRank`)
-is the falsifiable intervention: if the conjecture holds, rdc\* will shift to a data-dependent
-fixed point ≠ 10 when K is free to adapt.
-
-
-## 12. AdaptiveHyperController: Closed-Loop Hyperparameter Control
-
-> **Module:** `cgt.distillation.adaptive_controller`  
-> **Single-GPU:** fully supported (default)  
-> **Multi-GPU PBT:** supported via shared filesystem (Drive / NFS)
-
-Replaces manual lambda tuning during distillation with a three-level closed-loop controller.
-Monitors `GradBalance`, `val_ppl` velocity, and training regimes in real time and adjusts
-`lambda_distill`, `lambda_hidden`, `temperature`, and `learning_rate` automatically.
-
-### Architecture: Three Control Levels
-
-| Level | Runs every | Monitors | Adjusts |
-|---|---|---|---|
-| L1 — GradBalance | 5 000 steps | `eff_kl` vs `eff_hidden` | `lambda_distill`, `lambda_hidden` |
-| L2 — PPL velocity | every eval | val_ppl improvement rate | learning rate |
-| L3 — Regime | 200 steps | `rdc`, `logit_std`, `div`, `rad` | per-regime response |
-
-**L1** uses a proportional controller: if `eff_kl / eff_hidden > 2×`, the dominant lambda
-is reduced by `balance_lr × (ratio − 1) / ratio`. Resolves the `imbalance=10×❌` problem
-that previously required manual intervention.
-
-**L2** computes relative PPL improvement velocity over a sliding window. Below
-`ppl_min_velocity` for `ppl_stall_patience` evals → LR reduced by `lr_reduce_factor`.
-Above `3 × ppl_min_velocity` → LR boosted by `lr_boost_factor`.
-
-**L3** detects four pathological regimes and responds automatically:
-
-| Regime | Condition | Response |
-|---|---|---|
-| DegEq onset | `rdc > 3.0` for 3 steps | `lambda_distill × 0.7` |
-| OverconfidenceSpiral | `logit_std > 15.0` | clamp `log_temperature ≤ log(8)` |
-| DiversityCollapse | `div < 0.3` | `temperature × 1.2` |
-| RadiusCollapse risk | `rad < 0.05` | `lambda_radius × 1.5` |
-
-### Quick start (single GPU)
-
-```python
-from cgt.distillation import AdaptiveHyperController, AdaptiveControllerConfig
-
-controller = AdaptiveHyperController(
-    config  = AdaptiveControllerConfig(),   # all defaults
-    trainer = trainer,
-)
-trainer.adaptive_controller = controller
-
-# After training:
-print(controller.summary())
-```
-
-### Custom config
-
-```python
-controller = AdaptiveHyperController(
-    config = AdaptiveControllerConfig(
-        grad_balance_every = 5000,    # L1: check balance every N steps
-        balance_tolerance  = 2.0,     # L1: allow up to 2× imbalance
-        balance_lr         = 0.5,     # L1: correction aggressiveness (0–1)
-        lambda_distill_min = 0.001,   # L1: lower bound
-        lambda_hidden_min  = 0.001,   # L1: lower bound
-        ppl_stall_patience = 5,       # L2: evals before LR drop
-        lr_reduce_factor   = 0.7,     # L2: LR × 0.7 on stall
-        lr_boost_factor    = 1.1,     # L2: LR × 1.1 on fast convergence
-        regime_every       = 200,     # L3: regime check interval
-        rdc_danger         = 3.0,     # L3: DegEq onset threshold
-        logit_std_max      = 15.0,    # L3: OverconfidenceSpiral threshold
-        verbose            = True,    # print actions to training log
-    ),
-    trainer = trainer,
-)
-```
-
-### Population Based Training — multi-GPU (PBT)
-
-Based on [Jaderberg et al. 2017 (DeepMind)](https://arxiv.org/abs/1711.09846) with a
-hyperbolic-specific fitness function that penalises DegEq-active models alongside PPL.
-
-Every `pbt_interval` steps, workers synchronise via a shared directory. Bottom 20% copy
-hyperparameters from top 20% (exploit) and perturb them by ±20% (explore).
-
-**Fitness function** (higher = better):
-```
-fitness = 0.5 × ppl_score + 0.3 × rdc_score
-```
-where `ppl_score = 1 − clip((ppl − 50) / 450)` and `rdc_score = 1 − clip(rdc / 10)`.
-A model with good PPL but DegEq active (rdc ≈ 10) scores lower than a model with
-slightly worse PPL but rdc < 2 — the hyperbolic modification vs the original PBT paper.
-
-```python
-# Worker 0 (run on GPU 0):
-controller = AdaptiveHyperController(
-    config = AdaptiveControllerConfig(
-        n_workers        = 4,                    # total number of GPUs
-        worker_id        = 0,                    # this GPU's rank
-        pbt_interval     = 10_000,               # sync every 10k steps
-        pbt_exploit_frac = 0.2,                  # bottom/top 20%
-        pbt_perturb_factor = 0.2,                # ±20% perturbation
-        pbt_shared_dir   = "/content/drive/MyDrive/HydraPaper/pbt_sync",
-        pbt_fitness_weights = {
-            "val_ppl":  0.5,
-            "rdc_ema":  0.3,
-            "logit_std": 0.2,
-        },
-    ),
-    trainer = trainer,
-)
-
-# Each GPU runs independently. The controller handles all synchronisation.
-# Requires pbt_shared_dir to be accessible by all workers (Drive, NFS, etc.)
-```
-
-### Controller state in checkpoints
-
-```python
-# Save (add to your checkpoint logic):
-torch.save({
-    "model": student.state_dict(),
-    "controller": controller.get_state(),
-}, "checkpoint.pt")
-
-# Load:
-ckpt = torch.load("checkpoint.pt")
-student.load_state_dict(ckpt["model"])
-controller.load_state(ckpt["controller"])
-```
-
-
-
-## 8. References
-
-1. **HyDRA v3: Hyperbolic Distillation with Riemannian Adaptation — Attractor Invariance and Proof by Elimination**  
-   de Sena, Éric Gustavo Reis. (2026).
-   - v2: DOI [10.5281/zenodo.19480998](https://doi.org/10.5281/zenodo.19480998)
-   - v3: DOI [10.5281/zenodo.19483206](https://doi.org/10.5281/zenodo.19483206)
-   - **v4 (current):** DOI [10.5281/zenodo.19501160](https://doi.org/10.5281/zenodo.19501160)
-
-2. **Lorentzian Hyperbolic Compression: A Family of Geometric Models for Euclidean-to-Hyperbolic Representation Transfer**  
-   Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18382872](https://doi.org/10.5281/zenodo.18382872)
-
-3. **Contrastive Geometric Transfer: Efficient Sentence Embeddings via Hyperbolic Projection with 24× Compression**  
-   Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18379741](https://doi.org/10.5281/zenodo.18379741)
-
-4. **Topological Bridges and Precision-Aware Geometry: Eradicating Deterministic Numerical Instability in Lorentz Manifold Deep Learning**  
-   Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794)
-
-5. **Hyperbolic-Native Large Language Model: Complete Mathematical Specification for Direct Implementation**  
-   Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18383897](https://doi.org/10.5281/zenodo.18383897)
-
-6. **Geometric Dynamics in Neural Architectures: The Integration of Hyperbolic Adaptive Kuramoto Oscillators into Large Language Models**  
-   Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18394033](https://doi.org/10.5281/zenodo.18394033)
-
-7. **Geometric Control Manifolds for Hyperbolic Self-Organizing Intelligence**  
-   Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18334132](https://doi.org/10.5281/zenodo.18334132)
-
-8. **From Geometric Control Manifolds to Toy Ψ-SLM: A Classical, Variational Implementation on Hyperbolic Manifolds**  
-   Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18334140](https://doi.org/10.5281/zenodo.18334140)
-
-9. **Hyperbolic Neural Cellular Automata: A Geometric Framework for Emergent Complexity**  
-   Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18334091](https://doi.org/10.5281/zenodo.18334091)
-
-10. **Unsupervised Topological Alignment Between Neural and Phenomenal Spaces via Gromov-Wasserstein Transport**  
-    Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18334153](https://doi.org/10.5281/zenodo.18334153)
-
-11. **Dimensional Efficiency Bounds for Embedding Hierarchical Metric Structures: A Regime-Dependent Analysis**  
-    Reis, Éric. Zenodo (2026). DOI: [10.5281/zenodo.18378938](https://doi.org/10.5281/zenodo.18378938)
-
-Additional foundational references:
-- Yang et al. (2025). "HypLoRA: Hyperbolic Fine-Tuning for Large Language Models." NeurIPS 2025 Spotlight.
-  https://arxiv.org/abs/2410.04010
-- Lou et al. (2020). "Differentiating through the Fréchet Mean." ICML.
-- Nickel & Kiela (2017). "Poincaré Embeddings for Learning Hierarchical Representations."
-- Ganea et al. (2018). "Hyperbolic Neural Networks."
-- Amari (1998). "Natural gradient works efficiently in learning." Neural Computation.
-
----
-
-## 9. Related Publications by the Author
-
-The following papers provide broader theoretical context. **These are NOT fully implemented in this repository.**
-
-### Numerical Foundations
-
-| Paper | DOI | Status |
-|-------|-----|--------|
-| Topological Bridges and Precision-Aware Geometry | [10.5281/zenodo.19362794](https://doi.org/10.5281/zenodo.19362794) | Implemented (`lorentz_hardened.py`) |
-
-### Architectural Extensions
-
-| Paper | DOI | Status |
-|-------|-----|--------|
-| Lorentz-Manifold Transformers: A Geometric–Dynamical Framework | [10.5281/zenodo.18334083](https://doi.org/10.5281/zenodo.18334083) | Theoretical |
-| H-KAN: Hyperbolic Kuramoto Attention Networks | [10.5281/zenodo.18334106](https://doi.org/10.5281/zenodo.18334106) | Theoretical (Poincaré disk variant) |
-| The Ψ-Former: Topological Downward Causation via Riemannian Optimization | [10.5281/zenodo.18334069](https://doi.org/10.5281/zenodo.18334069) | Theoretical |
-| Resilient Cognitive Architectures via Anosov Flows on Lorentz Manifolds | [10.5281/zenodo.18334123](https://doi.org/10.5281/zenodo.18334123) | Theoretical |
-
-### Theoretical Framework
-
-| Paper | DOI | Status |
-|-------|-----|--------|
-| The Geometric Control Manifold Hypothesis | [10.5281/zenodo.18334059](https://doi.org/10.5281/zenodo.18334059) | Foundational hypothesis |
-| A Unified Geometric Field Theory of Self-Organizing Intelligence | [10.5281/zenodo.18334098](https://doi.org/10.5281/zenodo.18334098) | UGFT framework |
-| The Topological Signature of Consciousness: A GW Framework | [10.5281/zenodo.18334076](https://doi.org/10.5281/zenodo.18334076) | GW for neural-phenomenal alignment |
-| Hyperbolic Semantic Communication: Geometrodynamics of Synthetic Intelligence | [10.5281/zenodo.18379242](https://doi.org/10.5281/zenodo.18379242) | Unified framework under causal constraints |
-
-### Application Domains (XR / Semantic Communication)
-
-| Paper | DOI | Status |
-|-------|-----|--------|
-| Hyperbolic Semantic Communication for Retinal-Resolution XR | [10.5281/zenodo.18380913](https://doi.org/10.5281/zenodo.18380913) | Theoretical framework |
-| Geometric Dynamics and Semantic Communication for XR Video (v1) | [10.5281/zenodo.18383221](https://doi.org/10.5281/zenodo.18383221) | Systems-level analysis |
-| Geometric Dynamics and Semantic Communication for XR Video (v2) | [10.5281/zenodo.18383250](https://doi.org/10.5281/zenodo.18383250) | Extended version |
-
-**Note:** Claims made in theoretical papers should not be interpreted as empirically validated by this codebase.
+9. Yang et al. (2025). "HypLoRA." NeurIPS 2025. https://arxiv.org/abs/2410.04010
+10. Nickel & Kiela (2018). "Lorentz Model." ICML 2018.
+11. Ganea et al. (2018). "Hyperbolic Neural Networks." NeurIPS 2018.
+12. Strogatz (2000). "From Kuramoto to Crawford." Physica D.
+13. Bubenik (2015). "Statistical TDA." JMLR 16.
+14. Forman (2003). "Combinatorial Ricci Curvature." Discrete Comput. Geom.
+15. Mémoli (2011). "Gromov-Wasserstein Distances." Found. Comput. Math.
 
 ---
 
 ## Citation
 
 ```bibtex
-@misc{sena2026hydra,
-  title={HyDRA v4: Hyperbolic Distillation with Riemannian Adaptation ---
-         Channel Attribution and Proof by Elimination},
-  author={de Sena, {\'E}ric Gustavo Reis},
-  year={2026},
-  publisher={Zenodo},
-  doi={10.5281/zenodo.19501160},
-  url={https://doi.org/10.5281/zenodo.19501160},
-  note={v2: 10.5281/zenodo.19480998 | v3: 10.5281/zenodo.19483206}
+@misc{sena2026hydra_v7,
+  title   = {Temporal Binding on the Lorentz Manifold: Geodesic Kuramoto
+             Oscillators, Topological Regularisation, and Closed-Loop
+             Geometric Control for Hyperbolic Language Model Distillation},
+  author  = {{Reis de Sena}, {\'E}ric Gustavo},
+  year    = {2026},
+  publisher = {Zenodo},
+  doi     = {10.5281/zenodo.19583481},
+  url     = {https://doi.org/10.5281/zenodo.19583481},
+  note    = {Proof of concept preprint. Independent research, Colab Pro.}
 }
 
-@misc{sena2026cgt,
-  title={Contrastive Geometric Transfer: Efficient Sentence Embeddings via Hyperbolic Projection with 24× Compression},
-  author={de Sena, {\'E}ric Gustavo Reis},
-  year={2026},
-  publisher={Zenodo},
-  doi={10.5281/zenodo.18379741}
-}
-```
-
-```bibtex
-@inproceedings{yang2025hyplora,
-  title     = {Hyperbolic Fine-Tuning for Large Language Models},
-  author    = {Yang, Menglin and B B, Ram Samarth and Feng, Aosong
-               and Xiong, Bo and Liu, Jiahong and King, Irwin and Ying, Rex},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
-  year      = {2025}
+@misc{sena2026hydra_v4,
+  title   = {HyDRA v4: Hyperbolic Distillation with Riemannian Adaptation ---
+             Channel Attribution and Proof by Elimination},
+  author  = {{Reis de Sena}, {\'E}ric Gustavo},
+  year    = {2026},
+  publisher = {Zenodo},
+  doi     = {10.5281/zenodo.19501160}
 }
 ```
 
@@ -1057,29 +483,36 @@ The following papers provide broader theoretical context. **These are NOT fully 
 
 ## License
 
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)  
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 Copyright © 2026 Éric Gustavo Reis de Sena. All Rights Reserved.
 
-**IP Protected** — Patent Pending. Commercial licensing: eirikreisena@gmail.com
+**IP Protected** — Patent Pending.
+Commercial licensing: eirikreisena@gmail.com
 
 ### AI Training Prohibition
 
 **NOTICE TO AI/ML COMPANIES AND RESEARCHERS:**
 
-This repository and all its contents are **explicitly excluded** from use in training, fine-tuning, or otherwise improving any artificial intelligence, machine learning, or large language model systems, including but not limited to:
-
+This repository and all its contents are **explicitly excluded** from use in training,
+fine-tuning, or otherwise improving any artificial intelligence, machine learning, or
+large language model systems, including but not limited to:
 - Foundation models (GPT, Claude, Gemini, LLaMA, etc.)
 - Embedding models, code generation models, and any derivative or successor systems
 
-**Prohibited uses include:** direct training on this codebase or documentation; inclusion in training datasets (Common Crawl, The Stack, etc.); use in RLHF, DPO, or other alignment procedures; extraction of patterns, architectures, or methodologies for model improvement.
+**Prohibited uses include:** direct training on this codebase or documentation;
+inclusion in training datasets (Common Crawl, The Stack, etc.); use in RLHF, DPO,
+or other alignment procedures; extraction of patterns, architectures, or methodologies
+for model improvement.
 
-This prohibition applies to all entities — AI companies, academic institutions, and any entity collecting data for AI training purposes. Violation constitutes copyright infringement. The CC BY-NC-SA 4.0 license does not grant permission for AI training use.
+This prohibition applies to all entities — AI companies, academic institutions, and
+any entity collecting data for AI training purposes. Violation constitutes copyright
+infringement. The CC BY-NC-SA 4.0 license does not grant permission for AI training use.
 
 For authorized research collaborations, contact the author directly.
 
 ---
 
-**Author:** Éric Gustavo Reis de Sena  
-**Contact:** eirikreisena@gmail.com  
-**LinkedIn:** [linkedin.com/in/eric-araya](https://linkedin.com/in/eric-araya)  
+**Author:** Éric Gustavo Reis de Sena
+**Contact:** eirikreisena@gmail.com
+**LinkedIn:** [linkedin.com/in/eric-araya](https://linkedin.com/in/eric-araya)
 **YouTube:** [youtube.com/@ericreis-z3u](https://youtube.com/@ericreis-z3u)
