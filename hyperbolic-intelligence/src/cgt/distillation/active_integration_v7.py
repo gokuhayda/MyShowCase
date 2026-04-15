@@ -325,29 +325,36 @@ def activate_all_modules_v7(
                 pass
 
         # ── 7. L_align hook (Q8) — distance matrix alignment ─────────────
-        # Runs every 50 steps after warmup to avoid cold-start interference
+        # Uses vocabulary embeddings (stable, no extra forward pass needed)
         if cur_step >= 100 and cur_step % 50 == 0:
             try:
-                # Get teacher hidden states via a no-grad forward pass
-                input_ids = batch['input_ids'].to(trainer.device)
-                with torch.no_grad():
-                    t_out = trainer.teacher(input_ids, return_hidden=True)
-                    t_hidden = t_out.get('hidden_states')
-                    if t_hidden is None and hasattr(t_out, 'get'):
-                        t_hidden = t_out.get('last_hidden_state')
+                # Student: SublatticeLMHead weights (spatial components)
+                lm = trainer.student.core_model.lm_head
+                if hasattr(lm, '_get_all_weights'):
+                    s_emb = lm._get_all_weights()[:, 1:].float()   # [V, n]
+                elif hasattr(lm, 'weight_frequent'):
+                    s_emb = torch.cat([lm.weight_frequent, lm.weight_rare], dim=0).float()
+                else:
+                    s_emb = None
 
-                # Get student hidden states
-                s_out = trainer.student(input_ids)
-                s_hidden = s_out.get('hidden_states')
+                # Teacher: GPT-2 wte embeddings
+                t_emb = None
+                if hasattr(trainer.teacher, 'model'):
+                    t_emb = trainer.teacher.model.transformer.wte.weight.detach().float()
+                elif hasattr(trainer.teacher, 'transformer'):
+                    t_emb = trainer.teacher.transformer.wte.weight.detach().float()
 
-                if t_hidden is not None and s_hidden is not None:
-                    l_align = compute_l_align(
-                        student_hidden=s_hidden,
-                        teacher_hidden=t_hidden,
-                        sample_k=align_sample_k,
-                        lambda_align=lambda_align,
-                    )
-                    if l_align.requires_grad and l_align.item() > 0:
+                if s_emb is not None and t_emb is not None:
+                    N = min(s_emb.shape[0], t_emb.shape[0])
+                    idx_i = torch.randint(0, N, (align_sample_k,), device=s_emb.device)
+                    idx_j = torch.randint(0, N, (align_sample_k,), device=s_emb.device)
+                    # Student spatial distances (L2 proxy for Lorentz)
+                    d_s = torch.norm(s_emb[idx_i] - s_emb[idx_j], dim=-1)
+                    # Teacher Euclidean distances
+                    d_t = torch.norm(t_emb[idx_i].to(s_emb.device)
+                                   - t_emb[idx_j].to(s_emb.device), dim=-1).detach()
+                    l_align = ((d_t - d_s) ** 2).mean() * lambda_align
+                    if l_align.requires_grad and l_align.item() > 1e-8:
                         trainer.optimizer.zero_grad()
                         l_align.backward()
                         torch.nn.utils.clip_grad_norm_(
@@ -355,9 +362,9 @@ def activate_all_modules_v7(
                             trainer.config.gradient_clip * 0.3,
                         )
                         trainer.optimizer.step()
-                        metrics['l_align'] = float(l_align.item())
-            except Exception:
-                pass
+                    metrics['l_align'] = float(l_align.item())
+            except Exception as _e:
+                metrics['l_align'] = 0.0  # ensure field always present
 
         # ── 8. Asymmetric PCGrad + extra_loss_hooks (Q2) ─────────────────
         hooks = extra_loss_hooks or getattr(trainer, '_extra_loss_hooks', [])
