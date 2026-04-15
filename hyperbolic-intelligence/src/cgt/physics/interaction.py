@@ -76,3 +76,8 @@ class DynamicCurvatureField(nn.Module):
         lo, hi = self.cfg.K_curv_min, self.cfg.K_curv_max
         return lo + (hi - lo) * k                             # [N]
 
+
+
+def causal_horizon(D: torch.Tensor, R: float, tau: float) -> torch.Tensor:
+    """Soft causal cutoff: K_ij *= σ((R − d) / τ)  ∈ (0, 1)."""
+    return torch.sigmoid((R - D) / tau)
