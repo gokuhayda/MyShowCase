@@ -14,6 +14,16 @@
 
 ---
 
+> *Contrastive Geometric Transfer preserves the **relational structure** of
+> representations rather than only matching output distributions, enabling
+> stronger generalization under compression.*
+>
+> *While traditional distillation matches output distributions, CGT combined
+> with **HypLoRA** aligns the underlying **representational geometry**, enabling
+> stronger generalization and robustness under compression.*
+
+---
+
 ## 1. What CGT Does
 
 Pre-trained sentence embedding models (MiniLM-384D, MPNet-768D, etc.) produce high-dimensional vectors with significant storage and compute cost at scale. CGT compresses them across geometries — from flat Euclidean to the Lorentz hyperboloid — aiming to preserve pairwise semantic similarity at aggressive compression ratios.
